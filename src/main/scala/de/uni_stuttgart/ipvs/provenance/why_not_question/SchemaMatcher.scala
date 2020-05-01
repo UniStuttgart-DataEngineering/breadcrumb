@@ -46,6 +46,15 @@ class SchemaMatcher(twig: Twig, schema: Schema) {
     getCommonAncestorsLabel(rootLabel, leafLabel) == rootLabel
   }
 
+  def getCandidate(): Option[SchemaMatch] = {
+    val candidates = getCandidates()
+    if (candidates.size == 1){
+      Some(candidates(0))
+    } else {
+      None
+    }
+  }
+
   def getCandidates(): Seq[SchemaMatch] = {
     checkCandidates()
   }

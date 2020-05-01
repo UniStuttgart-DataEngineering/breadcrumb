@@ -15,6 +15,10 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaMatch, oid: Int) ext
   override def unrestructure(child: Option[LogicalPlan] = None): SchemaMatch = {
 
     //TODO this is not correct
+    //3 cases:
+    // 1) renaming: a --> b
+    // 2) tuple unnesting c<a,b> --> a --> d
+    // 2) tuple nesting a, b -> c<a,b>
     whyNotQuestion
   }
 

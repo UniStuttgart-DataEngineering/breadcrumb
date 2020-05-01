@@ -92,10 +92,6 @@ class SchemaMatchSuite extends FunSuite with SharedSparkTestDataFrames with Data
     twig.validate.get
   }
 
-  def getDataFrame(path: String) : DataFrame = {
-    spark.read.json(path)
-  }
-
   def getDataFrameAndMatches(pathToDf: String, twig: Twig): (DataFrame, Seq[SchemaMatch]) = {
     val df = getDataFrame(pathToDf)
     val schema = new Schema(df)

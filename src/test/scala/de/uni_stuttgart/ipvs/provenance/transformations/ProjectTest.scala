@@ -14,7 +14,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
     val df = singleInputColumnDataFrame()
     val otherDf = df.select($"MyIntCol")
-    WhyNotProvenance.rewrite(otherDf)
+    WhyNotProvenance.rewrite(otherDf, whyNotTuple())
     assertSmallDataFrameEquality(df, otherDf)
   }
 
@@ -22,7 +22,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
     val df = singleInputColumnDataFrame().withColumn(Constants.PROVENANCE_ID_STRUCT, monotonically_increasing_id())
     var otherDf = df.select($"MyIntCol")
-    otherDf = WhyNotProvenance.rewrite(otherDf)
+    otherDf = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
     otherDf.explain()
     otherDf.show()
     assertSmallDataFrameEquality(df, otherDf)

@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance
 
+import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.DataFrame
 
 trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
@@ -29,10 +30,21 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
 
 
   def getDataFrame(): DataFrame = {
-    val initial: DataFrame = spark.read.json(pathToNestedData2)
+    val initial: DataFrame = getDataFrame(pathToNestedData2)
     initial.filter(initial.col("flat_key") isNotNull)
   }
 
+  def getDataFrame(path: String): DataFrame = {
+    spark.read.json(path)
+  }
+
+  def whyNotTuple(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("MyIntCol", 1, 1, "")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
 
 
 }

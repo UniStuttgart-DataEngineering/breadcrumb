@@ -122,11 +122,6 @@ class SchemaMatcherSuite extends FunSuite with SharedSparkTestDataFrames with Da
   |    |-- b: long (nullable = true)
   */
 
-
-  def getDataFrame(path: String) : DataFrame = {
-    spark.read.json(path)
-  }
-
   test("PC leaf to root validation - all candidates") {
     val df = getDataFrame()
     val twig = getValidatedPCTwig()

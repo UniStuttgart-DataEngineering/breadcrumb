@@ -143,10 +143,6 @@ class DataFetcherUDFSuite extends FunSuite with SharedSparkTestDataFrames with D
     twig.validate.get
   }
 
-  def getDataFrame(path: String) : DataFrame = {
-    spark.read.json(path)
-  }
-
   test("Entire Workflow"){
     val df = getDataFrame(pathToDoc4)
     val twig = getSimplePathAmbiguousTreePattern1()
