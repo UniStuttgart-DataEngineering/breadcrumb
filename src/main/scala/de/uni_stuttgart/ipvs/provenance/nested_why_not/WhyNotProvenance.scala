@@ -41,4 +41,23 @@ object WhyNotProvenance {
     )
   }
 
+  def rewrite(dataFrame: DataFrame): DataFrame = {
+    val execState = dataFrame.queryExecution
+    val basePlan = execState.analyzed
+    val rewrite = WhyNotPlanRewriter.rewrite(basePlan, null)
+    val outputStruct = StructType(
+      rewrite.plan.output.map(out => StructField(out.name, out.dataType))
+    )
+
+    new DataFrame(
+      execState.sparkSession,
+      rewrite.plan,
+      RowEncoder(outputStruct)
+    )
+
+
+  }
+
+
+
 }

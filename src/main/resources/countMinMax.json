@@ -1,0 +1,7 @@
+{"name": "A AG", "bestellung": "A98547B1", "preis": 20, "artikelNr": ["A1"]},
+{"name": "A AG", "bestellung": "A98547B2", "preis": 50, "artikelNr": ["A2", "A3"]},
+{"name": "B AG", "bestellung": "A98547B3", "preis": 90, "artikelNr": ["A4", "A5", "A6", "A7"]},
+{"name": "B AG", "bestellung": "A98547B4", "preis": 40, "artikelNr": ["A8", "A9", "A10"]},
+{"name": "B AG", "bestellung": "A98547B5", "preis": 30, "artikelNr": ["A11", "A12"]},
+{"name": "C AG", "bestellung": "A98547B6", "preis": 25, "artikelNr": ["A13", "A14"]},
+{"name": "C AG", "bestellung": "A98547B7", "preis": 35, "artikelNr": ["A15", "A16"]}

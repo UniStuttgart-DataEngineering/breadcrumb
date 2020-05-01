@@ -30,6 +30,14 @@
         <spec2.version>4.2.0</spec2.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>spark-tests</id>
+            <name>spark-tests</name>
+            <url>https://dl.bintray.com/spark-packages/maven/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Main -->
         <dependency>
@@ -66,6 +74,13 @@
             <groupId>org.specs2</groupId>
             <artifactId>specs2-junit_${scala.compat.version}</artifactId>
             <version>${spec2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/MrPowers/spark-fast-tests -->
+        <dependency>
+            <groupId>MrPowers</groupId>
+            <artifactId>spark-fast-tests</artifactId>
+            <version>0.21.1-s_2.11</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

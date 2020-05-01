@@ -1,14 +1,48 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stutde.uni_stuttgart.ipvs.provenance.transformations.FilterRewrite
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project, ReturnAnswer, Subquery}
+import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, LocalRelationRewrite, ProjectRewrite}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, Expression, Literal, MonotonicallyIncreasingID, NamedExpression}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 
 
 object WhyNotPlanRewriter {
 
   def annotationEncoding = AnnotationEncoder
+
+  private var oid = 0
+
+  def getUniqueOperatorIdentifier(): Int = {
+    oid += 1
+    oid
+  }
+
+  def rewrite(plan: LogicalPlan, whyNotQuestion: SchemaMatch): Rewrite = {
+    plan match {
+      case ra: ReturnAnswer =>
+      {
+        rewrite(ra.child, whyNotQuestion)
+      }
+      case f: Filter =>
+      {
+        FilterRewrite(f, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+      }
+      case p: Project =>
+      {
+        ProjectRewrite(p, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+      }
+      case l: LocalRelation =>
+      {
+        LocalRelationRewrite(l, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+      }
+    }
+    //case plan: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan => {
+    //plan.map(plan => annotateAllChildren)
+    //}
+  }
+
+
 
   protected def applyOnChildren(plan: LogicalPlan, pq: Expression): LogicalPlan = {
     plan.mapChildren(apply(_,pq))
@@ -40,7 +74,7 @@ object WhyNotPlanRewriter {
         val candidatesOnChild = AnnotateCandidates(rewrittenChild,pq)
 
         // rewriting plan for filter
-        val modifiedFilter = new FilterRewrite() apply(filter.condition, candidatesOnChild)
+        val modifiedFilter = new FilterRewrite(filter, null, getUniqueOperatorIdentifier()).apply(filter.condition, candidatesOnChild)
         val projection = modifiedFilter.output :+ buildAnnotation(modifiedFilter)
 
         Project(

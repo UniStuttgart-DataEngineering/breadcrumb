@@ -1,14 +1,40 @@
-package de.uni_stutde.uni_stuttgart.ipvs.provenance.transformations
+package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.WhyNotPlanRewriter.buildAnnotation
 import de.uni_stuttgart.ipvs.provenance.transformations.RewriteConditons
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, Not, Or}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project, With}
+
+object FilterRewrite {
+  def apply(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int)
+}
+
+class FilterRewrite(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int) extends TransformationRewrite(filter, whyNotQuestion, oid) {
+
+  override def rewrite: Rewrite = {
+    val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, unrestructure())
+    val conditionExpression = filter.condition
+
+    val filterAttrName = FILTER_OP + opNum.toString()
+    val filterOrigAttrName = filterAttrName + "_Orig"
+    val lostByOrigFilter = filterOrigAttrName + "_lost"
+
+    val additionalColumn = Alias(conditionExpression, lostByOrigFilter)()
+    val projectList = filter.output :+ additionalColumn
+
+    val dataType = additionalColumn.dataType
+    val rewrittenProjection = Project(
+      projectList,
+      childRewrite.plan
+    )
+
+    Rewrite(rewrittenProjection, childRewrite.provenanceExtension)
+  }
 
 
-class FilterRewrite {
-  var opNum: Int = 0
-  opNum += 1
+  var opNum: Int = oid
 
   //  Rewriting the plan
   def apply(condition: Expression, children: LogicalPlan): LogicalPlan = {

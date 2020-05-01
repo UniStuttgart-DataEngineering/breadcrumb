@@ -1,22 +1,18 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
+import de.uni_stuttgart.ipvs.provenance.{SharedSparkTestDataFrames}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.scalatest.FunSuite
 import org.scalatest.Assertions._
 
-class WhyNotProvenanceTest extends FunSuite with SharedSparkTestInstance{
+class WhyNotProvenanceTest extends FunSuite with SharedSparkTestDataFrames{
 
   import spark.implicits._
 
-  def inputDataFrame(): DataFrame = {
-    Seq(1, 2, 3, 4, 5, 6).toDF("MyIntCol")
-  }
-
   test("The first test, fail fast, fail often") {
-    var df = inputDataFrame()
+    var df = singleInputColumnDataFrame()
     df = df.filter($"MyIntCol" > 2)
     //df.explain(true)
     // TODO: provenance question
