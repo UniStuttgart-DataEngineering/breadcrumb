@@ -2,16 +2,17 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.WhyNotPlanRewriter.buildAnnotation
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.transformations.RewriteConditons
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project, With}
 
 object FilterRewrite {
-  def apply(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int)
+  def apply(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)
 }
 
-class FilterRewrite(filter: Filter, whyNotQuestion:SchemaMatch, oid: Int) extends TransformationRewrite(filter, whyNotQuestion, oid) {
+class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) extends TransformationRewrite(filter, whyNotQuestion, oid) {
 
   override def rewrite: Rewrite = {
     val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, unrestructure())

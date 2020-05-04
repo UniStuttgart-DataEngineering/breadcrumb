@@ -6,21 +6,25 @@ import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import scala.collection.mutable
 import scala.collection.mutable.Map
 
-class Schema (dataFrame: DataFrame) {
+class Schema (dataFrame: DataFrame, _test: Boolean = false) {
 
-  val labeles = parseSchemaOfDataFrame(dataFrame)
-  val nameStreams = initializeNameStreams(labeles)
+  val labeles = Map.empty[String, String]
+  val nameStreams =  Map.empty[String, Seq[String]]
 
-  def parseSchemaOfDataFrame(dataFrame: DataFrame): Map[String, String] = {
-    var schemaElementsWithLabels = Map.empty[String, String]
-    schemaElementsWithLabels.put("0", "root")
+  if (!_test){
+    parseSchemaOfDataFrame(dataFrame)
+    initializeNameStreams(labeles)
+  }
+
+  def parseSchemaOfDataFrame(dataFrame: DataFrame): Unit = {
+    //var schemaElementsWithLabels = Map.empty[String, String]
+    labeles.put("0", "root")
 
 
     val dfSchema = dataFrame.schema
     val fields = dfSchema.fields
 
-    addLabels(fields, schemaElementsWithLabels, "0")
-    schemaElementsWithLabels
+    addLabels(fields, labeles, "0")
   }
 
   // end-recursive, side effects on schemaElementsWithLabels
@@ -43,8 +47,7 @@ class Schema (dataFrame: DataFrame) {
     }
   }
 
-  def initializeNameStreams(labeledSchema: Map[String, String]) : Map[String, Seq[String]] = {
-    val nameStreams = Map.empty[String, Seq[String]]
+  def initializeNameStreams(labeledSchema: Map[String, String]) : Unit = {
     for ((label, name) <- labeledSchema) {
       nameStreams.get(name) match {
         case Some(hit : Seq[String]) => nameStreams.update(name, hit :+ label)
@@ -52,7 +55,6 @@ class Schema (dataFrame: DataFrame) {
           nameStreams += (name -> labels)}
       }
     }
-    nameStreams
   }
 
   def getNameStream(name: String) : Seq[String] = {

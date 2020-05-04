@@ -1,18 +1,19 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.types.StructType
 
 object ProjectRewrite {
-  def apply(project: Project, whyNotQuestion:SchemaMatch, oid: Int)  = new ProjectRewrite(project: Project, whyNotQuestion:SchemaMatch, oid: Int)
+  def apply(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new ProjectRewrite(project, whyNotQuestion, oid)
 }
 
-class ProjectRewrite(project: Project, whyNotQuestion:SchemaMatch, oid: Int) extends TransformationRewrite(project, whyNotQuestion, oid){
+class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int) extends TransformationRewrite(project, whyNotQuestion, oid){
 
-  override def unrestructure(child: Option[LogicalPlan] = None): SchemaMatch = {
+  override def unrestructure(child: Option[LogicalPlan] = None): SchemaSubsetTree = {
 
     //TODO this is not correct
     //3 cases:

@@ -2,6 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
 import org.apache.spark.sql.{Column, DataFrame}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatcher, Twig}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Expression, Literal}
@@ -48,7 +49,8 @@ object WhyNotProvenance {
     val schema = new Schema(dataFrame)
     val schemaMatcher = SchemaMatcher(whyNotTwig, schema)
     val schemaMatch = schemaMatcher.getCandidate().getOrElse(throw new MatchError("The why not question either does not match or matches multiple times on the given dataframe schema."))
-    val rewrite = WhyNotPlanRewriter.rewrite(basePlan, schemaMatch)
+    val schemaSubset = SchemaSubsetTree(schemaMatch, schema)
+    val rewrite = WhyNotPlanRewriter.rewrite(basePlan, schemaSubset)
     val outputStruct = StructType(
       rewrite.plan.output.map(out => StructField(out.name, out.dataType))
     )

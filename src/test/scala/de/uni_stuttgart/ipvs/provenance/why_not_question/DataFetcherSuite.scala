@@ -3,6 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.why_not_question
 import com.github.mrpowers.spark.fast.tests.DataFrameComparer
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import org.apache.spark.sql.functions.{col, lit, struct, typedLit}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
@@ -88,12 +89,12 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   }
 
 
-  def getDataFrameAndSchemaMatches(twig: Twig = getValidatedPCTwig()): (Dataset[_], Seq[SchemaMatch]) = {
+  def getDataFrameAndSchemaMatches(twig: Twig = getValidatedPCTwig()): (Dataset[_], Seq[SchemaMatch], Schema) = {
     val df = getDataFrame()
     val schema = new Schema(df)
     val schemaMatcher = SchemaMatcher(twig, schema)
     val candidates = schemaMatcher.getCandidates()
-    (df, candidates)
+    (df, candidates, schema)
   }
 
 
@@ -101,9 +102,9 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
 
     val dfAndMatches = getDataFrameAndSchemaMatches()
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0)).getItems()
-    val dataFetcher2 = DataFetcher(annotatedData, dfAndMatches._2(0)).getItems()
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch).getItems()
+    val dataFetcher2 = DataFetcher(annotatedData, schemaMatch).getItems()
 
 
   }
@@ -111,8 +112,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("simple data fetcher test with single match") {
     val dfAndMatches = getDataFrameAndSchemaMatches()
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 1)
     assert(res.count() == 4)
@@ -122,8 +123,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("simple data fetcher test with two matches") {
     val dfAndMatches = getDataFrameAndSchemaMatches(getValidatedADTwig())
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 2)
     assert(res.count() == 4) // used to be more matches than one, thus number may be smaller
@@ -132,8 +133,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("simple data fetcher with condition") {
     val dfAndMatches = getDataFrameAndSchemaMatches(getValidatedPCTwigWithCondition())
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 1)
     assert(res.count() == 1)
@@ -142,8 +143,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("data fetcher on nested data") {
     val dfAndMatches = getDataFrameAndSchemaMatches(getValidatedCollectionTwig())
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 1)
     assert(res.count() == 4)
@@ -152,8 +153,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("data fetcher on nested data with condition") {
     val dfAndMatches = getDataFrameAndSchemaMatches(getValidatedCollectionTwigWithCondition())
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 1)
     assert(res.count() == 2)
@@ -163,8 +164,8 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
   test("data fetcher on multiply nested data with condition") {
     val dfAndMatches = getDataFrameAndSchemaMatches(getValidatedDoublyNestedCollectionTwigWithCondition())
     val annotatedData = dfAndMatches._1
-
-    val dataFetcher1 = DataFetcher(annotatedData, dfAndMatches._2(0))
+    val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
+    val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
     val res = dataFetcher1.getItems()
     assert(dfAndMatches._2.size == 1)
     //TODO solution does not work multiple nested lists -- should not be a problem in this context

@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.why_not_question
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object SchemaMatch {

@@ -4,6 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, LocalRel
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, Expression, Literal, MonotonicallyIncreasingID, NamedExpression}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 
 
@@ -18,7 +19,7 @@ object WhyNotPlanRewriter {
     oid
   }
 
-  def rewrite(plan: LogicalPlan, whyNotQuestion: SchemaMatch): Rewrite = {
+  def rewrite(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree): Rewrite = {
     plan match {
       case ra: ReturnAnswer =>
       {
