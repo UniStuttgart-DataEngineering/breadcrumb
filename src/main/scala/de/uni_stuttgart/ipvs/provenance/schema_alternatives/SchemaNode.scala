@@ -78,6 +78,22 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
     children += child
   }
 
+  def getChild(name: String): Option[SchemaNode] = {
+    children.find(child => child.name == name)
+  }
+
+  def rename(newName: String): Unit = {
+    name = newName
+  }
+
+
+
+
+
+
+
+
+
   def deepCopy(copiedParent: SchemaNode): SchemaNode = {
     val copiedName = name + ""
     val copiedConstrained = constraint.deepCopy()

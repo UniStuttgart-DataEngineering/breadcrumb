@@ -21,6 +21,13 @@ object SchemaSubsetTree {
   }
 
   def apply(schemaMatch: SchemaMatch,schema: Schema) = fromSchemaMatch(schemaMatch, schema: Schema)
+  def apply(withRootNode: Boolean = true) = {
+    val schemaSubTree = new SchemaSubsetTree
+    if (withRootNode) {
+      schemaSubTree.rootNode = SchemaNode("root")
+    }
+    schemaSubTree
+  }
 }
 
 class SchemaSubsetTree {
@@ -48,6 +55,38 @@ class SchemaSubsetTree {
       currentId = serializeNode(child, nodes, currentId, id)
     }
     currentId // Check whether id labeling works properly
+  }
+
+  def getNodeByPath(path: Seq[String]): Option[SchemaNode] ={
+    var currentNode = rootNode
+    for (nodeName <- path){
+      currentNode = currentNode.getChild(nodeName).getOrElse(return None)
+    }
+    Some(currentNode)
+  }
+
+  def addRenamedCopyOfNodeToParent(nodeToAdd: SchemaNode, parent:SchemaNode = rootNode): SchemaNode = {
+    nodeToAdd.deepCopy(parent)
+  }
+
+  def moveNodeToNewParentByPath(nodePath: Seq[String], newParentPath: Seq[String]): Option[SchemaNode] = {
+    val node = getNodeByPath(nodePath).getOrElse(return None)
+    var newParent = rootNode
+    if (newParentPath != null && newParentPath.nonEmpty){
+      newParent = getNodeByPath(newParentPath).getOrElse(return None)
+    }
+    moveNodeToNewParent(node, newParent)
+    Some(node)
+  }
+
+
+
+  def moveNodeToNewParent(node: SchemaNode, newParent: SchemaNode): Unit = {
+    if (node.parent != null) {
+      node.parent.children -= node
+    }
+    node.setParent(newParent)
+    newParent.children += node
   }
 
 
