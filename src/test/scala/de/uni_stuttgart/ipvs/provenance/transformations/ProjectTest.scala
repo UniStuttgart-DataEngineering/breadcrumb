@@ -14,6 +14,16 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
   import spark.implicits._
 
+
+
+
+  def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
+    val schemaMatch = getSchemaMatch(outputDataFrame, whyNotQuestionFlatKey())
+    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
+    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
+    (rewrite.unrestructure(), schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+  }
+
   test("Projection without provenance annotations does not add provenance annotations") {
 
     val df = singleInputColumnDataFrame()
@@ -32,7 +42,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     assertSmallDataFrameEquality(df, otherDf)
   }
 
-  def whyNotTupleProjection1(): Twig = {
+  def whyNotQuestionFlatKey(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val flat_key = twig.createNode("flat_key", 1, 1, "")
@@ -40,7 +50,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     twig.validate().get
   }
 
-  def whyNotTupleProjection2(): Twig = {
+  def whyNotQuestionFull(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val nested_obj1 = twig.createNode("nested_obj", 1, 1, "")
@@ -53,38 +63,46 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
   }
 
 
+
+
   test("[Unrestructure] Attribute keeps name and structure"){
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection1())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
     val res = df.select($"flat_key")
 
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionFlatKey())
+
+    (rewrittenSchemaSubset, schemaSubset)
+
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     assert(schemaSubset.rootNode.children.head.name == rewrittenSchemaSubset.rootNode.children.head.name)
+  }
+
+  def whyNotTupleProjectionNewName(newName: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode(newName, 1, 1, "")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
   }
 
   test("[Unrestructure] Attribute is renamed"){
     val newName = "renamed"
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection1())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
     val res = df.select($"flat_key".alias(newName))
+    whyNotTupleProjectionNewName(newName)
 
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
+
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == newName)
+    assert(rewrittenSchemaSubset.rootNode.children.head.name == "flat_key")
   }
 
   test("[Unrestructure] Nested attribute is not renamed"){
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
     val res = df.select($"nested_obj.nested_obj")
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName("nested_obj"))
+
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     assert(rewrittenSchemaSubset.rootNode.children.head.name == "nested_obj")
   }
@@ -92,71 +110,182 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
   test("[Unrestructure] Nested attribute is renamed"){
     val newName = "renamed"
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
-    val res = df.select($"nested_obj.nested_obj".alias("nonNestedObj"))
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
+    val res = df.select($"nested_obj.nested_obj".alias(newName))
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
+
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     assert(rewrittenSchemaSubset.rootNode.children.head.name == newName)
+  }
+
+  def whyNotQuestionWithNesting(newName: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val newNameNode = twig.createNode(newName, 1, 1, "")
+    val flat_key = twig.createNode("flat_key", 1, 1, "")
+    twig = twig.createEdge(root, newNameNode, false)
+    twig = twig.createEdge(newNameNode, flat_key, false)
+    twig.validate().get
   }
 
   test("[Unrestructure] Flat attribute is nested"){
     val newName = "tupleName"
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
     val res = df.select(struct($"flat_key").alias(newName))
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
 
-    val tuple1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("tuple 1 not where it is supposed to be"))
-    val flat_key = tuple1.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting(newName))
 
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    assert(tuple1.name == newName)
     assert(flat_key.name == "flat_key")
 
+  }
+
+  def whyNotQuestionWithNesting2(newName: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val newNameNode = twig.createNode(newName, 1, 1, "")
+    val flat_key = twig.createNode("flat_key", 1, 1, "")
+    val nested_obj = twig.createNode("nested_obj", 1, 1, "")
+    twig = twig.createEdge(root, newNameNode, false)
+    twig = twig.createEdge(newNameNode, flat_key, false)
+    twig = twig.createEdge(newNameNode, nested_obj, false)
+    twig.validate().get
   }
 
   test("[Unrestructure] Create multiple attributes in a structure"){
     val newName1 = "tupleOne"
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
     val res = df.select(struct($"flat_key", $"nested_obj").alias(newName1))
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
 
-    val tuple1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("tuple 1 not where it is supposed to be"))
-    val flat_key = tuple1.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
-    val nested_obj = tuple1.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting2(newName1 ))
 
-    assert(tuple1.name == newName1)
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val nested_obj = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+
     assert(flat_key.name == "flat_key")
     assert(nested_obj.name == "nested_obj")
+  }
+
+  test("[Unrestructure] Create multiple attributes in a structure, but reference just one attribute"){
+    val newName1 = "tupleOne"
+    val df = getDataFrame()
+    val res = df.select(struct($"flat_key", $"nested_obj").alias(newName1))
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting(newName1))
+
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val size = rewrittenSchemaSubset.rootNode.children.size
+
+    assert(flat_key.name == "flat_key")
+    assert(size == 1)
+  }
+
+  def whyNotQuestionWithNesting3(newName1: String, newName2: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val newNameNode = twig.createNode(newName1, 1, 1, "")
+    val newNameNode2 = twig.createNode(newName2, 1, 1, "")
+    val flat_key = twig.createNode("flat_key", 1, 1, "")
+    val nested_obj = twig.createNode("nested_obj", 1, 1, "")
+    twig = twig.createEdge(root, newNameNode, false)
+    twig = twig.createEdge(newNameNode, flat_key, false)
+    twig = twig.createEdge(newNameNode, newNameNode2, false)
+    twig = twig.createEdge(newNameNode2, nested_obj, false)
+    twig.validate().get
   }
 
   test("[Unrestructure] Create multiple attributes in multiple structures"){
     val newName1 = "tupleOne"
     val newName2 = "tupleTwo"
     val df = getDataFrame()
-    val schemaMatch = getSchemaMatch(df, whyNotTupleProjection2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(df))
-    val res = df.select(struct($"flat_key", struct($"nested_obj").alias(newName1)).alias(newName2))
-    val rewrite = ProjectRewrite(res.queryExecution.analyzed.asInstanceOf[Project],schemaSubset, 1)
-    val rewrittenSchemaSubset = rewrite.unrestructure()
+    val res = df.select(struct($"flat_key", struct($"nested_obj").alias(newName2)).alias(newName1))
 
 
-    val tuple1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("tuple 1 not where it is supposed to be"))
-    val flat_key = tuple1.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
-    val tuple2 = tuple1.children.find(node => node.name == newName2).getOrElse(fail("tuple 2 not where it is supposed to be"))
-    val nested_obj = tuple2.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting3(newName1, newName2))
 
-    assert(tuple1.name == newName1)
-    assert(tuple2.name == newName2)
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val nested_obj = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+
     assert(flat_key.name == "flat_key")
     assert(nested_obj.name == "nested_obj")
+  }
+
+  test("[Unrestructure] Create multiple attributes in multiple structures and multiple unnesting"){
+    val newName1 = "tupleOne"
+    val newName2 = "tupleTwo"
+    val df = getDataFrame()
+    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1))
+
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting3(newName1, newName2))
+
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val nested_obj2 = nested_obj1.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+
+
+    assert(flat_key.name == "flat_key")
+    assert(nested_obj1.name == "nested_obj")
+    assert(nested_obj2.name == "nested_obj")
+  }
+
+  def whyNotQuestionWithNesting4(newName1: String, newName2: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val newNameNode = twig.createNode(newName1, 1, 1, "")
+    val newNameNode2 = twig.createNode(newName2, 1, 1, "")
+    val nested_obj = twig.createNode("nested_obj", 1, 1, "")
+    twig = twig.createEdge(root, newNameNode, false)
+    twig = twig.createEdge(newNameNode, newNameNode2, false)
+    twig = twig.createEdge(newNameNode2, nested_obj, false)
+    twig.validate().get
+  }
+
+  test("[Unrestructure] Create multiple attributes in multiple structures but only one attribute 1"){
+    val newName1 = "tupleOne"
+    val newName2 = "tupleTwo"
+    val df = getDataFrame()
+    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1))
+
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting4(newName1, newName2))
+
+
+    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val nested_obj2 = nested_obj1.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val size1 = rewrittenSchemaSubset.rootNode.children.size
+    val size2 = rewrittenSchemaSubset.rootNode.children.size
+
+    assert(nested_obj1.name == "nested_obj")
+    assert(nested_obj2.name == "nested_obj")
+    assert(size1 == 1)
+    assert(size2 == 1)
+  }
+
+  test("[Unrestructure] Create multiple attributes in multiple structures but only one attribute 2"){
+    val newName1 = "tupleOne"
+    val newName2 = "tupleTwo"
+    val df = getDataFrame()
+    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1))
+
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting(newName1))
+
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    val size = rewrittenSchemaSubset.rootNode.children.size
+
+
+    assert(flat_key.name == "flat_key")
+    assert(size == 1)
+
   }
 
 
