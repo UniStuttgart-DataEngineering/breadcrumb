@@ -5,4 +5,4 @@ import org.apache.spark.sql.types.StructType
 
 case class Rewrite(
                     plan: LogicalPlan,
-                    provenanceExtension: ProvenanceContext) {}
+                    provenanceContext: ProvenanceContext) {}

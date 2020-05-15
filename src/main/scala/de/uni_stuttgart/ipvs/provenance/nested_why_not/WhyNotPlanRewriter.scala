@@ -1,11 +1,12 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, LocalRelationRewrite, ProjectRewrite}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
+import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, RelationRewrite, ProjectRewrite}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LeafNode, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, Expression, Literal, MonotonicallyIncreasingID, NamedExpression}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
+import javax.management.relation.Relation
 
 
 object WhyNotPlanRewriter {
@@ -33,9 +34,9 @@ object WhyNotPlanRewriter {
       {
         ProjectRewrite(p, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
       }
-      case l: LocalRelation =>
+      case l: LeafNode =>
       {
-        LocalRelationRewrite(l, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        RelationRewrite(l, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
       }
     }
     //case plan: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan => {

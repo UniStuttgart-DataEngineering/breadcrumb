@@ -1,12 +1,16 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.WhyNotPlanRewriter.buildAnnotation
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.transformations.RewriteConditons
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, Not, Or}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, EqualTo, Expression, NamedExpression, Not, Or}
+import org.apache.spark.sql.catalyst.parser.SqlBaseParser.NamedExpressionContext
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project, With}
+import org.apache.spark.sql.types.BooleanType
+
+import scala.collection.mutable.ListBuffer
 
 object FilterRewrite {
   def apply(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)
@@ -16,22 +20,46 @@ class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) e
 
   override def rewrite: Rewrite = {
     val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, unrestructure())
-    val conditionExpression = filter.condition
+    val provenanceContext = childRewrite.provenanceContext
+    val rewrittenChild = childRewrite.plan
 
-    val filterAttrName = FILTER_OP + opNum.toString()
-    val filterOrigAttrName = filterAttrName + "_Orig"
-    val lostByOrigFilter = filterOrigAttrName + "_lost"
-
-    val additionalColumn = Alias(conditionExpression, lostByOrigFilter)()
-    val projectList = filter.output :+ additionalColumn
-
-    val dataType = additionalColumn.dataType
-    val rewrittenProjection = Project(
+    val projectList = filter.output ++
+      provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output) ++
+      provenanceAttributes(childRewrite)
+    val rewrittenFilter = Project(
       projectList,
       childRewrite.plan
     )
 
-    Rewrite(rewrittenProjection, childRewrite.provenanceExtension)
+    Rewrite(rewrittenFilter, childRewrite.provenanceContext)
+  }
+
+  def provenanceAttributes(rewrite: Rewrite): Seq[NamedExpression] = {
+    val attributesToBeAdded = ListBuffer.empty[NamedExpression]
+    attributesToBeAdded += survivorColumn(rewrite)
+    attributesToBeAdded += compatibleColumn(rewrite)
+    attributesToBeAdded.toList
+  }
+
+  def getPreviousCompatible(rewrite: Rewrite): NamedExpression = {
+    val attribute = rewrite.provenanceContext.getMostRecentCompatibilityAttribute()
+      .getOrElse(throw new MatchError("Unable to find previous compatible structure in provenance structure"))
+    val compatibleAttribute = rewrite.plan.output.find(ex => ex.name == attribute.attributeName)
+      .getOrElse(throw new MatchError("Unable to find previous compatible structure in output of previous operator"))
+    compatibleAttribute
+  }
+
+  def compatibleColumn(rewrite: Rewrite): NamedExpression = {
+    val lastCompatibleAttribute = getPreviousCompatible(rewrite)
+    val attributeName = Constants.getCompatibleFieldName(oid)
+    rewrite.provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
+    Alias(lastCompatibleAttribute, attributeName)()
+  }
+
+  def survivorColumn(rewrite: Rewrite): NamedExpression = {
+    val attributeName = Constants.getSurvivorFieldName(oid)
+    rewrite.provenanceContext.addSurvivorAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
+    Alias(filter.condition, attributeName)()
   }
 
 

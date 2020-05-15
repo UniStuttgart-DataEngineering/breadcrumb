@@ -127,18 +127,14 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
   }
 
   override def rewrite: Rewrite = {
-    unrestructuredWhyNotQuestionOutput = unrestructure()
+    //unrestructuredWhyNotQuestionOutput = unrestructure()
     val childRewrite = WhyNotPlanRewriter.rewrite(project.child, unrestructuredWhyNotQuestionOutput)
     val rewrittenChild = childRewrite.plan
-    val addedProvenance = childRewrite.provenanceExtension
+    val provenanceContext = childRewrite.provenanceContext
 
-    val provenanceAttributeOption = rewrittenChild.output.
-      collectFirst{case attr if (attr.name == Constants.PROVENANCE_ID_STRUCT) => attr}
-
-
-    val projectList = project.projectList ++ provenanceAttributeOption
+    val projectList = project.projectList ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
     val rewrittenProjection = Project(projectList, rewrittenChild)
-    Rewrite(rewrittenProjection, addedProvenance)
+    Rewrite(rewrittenProjection, provenanceContext)
   }
 
 

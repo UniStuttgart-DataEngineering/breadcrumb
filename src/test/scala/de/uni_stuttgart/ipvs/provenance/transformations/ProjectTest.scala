@@ -14,9 +14,6 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
   import spark.implicits._
 
-
-
-
   def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
     val schemaMatch = getSchemaMatch(outputDataFrame, whyNotQuestionFlatKey())
     val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
@@ -24,22 +21,21 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     (rewrite.unrestructure(), schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
   }
 
-  test("Projection without provenance annotations does not add provenance annotations") {
-
+  test("[Rewrite] Projection keeps all provenance columns after rewrite") {
     val df = singleInputColumnDataFrame()
+    val res1 = WhyNotProvenance.rewrite(df, whyNotTuple())
     val otherDf = df.select($"MyIntCol")
-    WhyNotProvenance.rewrite(otherDf, whyNotTuple())
-    assertSmallDataFrameEquality(df, otherDf)
+    val res2 = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
+    assert(res1.schema.size == res2.schema.size)
+    assert(res1.schema.size == 2)
   }
 
-  test("Projection with provenance annotations keeps provenance annotations") {
-
-    val df = singleInputColumnDataFrame().withColumn(Constants.PROVENANCE_ID_STRUCT, monotonically_increasing_id())
-    var otherDf = df.select($"MyIntCol")
-    otherDf = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
-    otherDf.explain()
-    otherDf.show()
-    assertSmallDataFrameEquality(df, otherDf)
+  test("[Rewrite] Projection keeps values in provenance columns") {
+    val df = singleInputColumnDataFrame()
+    val res1 = WhyNotProvenance.rewrite(df, whyNotTuple())
+    val otherDf = df.select($"MyIntCol")
+    val res2 = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
+    assertSmallDataFrameEquality(res1, res2, ignoreColumnNames = true)
   }
 
   def whyNotQuestionFlatKey(): Twig = {
