@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance
 
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatch, SchemaMatcher, Twig}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatch, SchemaMatcher, SchemaMatcherNew, Twig}
 import org.apache.spark.sql.DataFrame
 
 trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
@@ -41,6 +41,11 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   def getSchemaMatch(df: DataFrame, twig: Twig): SchemaMatch  = {
     val schema = new Schema(df)
     val schemaMatcher = SchemaMatcher(twig, schema)
+    schemaMatcher.getCandidate().getOrElse(throw new MatchError("The why not question either does not match or matches multiple times on the given dataframe schema."))
+  }
+
+  def getSchemaMatchNew(inSchema: Schema, outSchema: Schema, twig: Twig): SchemaMatch  = {
+    val schemaMatcher = SchemaMatcherNew(twig, outSchema, inSchema)
     schemaMatcher.getCandidate().getOrElse(throw new MatchError("The why not question either does not match or matches multiple times on the given dataframe schema."))
   }
 

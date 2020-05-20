@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{AnnotationExtension, Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 import org.apache.spark.sql.catalyst.expressions

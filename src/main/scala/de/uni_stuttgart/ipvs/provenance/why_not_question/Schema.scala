@@ -61,6 +61,17 @@ class Schema (dataFrame: DataFrame, _test: Boolean = false) {
     nameStreams.getOrElse(name, Seq.empty[String])
   }
 
+  def getLabels(labels: Seq[String]) : Seq[String] = {
+    var listOfOrigNames = Seq.empty[String]
+
+    for(label <- labels) {
+      val getAttrName = labeles.get(label)
+      listOfOrigNames = listOfOrigNames :+ getAttrName.get
+    }
+
+    listOfOrigNames
+  }
+
   def getAncestors(label: String) : Seq[String] = {
     var ancestors = Seq.empty[String]
     var parts = label.split('.')

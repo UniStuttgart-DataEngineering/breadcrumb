@@ -80,7 +80,6 @@ class SchemaSubsetTree {
   }
 
 
-
   def moveNodeToNewParent(node: SchemaNode, newParent: SchemaNode): Unit = {
     if (node.parent != null) {
       node.parent.children -= node
