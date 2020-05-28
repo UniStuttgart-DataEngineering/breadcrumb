@@ -9,6 +9,8 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
 
   protected val baseDir = "src/main/resources/"
 
+  protected val pathToNestedData0 = baseDir + "nestedCollection_Simple.json"
+  protected val pathToNestedData00 = baseDir + "nestedCollection_WithEmpty.json"
   protected val pathToNestedData1 = baseDir + "nestedData.json"
   protected val pathToNestedData2 = baseDir + "nestedData_moreComplex.json"
   protected val pathToNestedData3 = baseDir + "nestedData_withKeyDuplicates.json"
@@ -23,6 +25,15 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToDoc3 = baseDir + "doc3.json"
   protected val pathToDoc4 = baseDir + "doc4.json"
   protected val pathToDemoData = baseDir + "demo.json"
+  protected val pathToAggregationDoc0 = baseDir + "docAggregation.json"
+
+  def myIntColWhyNotQuestion(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("MyIntCol", 1, 1, "")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
 
   def singleInputColumnDataFrame(): DataFrame = {
     Seq(1, 2, 3, 4, 5, 6).toDF("MyIntCol")
@@ -47,10 +58,13 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   def whyNotTuple(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
-    val flat_key = twig.createNode("MyIntCol", 1, 1, "")
+    val flat_key = twig.createNode("nested_list", 1, 1, "")
     twig = twig.createEdge(root, flat_key, false)
     twig.validate().get
   }
+
+
+
 
 
 }

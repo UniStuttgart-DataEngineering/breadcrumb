@@ -12,6 +12,6 @@ abstract class TransformationRewrite(val plan: LogicalPlan, val whyNotQuestion: 
     whyNotQuestion
   }
 
-  def rewrite():Rewrite = null
+  def rewrite():Rewrite
 
 }

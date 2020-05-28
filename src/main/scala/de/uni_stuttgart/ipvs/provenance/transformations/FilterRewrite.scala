@@ -1,13 +1,10 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
+
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.WhyNotPlanRewriter.buildAnnotation
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.transformations.RewriteConditons
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, EqualTo, Expression, NamedExpression, Not, Or}
-import org.apache.spark.sql.catalyst.parser.SqlBaseParser.NamedExpressionContext
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project, With}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, NamedExpression, Not, Or}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
 import org.apache.spark.sql.types.BooleanType
 
 import scala.collection.mutable.ListBuffer

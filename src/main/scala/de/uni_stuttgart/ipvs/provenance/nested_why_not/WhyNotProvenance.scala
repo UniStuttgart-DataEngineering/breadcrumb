@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatcher, Twig}
@@ -51,18 +51,24 @@ object WhyNotProvenance {
     val schemaMatch = schemaMatcher.getCandidate().getOrElse(throw new MatchError("The why not question either does not match or matches multiple times on the given dataframe schema."))
     val schemaSubset = SchemaSubsetTree(schemaMatch, schema)
     val rewrite = WhyNotPlanRewriter.rewrite(basePlan, schemaSubset)
+    import org.apache.spark.sql.catalyst.analysis.Analyzer
+
+    var plan = rewrite.plan
+    //val analyzer = basePlan.asInstanceOf[Analyzer]
+    plan = dataFrame.sparkSession.sessionState.analyzer.executeAndCheck(rewrite.plan)
     val outputStruct = StructType(
       rewrite.plan.output.map(out => StructField(out.name, out.dataType))
     )
-
     new DataFrame(
       execState.sparkSession,
-      rewrite.plan,
+      plan,
       RowEncoder(outputStruct)
     )
-
-
   }
+
+  //def getResolvedAttribute(plan: LogicalPlan)
+
+
 
 
 

@@ -23,18 +23,18 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
   test("[Rewrite] Projection keeps all provenance columns after rewrite") {
     val df = singleInputColumnDataFrame()
-    val res1 = WhyNotProvenance.rewrite(df, whyNotTuple())
+    val res1 = WhyNotProvenance.rewrite(df, myIntColWhyNotQuestion())
     val otherDf = df.select($"MyIntCol")
-    val res2 = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
+    val res2 = WhyNotProvenance.rewrite(otherDf, myIntColWhyNotQuestion())
     assert(res1.schema.size == res2.schema.size)
     assert(res1.schema.size == 2)
   }
 
   test("[Rewrite] Projection keeps values in provenance columns") {
     val df = singleInputColumnDataFrame()
-    val res1 = WhyNotProvenance.rewrite(df, whyNotTuple())
+    val res1 = WhyNotProvenance.rewrite(df, myIntColWhyNotQuestion())
     val otherDf = df.select($"MyIntCol")
-    val res2 = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
+    val res2 = WhyNotProvenance.rewrite(otherDf, myIntColWhyNotQuestion())
     assertSmallDataFrameEquality(res1, res2, ignoreColumnNames = true)
   }
 

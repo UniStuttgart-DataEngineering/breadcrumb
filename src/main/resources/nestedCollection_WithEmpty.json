@@ -1,0 +1,6 @@
+{"flat_key": "1_flat_val_x", "nested_obj": {"nested_obj": {"nested_key": "1_nested_val"}}, "nested_list": ["1_list_val_1_1", "1_list_val_2_1"], "obj": {"obj_sub": {"key": "1"}}},
+{"flat_key": "2_flat_val_x", "nested_obj": {"nested_obj": {"nested_key": "2_nested_val"}}, "nested_list": ["2_list_val_1_1", "2_list_val_2_1"], "obj": {"obj_sub": {"key": "2"}}},
+{"flat_key": "4_flat_val_y", "nested_obj": {"nested_obj": {"nested_key": "4_nested_val"}}, "nested_list": ["4_list_val_1_1", "4_list_val_2_1"], "obj": {"obj_sub": {"key": "3"}}},
+{"flat_key": "3_flat_val_x", "nested_obj": {"nested_obj": {"nested_key": "3_nested_val"}}, "nested_list": ["3_list_val_1_1", "3_list_val_2_1"], "obj": {"obj_sub": {"key": "4"}}},
+{"flat_key": "5_flat_val_y", "nested_obj": {"nested_obj": {"nested_key": "5_nested_val"}}, "obj": {"obj_sub": {"key": "5"}}},
+{"flat_key": "6_flat_val_y", "nested_obj": {"nested_obj": {"nested_key": "6_nested_val"}}, "nested_list": [], "obj": {"obj_sub": {"key": "6"}}}

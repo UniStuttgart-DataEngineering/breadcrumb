@@ -8,6 +8,7 @@ case object Constants {
   val VALID_FIELD = "__VALID"
   val COMPATIBLE_FIELD = "__COMPATIBLE"
   val SURVIVED_FIELD = "__SURVIVED"
+  val PROVENANCE_COLLECTION = "__PROVENANCE_COLLECTION"
 
   private def getFieldName(fieldName: String, oid: Int): String = {
     f"${fieldName}_${oid}%04d"
@@ -19,6 +20,10 @@ case object Constants {
 
   protected[provenance] def getCompatibleFieldName(oid: Int): String = {
     getFieldName(COMPATIBLE_FIELD, oid)
+  }
+
+  protected[provenance] def getProvenanceCollectionFieldName(oid: Int): String = {
+    getFieldName(PROVENANCE_COLLECTION, oid)
   }
 
 

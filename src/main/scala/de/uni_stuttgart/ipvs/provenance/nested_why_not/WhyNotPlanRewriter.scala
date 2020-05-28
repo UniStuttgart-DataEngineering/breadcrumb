@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, RelationRewrite, ProjectRewrite}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LeafNode, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
+import de.uni_stuttgart.ipvs.provenance.transformations.{AggregateRewrite, FilterRewrite, GenerateRewrite, ProjectRewrite, RelationRewrite}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Filter, Generate, LeafNode, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery}
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, Expression, Literal, MonotonicallyIncreasingID, NamedExpression}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
@@ -37,6 +37,14 @@ object WhyNotPlanRewriter {
       case l: LeafNode =>
       {
         RelationRewrite(l, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+      }
+      case g: Generate =>
+      {
+        GenerateRewrite(g, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+      }
+      case a: Aggregate =>
+      {
+        AggregateRewrite(a, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
       }
     }
     //case plan: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan => {
