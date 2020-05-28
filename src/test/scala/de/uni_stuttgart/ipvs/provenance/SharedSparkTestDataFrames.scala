@@ -63,8 +63,11 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
     twig.validate().get
   }
 
-
-
-
-
+  def whyNotTupleWithCond(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("MyIntCol", 1, 1, "> 4")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
 }

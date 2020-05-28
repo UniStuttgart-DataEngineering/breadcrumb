@@ -67,7 +67,7 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
 
   var name = _name
   var parent : SchemaNode = _parent
-  val children = scala.collection.mutable.Set.empty[SchemaNode]
+  var children = scala.collection.mutable.Set.empty[SchemaNode]
   var constraint = _constraint
 
   def setParent(_parent: SchemaNode) = {
@@ -85,14 +85,6 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
   def rename(newName: String): Unit = {
     name = newName
   }
-
-
-
-
-
-
-
-
 
   def deepCopy(copiedParent: SchemaNode): SchemaNode = {
     val copiedName = name + ""
