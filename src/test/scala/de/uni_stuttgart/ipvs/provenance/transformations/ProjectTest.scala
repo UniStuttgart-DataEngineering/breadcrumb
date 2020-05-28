@@ -39,11 +39,36 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 //    (schemaSubsetOverInput, schemaSubset)
 //  }
 
+  test("[Rewrite + Unrestructure] Correct unstructuring over rewrite") {
+    val df = singleInputColumnDataFrame()
+    val res1 = WhyNotProvenance.rewrite(df, whyNotTupleWithCond())
+    val dfAfterProj = df.select($"MyIntCol")
+    val res2 = WhyNotProvenance.rewrite(dfAfterProj, whyNotTupleWithCond())
+
+//    println(res1.queryExecution.analyzed)
+//    println(res2.queryExecution.analyzed)
+//
+//    res1.show()
+//    res2.show()
+
+    val compatibleOverDf = df.select($"__COMPATIBLE_0002")
+    val compatibleOverDfAfterProj = df.select($"__COMPATIBLE_0005")
+
+    compatibleOverDf.show()
+    compatibleOverDfAfterProj.show()
+
+    assert(res1.schema.size == res2.schema.size)
+    assert(res1.schema.size == 2)
+    assert(compatibleOverDf == compatibleOverDfAfterProj)
+  }
+
+
   test("[Rewrite] Projection keeps all provenance columns after rewrite") {
     val df = singleInputColumnDataFrame()
     val res1 = WhyNotProvenance.rewrite(df, whyNotTuple())
     val otherDf = df.select($"MyIntCol")
     val res2 = WhyNotProvenance.rewrite(otherDf, whyNotTuple())
+
     assert(res1.schema.size == res2.schema.size)
     assert(res1.schema.size == 2)
   }
@@ -102,6 +127,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val newName = "renamed"
     val df = getDataFrame()
     val res = df.select($"flat_key".alias(newName))
+    df.show(false)
 //    whyNotTupleProjectionNewName(newName)
 
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
@@ -303,21 +329,5 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     assert(size == 1)
 
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

@@ -79,14 +79,17 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
     val newParent = node.get.parent
     var newParentChildren = newParent.children
 
+    // Remove nodes corresponding to renamed attribute
     for (rootChild <- newParent.children) {
       if (!seq.contains(rootChild.name)) {
         newParentChildren -= rootChild
       }
     }
 
+    // Replace with new children
     newParent.children = newParentChildren
 
+    // Recursively mapping to new parents from leaf nodes
     for (child <- node.get.children) {
       if (child.children isEmpty){
         unrestructuredWhyNotQuestion.moveNodeToNewParent(child, newParent)
@@ -103,7 +106,7 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
     // 0) selection: a --> a
     // 1) renaming: a --> b
     // 2) tuple unnesting c<a,b> --> a --> d
-    // 2) tuple nesting a, b -> c<a,b>
+    // 3) tuple nesting a, b -> c<a,b>
 //    val unrestructuredWhyNotQuestion = whyNotQuestion.deepCopy()
     unrestructuredWhyNotQuestionInput = whyNotQuestion.deepCopy()
 
@@ -117,10 +120,12 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
           //a.child.asInstanceOf[AttributeReference].name
           //child.ge
           //println(child.prettyName + ": " + name)
+
+          // Collecting original attribute names for ex
           val seq = unrestructureAliasExpression(a)
 //          val node = unrestructuredWhyNotQuestion.moveNodeToNewParentByPath(List(a.name), Seq.empty[String])
 
-          // Get the node for renamed attribute
+          // Returning the node corresponding renamed attribute that is direct child of the root
           val node = unrestructuredWhyNotQuestionInput.getNodeByPath(List(a.name))
 
           if (node.get.children isEmpty){
@@ -188,7 +193,7 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
   }
 
   override def rewrite: Rewrite = {
-    //unrestructuredWhyNotQuestionOutput = unrestructure()
+    unrestructuredWhyNotQuestionOutput = unrestructure()
     val childRewrite = WhyNotPlanRewriter.rewrite(project.child, unrestructuredWhyNotQuestionOutput)
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
