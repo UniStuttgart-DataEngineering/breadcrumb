@@ -10,7 +10,12 @@ object GenerateRewrite {
   def apply(generate: Generate, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new GenerateRewrite(generate, whyNotQuestion, oid)
 }
 
-class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid: Int) extends TransformationRewrite(generate, whyNotQuestion, oid) {
+class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(generate, whyNotQuestion, oid) {
+
+  override def unrestructure(): SchemaSubsetTree = {
+    //TODO: ReplaceStubWithRealAggregation
+    whyNotQuestion
+  }
 
   def survivorColumnInner(provenanceContext: ProvenanceContext, flattenInputColumn: Expression): NamedExpression = {
     val attributeName = Constants.getSurvivorFieldName(oid)

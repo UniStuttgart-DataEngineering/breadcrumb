@@ -11,7 +11,12 @@ object AggregateRewrite {
   def apply(aggregate: Aggregate, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new AggregateRewrite(aggregate, whyNotQuestion, oid)
 }
 
-class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: SchemaSubsetTree, override val oid: Int) extends TransformationRewrite(aggregate, whyNotQuestion, oid){
+class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: SchemaSubsetTree, override val oid: Int) extends UnaryTransformationRewrite(aggregate, whyNotQuestion, oid){
+
+  override def unrestructure(): SchemaSubsetTree = {
+    //TODO: ReplaceStubWithRealAggregation
+    whyNotQuestion
+  }
 
   //TODO: Add revalidation of compatibles here, i.e. replace this stub with a proper implementation
   def getPreviousCompatible(rewrite: Rewrite): NamedExpression = {
@@ -76,6 +81,7 @@ class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: Schem
   def getExpressionFromName(operator: LogicalPlan, name: String): Option[NamedExpression] = {
     operator.output.find(attr => attr.name == name)
   }
+
 
 }
 

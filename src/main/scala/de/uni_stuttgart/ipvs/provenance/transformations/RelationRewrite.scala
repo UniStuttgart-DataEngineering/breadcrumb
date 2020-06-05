@@ -15,7 +15,7 @@ object RelationRewrite {
   def apply(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new RelationRewrite(relation, whyNotQuestion, oid)
 }
 
-class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int) extends TransformationRewrite(relation, whyNotQuestion, oid){
+class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int) extends InputTransformationRewrite(relation, whyNotQuestion, oid){
 
   def compatibleColumn(provenanceContext: ProvenanceContext): NamedExpression = {
     //TODO: integrate with unrestructured whyNot question

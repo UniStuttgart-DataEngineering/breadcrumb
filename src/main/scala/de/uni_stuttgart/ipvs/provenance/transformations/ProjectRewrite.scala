@@ -17,7 +17,7 @@ object ProjectRewrite {
   def apply(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new ProjectRewrite(project, whyNotQuestion, oid)
 }
 
-class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int) extends TransformationRewrite(project, whyNotQuestion, oid){
+class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(project, whyNotQuestion, oid){
 
   var unrestructuredWhyNotQuestionInput: SchemaSubsetTree = null
   var unrestructuredWhyNotQuestionOutput: SchemaSubsetTree = whyNotQuestion
@@ -100,7 +100,7 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
     }
   }
 
-  override def unrestructure(child: Option[LogicalPlan] = None): SchemaSubsetTree = {
+  override def unrestructure(): SchemaSubsetTree = {
     //TODO this is not correct
     //4 cases:
     // 0) selection: a --> a

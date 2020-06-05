@@ -95,5 +95,5 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     var testDf = df.withColumn("boolCol", rand(42) < 0.5)
     testDf = testDf.groupBy($"key").agg(collect_list($"boolCol").alias("list"), max($"boolCol"), min($"boolCol"))
   }
-  
+
 }

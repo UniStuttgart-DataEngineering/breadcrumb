@@ -13,7 +13,12 @@ object FilterRewrite {
   def apply(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)
 }
 
-class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) extends TransformationRewrite(filter, whyNotQuestion, oid) {
+class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(filter, whyNotQuestion, oid) {
+
+  override def unrestructure(): SchemaSubsetTree = {
+    //TODO: ReplaceStubWithRealAggregation
+    whyNotQuestion
+  }
 
   override def rewrite: Rewrite = {
     val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, unrestructure())
@@ -58,4 +63,6 @@ class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) e
     rewrite.provenanceContext.addSurvivorAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
     Alias(filter.condition, attributeName)()
   }
+
+
 }
