@@ -11,7 +11,12 @@ case class ProvenanceAttribute(oid: Int, attributeName: String, attributeType: D
 object ProvenanceContext {
 
   protected[provenance] def mergeContext(leftContext: ProvenanceContext, rightContext: ProvenanceContext): ProvenanceContext = {
-    throw new NotImplementedError()
+    val provenanceContext = new ProvenanceContext()
+    provenanceContext.nestedProvenanceContexts ++= leftContext.nestedProvenanceContexts
+    provenanceContext.nestedProvenanceContexts ++= rightContext.nestedProvenanceContexts
+    provenanceContext.provenanceAttributes ++= leftContext.provenanceAttributes
+    provenanceContext.provenanceAttributes ++= rightContext.provenanceAttributes
+    provenanceContext
   }
 
   def apply() = new ProvenanceContext()
