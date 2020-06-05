@@ -65,6 +65,12 @@ class SchemaSubsetTree {
     Some(currentNode)
   }
 
+  def getNodeByName(name: String): SchemaNode ={
+    var currentNode = rootNode
+    currentNode = currentNode.getChild(name).get
+    currentNode
+  }
+
   def addRenamedCopyOfNodeToParent(nodeToAdd: SchemaNode, parent:SchemaNode = rootNode): SchemaNode = {
     nodeToAdd.deepCopy(parent)
   }
