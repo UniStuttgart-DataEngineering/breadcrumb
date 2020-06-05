@@ -14,35 +14,6 @@ import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
  */
 object WhyNotProvenance {
 
-  def annotate(dataFrame: DataFrame, pq: Expression): DataFrame = {
-    val execState = dataFrame.queryExecution
-    val basePlan = execState.analyzed
-    val baseSchema = basePlan.schema
-    val annotatedPlan = WhyNotPlanRewriter(basePlan, pq)
-//    var annotatedSchema = if (baseSchema.fields.exists(_.name == PROVENANCE_ID_STRUCT))
-//      baseSchema else
-//      baseSchema.add(PROVENANCE_ID_STRUCT, AnnotationEncoder().annotationStruct())
-
-    // TODO: add all additional fields
-    var annotatedSchema = baseSchema
-
-    for (attr <- annotatedPlan.output) {
-      if (annotatedSchema.fieldNames == PROVENANCE_ID_STRUCT) {
-        annotatedSchema = annotatedSchema.add(PROVENANCE_ID_STRUCT, AnnotationEncoder().annotationStruct())
-      }
-      else if (!annotatedSchema.names.contains(attr.name)) {
-        annotatedSchema = annotatedSchema.add(attr.name, BooleanType)
-      }
-    }
-//    print(annotatedSchema)
-
-    new DataFrame(
-      execState.sparkSession,
-      annotatedPlan,
-      RowEncoder(annotatedSchema)
-    )
-  }
-
   def rewrite(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
     val execState = dataFrame.queryExecution
     val basePlan = execState.analyzed

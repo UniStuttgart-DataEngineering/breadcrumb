@@ -3,12 +3,11 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 case object Constants {
 
   val PROVENANCE_ID_STRUCT = "__PROVENANCE"
-  val PROVENANCE_ID_FIELD = "__PID"
-  val FILTER_OP = "__Fi"
   val VALID_FIELD = "__VALID"
   val COMPATIBLE_FIELD = "__COMPATIBLE"
   val SURVIVED_FIELD = "__SURVIVED"
   val PROVENANCE_COLLECTION = "__PROVENANCE_COLLECTION"
+  val PROVENANCE_TUPLE = "__PROVENANCE_TUPLE"
 
   private def getFieldName(fieldName: String, oid: Int): String = {
     f"${fieldName}_${oid}%04d"
@@ -24,6 +23,23 @@ case object Constants {
 
   protected[provenance] def getProvenanceCollectionFieldName(oid: Int): String = {
     getFieldName(PROVENANCE_COLLECTION, oid)
+  }
+
+  protected[provenance] def getProvenanceTupleFieldName(oid: Int): String = {
+    getFieldName(PROVENANCE_TUPLE, oid)
+  }
+
+  def columnNameContainsProvenanceConstant(name: String): Boolean = {
+    var contains = false
+
+    contains |= name.contains(PROVENANCE_ID_STRUCT)
+    contains |= name.contains(VALID_FIELD)
+    contains |= name.contains(COMPATIBLE_FIELD)
+    contains |= name.contains(SURVIVED_FIELD)
+    contains |= name.contains(PROVENANCE_COLLECTION)
+    contains |= name.contains(PROVENANCE_TUPLE)
+
+    contains
   }
 
 

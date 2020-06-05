@@ -16,9 +16,20 @@ object ProvenanceContext {
 
   def apply() = new ProvenanceContext()
 
+  def apply(childContext: ProvenanceContext, provenanceAttribute: ProvenanceAttribute) = {
+    val provenanceContext = new ProvenanceContext()
+    provenanceContext.addNestedProvenanceContext(childContext)
+    provenanceContext.addProvenanceAttribute(provenanceAttribute)
+    provenanceContext
+  }
+
 }
 
 class ProvenanceContext {
+
+
+  //TODO also associate with nodes in the schema subset tree aka. schema alternatives
+  protected[provenance] val nestedProvenanceContexts = mutable.ListBuffer.empty[ProvenanceContext]
 
   protected[provenance] val provenanceAttributes = mutable.ListBuffer.empty[ProvenanceAttribute]
 
@@ -26,9 +37,12 @@ class ProvenanceContext {
   protected[provenance] var mostRecentSurvivorAttribute: ProvenanceAttribute = null
   protected[provenance] var validAttribute: ProvenanceAttribute = null
 
+  protected def addNestedProvenanceContext(provenanceContext: ProvenanceContext): Unit = {
+    nestedProvenanceContexts += provenanceContext
+  }
 
 
-  protected def addProvenanceAttribute(provenanceAttribute: ProvenanceAttribute): Unit ={
+  protected def addProvenanceAttribute(provenanceAttribute: ProvenanceAttribute): Unit = {
     provenanceAttributes += provenanceAttribute
   }
 

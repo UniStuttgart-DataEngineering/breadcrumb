@@ -1,11 +1,10 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, CreateStruct, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Count}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, Max, Min}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.expressions.aggregate.Complete
 import org.apache.spark.sql.types.BooleanType
 
 object AggregateRewrite {
@@ -39,25 +38,44 @@ class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: Schem
     val provenanceContext = childRewrite.provenanceContext //array-buffer
 
 
-    val previousProvenance = Alias(CollectList(Alias(CreateNamedStruct(provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)), "NestedProvenanceTuple")()), "NestedProvenanceCollection")()
-    val provenanceTuple = Alias(CreateStruct(rewrittenChild.output)/*provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output))*/, "NestedProvenanceTuple")()
+    //val provenanceTuple = Alias(CreateStruct(rewrittenChild.output)/*provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output))*/, "NestedProvenanceTuple")()
+    val provenanceTuple = Alias(
+      CreateStruct(provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)),
+      Constants.getProvenanceTupleFieldName(oid))()
     val provenanceProjection = Project(rewrittenChild.output :+ provenanceTuple , rewrittenChild)
 
-    val otherAggregation = Alias(AggregateExpression(CollectList(getExpressionFromName(provenanceProjection, "NestedProvenanceTuple").get), Complete, false), "NestedProvenanceCollection")()
+    val provenanceLegacy = Alias(
+      AggregateExpression(
+        CollectList(getExpressionFromName(provenanceProjection,
+          Constants.getProvenanceTupleFieldName(oid)).get),
+        Complete, false),
+      Constants.getProvenanceCollectionFieldName(oid))()
+
+    val compatibleField = Alias(
+      AggregateExpression(
+        Max(provenanceContext.getExpressionFromProvenanceAttribute(
+          provenanceContext.getMostRecentCompatibilityAttribute().get, rewrittenChild.output).get),
+        Complete, false),
+      Constants.getCompatibleFieldName(oid))()
+
+
     val groupingExpressions = aggregate.groupingExpressions
-    val aggregateExpressions = aggregate.aggregateExpressions :+ otherAggregation //previousProvenance
+    val aggregateExpressions = aggregate.aggregateExpressions :+ provenanceLegacy :+ compatibleField //previousProvenance
 
     val aggregateExpression = Aggregate(groupingExpressions, aggregateExpressions, provenanceProjection)
 
-    //TODO: update provenanceContext
-    Rewrite(aggregateExpression, provenanceContext)
+    val aggregatedProvenanceAttribute = ProvenanceAttribute(oid, Constants.getProvenanceCollectionFieldName(oid), provenanceLegacy.dataType)
+    val aggregateContext = ProvenanceContext(provenanceContext, aggregatedProvenanceAttribute)
+
+    val compatibleAttribute = ProvenanceAttribute(oid, Constants.getCompatibleFieldName(oid), BooleanType)
+    aggregateContext.addCompatibilityAttribute(compatibleAttribute)
+
+    Rewrite(aggregateExpression, aggregateContext)
   }
 
   def getExpressionFromName(operator: LogicalPlan, name: String): Option[NamedExpression] = {
     operator.output.find(attr => attr.name == name)
   }
-
-
 
 }
 
