@@ -78,8 +78,48 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
     children += child
   }
 
+  def removeChild(child: SchemaNode) = {
+    children -= child
+  }
+
+  def copyNode(node: SchemaNode): Unit = {
+    name = node.name
+//    parent = null
+    constraint = node.constraint
+    children = node.children
+  }
+
+  def getLeafNode(): SchemaNode = {
+    val leafNode = SchemaNode("")
+
+    if (!children.isEmpty) {
+      leafNode.copyNode(children.head)
+      leafNode.getLeafNode()
+    } else {
+      leafNode.name = name
+      leafNode.parent = parent
+      leafNode.constraint = constraint
+    }
+
+    leafNode
+  }
+
   def getChild(name: String): Option[SchemaNode] = {
     children.find(child => child.name == name)
+  }
+
+  def getChildByPos(pos: Int): SchemaNode = {
+    var nthChild: Int = 0
+    var nthChildNode: SchemaNode = null
+
+    for (child <- children) {
+      if (nthChild == pos) {
+        nthChildNode = child
+      }
+      nthChild += 1
+    }
+
+    nthChildNode
   }
 
   def rename(newName: String): Unit = {
