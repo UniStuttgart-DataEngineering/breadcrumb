@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, GreaterThan, IsNotNull, Literal, NamedExpression, Size}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
 import org.apache.spark.sql.types.BooleanType
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftOuter, RightOuter}
@@ -25,9 +25,15 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
   def compatibleColumn(currentProvenanceContext: ProvenanceContext, leftRewrite: Rewrite, rightRewrite: Rewrite): NamedExpression = {
     val leftCompatibleColumn = getPreviousCompatible(leftRewrite)
     val rightCompatibleColumn = getPreviousCompatible(rightRewrite)
-    val compatibleExpression = And(leftCompatibleColumn, rightCompatibleColumn)
+    val compatibleExpression = caseHandlingForNullValues(And(leftCompatibleColumn, rightCompatibleColumn))
     val attributeName = addCompatibleAttributeToProvenanceContext(currentProvenanceContext)
     Alias(compatibleExpression, attributeName)()
+  }
+
+  def caseHandlingForNullValues(condition: Expression) : Expression = {
+    val elseValue: Option[Expression] = Some(Literal(false))
+    val branches: Seq[(Expression, Expression)] = Seq(Tuple2(IsNotNull(condition), condition))
+    CaseWhen(branches, elseValue)
   }
 
   def survivorColumn(currentProvenanceContext: ProvenanceContext, lastLeftCompatibleColumn: NamedExpression, lastRightCompatibleColumn: NamedExpression): NamedExpression = {
@@ -48,8 +54,8 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
 
     val survivorAttribute = ProvenanceAttribute(oid, Constants.getSurvivorFieldName(oid), BooleanType)
     currentProvenanceContext.addSurvivorAttribute(survivorAttribute)
-    val survivorColumnName = currentProvenanceContext.getSurvivedFieldAttribute(oid)
-    Alias(joinEvaluationCondition, survivorAttribute.attributeName)()
+    val conditionForNullHandling = caseHandlingForNullValues(joinEvaluationCondition)
+    Alias(conditionForNullHandling, survivorAttribute.attributeName)()
   }
 
   override def rewrite(): Rewrite = {

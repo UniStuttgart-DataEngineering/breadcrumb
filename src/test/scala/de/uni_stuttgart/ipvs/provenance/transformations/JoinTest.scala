@@ -4,6 +4,7 @@ import com.github.mrpowers.spark.fast.tests.{ColumnComparer, DataFrameComparer}
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
+import org.apache.spark.sql.catalyst.plans.LeftOuter
 import org.scalatest.FunSuite
 
 class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer {
@@ -54,7 +55,6 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val rightCnt = rightRewrite.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
     val resCnt = res.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
     assert(leftCnt + rightCnt + 2 == resCnt)
-
   }
 
   test("[Rewrite] Rewritten join retains all non-provenance attributes") {
@@ -64,6 +64,30 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
     checkSchemaContainment(res, df)
   }
+
+  test("[Rewrite] Inner join becomes outer join and marks according items as not survived (false, not null)") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    val df = dfLeft.join(dfRight, Seq("key"))
+    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    val lastSurvivedField = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD)).sorted.head
+    val keyFourElements = res.filter($"key" === "4").select(res.col(lastSurvivedField)).map(row => row.getBoolean(0)).collect()
+    assert(keyFourElements.size == 1)
+    assert(keyFourElements.head == false)
+  }
+
+  test("[Rewrite] Left outer join survivorColumn") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    val df = dfLeft.join(dfRight, Seq("key"), "leftouter")
+    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    val lastSurvivedField = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD)).sorted.head
+    val keyFourElements = res.filter($"key" === "4").select(res.col(lastSurvivedField)).map(row => row.getBoolean(0)).collect()
+    assert(keyFourElements.size == 1)
+    assert(keyFourElements.head == false)
+  }
+
+
 
 
 
