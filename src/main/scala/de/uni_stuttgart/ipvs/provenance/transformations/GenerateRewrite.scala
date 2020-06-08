@@ -24,20 +24,12 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
   }
 
 
-  //TODO: move to TransformationRewrite or provenanceContext
-  def getPreviousCompatible(rewrite: Rewrite): NamedExpression = {
-    val attribute = rewrite.provenanceContext.getMostRecentCompatibilityAttribute()
-      .getOrElse(throw new MatchError("Unable to find previous compatible structure in provenance structure"))
-    val compatibleAttribute = rewrite.plan.output.find(ex => ex.name == attribute.attributeName)
-      .getOrElse(throw new MatchError("Unable to find previous compatible structure in output of previous operator"))
-    compatibleAttribute
-  }
+
 
   //TODO: Add revalidation of compatibles here, i.e. replace this stub with a proper implementation
   def compatibleColumn(rewrite: Rewrite): NamedExpression = {
     val lastCompatibleAttribute = getPreviousCompatible(rewrite)
-    val attributeName = Constants.getCompatibleFieldName(oid)
-    rewrite.provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
+    val attributeName = addCompatibleAttributeToProvenanceContext(rewrite.provenanceContext)
     Alias(lastCompatibleAttribute, attributeName)()
   }
 

@@ -25,14 +25,44 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
     assert(res.schema.filter(field => field.name.contains(Constants.SURVIVED_FIELD)).size == 1)
 
+
   }
 
   test("[Rewrite] Rewritten join marks all items that do not survive the original join with false") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    val df = dfLeft.join(dfRight, Seq("key"))
+    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    assert(df.count() == res.count())
+
+    val survivedFields = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD))
+    assert(survivedFields.size > 0, "Rewritten join does not add a survived field, see previous test")
+    val orderedSurvivedFields = survivedFields.sorted
+    val latestSurvivedField = orderedSurvivedFields(0)
+
+    assert(df.count() == res.filter(res.col(latestSurvivedField) === true).count())
+  }
+
+  test("[Rewrite] Rewritten join retains previous provenance attributes") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    val df = dfLeft.join(dfRight, Seq("key"))
+    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    val leftRewrite = WhyNotProvenance.rewrite(dfLeft, basicWhyNotTuple())
+    val rightRewrite = WhyNotProvenance.rewrite(dfRight, basicWhyNotTuple())
+    val leftCnt = leftRewrite.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
+    val rightCnt = rightRewrite.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
+    val resCnt = res.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
+    assert(leftCnt + rightCnt + 2 == resCnt)
 
   }
 
-  test("[Rewrite] Rewritten join retains previous ") {
-
+  test("[Rewrite] Rewritten join retains all non-provenance attributes") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    val df = dfLeft.join(dfRight, Seq("key"))
+    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    checkSchemaContainment(res, df)
   }
 
 

@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object SharedSparkTestInstance {
@@ -8,6 +9,7 @@ object SharedSparkTestInstance {
       .appName("SharedSparkTestInstance")
       .master("local[2]")
       .getOrCreate()
+  Logger.getLogger("org").setLevel(Level.WARN)
 }
 
 

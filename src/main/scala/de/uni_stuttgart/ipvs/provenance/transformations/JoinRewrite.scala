@@ -1,9 +1,11 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceContext, Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import org.apache.spark.sql.catalyst.plans.FullOuter
-import org.apache.spark.sql.catalyst.plans.logical.Join
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, GreaterThan, IsNotNull, Literal, NamedExpression, Size}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
+import org.apache.spark.sql.types.BooleanType
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftOuter, RightOuter}
 
 object JoinRewrite {
   def apply(join: Join, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new JoinRewrite(join, whyNotQuestion, oid)
@@ -18,6 +20,36 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
   override def unrestructureRight(): SchemaSubsetTree = {
     //TODO implement
     whyNotQuestion
+  }
+
+  def compatibleColumn(currentProvenanceContext: ProvenanceContext, leftRewrite: Rewrite, rightRewrite: Rewrite): NamedExpression = {
+    val leftCompatibleColumn = getPreviousCompatible(leftRewrite)
+    val rightCompatibleColumn = getPreviousCompatible(rightRewrite)
+    val compatibleExpression = And(leftCompatibleColumn, rightCompatibleColumn)
+    val attributeName = addCompatibleAttributeToProvenanceContext(currentProvenanceContext)
+    Alias(compatibleExpression, attributeName)()
+  }
+
+  def survivorColumn(currentProvenanceContext: ProvenanceContext, lastLeftCompatibleColumn: NamedExpression, lastRightCompatibleColumn: NamedExpression): NamedExpression = {
+    val joinEvaluationCondition = join.joinType match {
+      case Inner => {
+        join.condition.get
+      }
+      case LeftOuter => {
+        And(join.condition.get, IsNotNull(lastRightCompatibleColumn))
+      }
+      case RightOuter => {
+        And(join.condition.get, IsNotNull(lastLeftCompatibleColumn))
+      }
+      case FullOuter => {
+        And(join.condition.get, And(IsNotNull(lastLeftCompatibleColumn),  IsNotNull(lastRightCompatibleColumn)))
+      }
+    }
+
+    val survivorAttribute = ProvenanceAttribute(oid, Constants.getSurvivorFieldName(oid), BooleanType)
+    currentProvenanceContext.addSurvivorAttribute(survivorAttribute)
+    val survivorColumnName = currentProvenanceContext.getSurvivedFieldAttribute(oid)
+    Alias(joinEvaluationCondition, survivorAttribute.attributeName)()
   }
 
   override def rewrite(): Rewrite = {
@@ -36,14 +68,14 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
 
     val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, join.condition)
 
+    val compatibleColumn = this.compatibleColumn(provenanceContext, leftRewrite, rightRewrite)
+    val survivorColumn = this.survivorColumn(provenanceContext,
+      provenanceContext.getExpressionFromProvenanceAttribute(leftRewrite.provenanceContext.getMostRecentCompatibilityAttribute().get, rewrittenJoin.output).get,
+      provenanceContext.getExpressionFromProvenanceAttribute(rightRewrite.provenanceContext.getMostRecentCompatibilityAttribute().get, rewrittenJoin.output).get)
 
+    val projectList = rewrittenJoin.output :+ compatibleColumn :+ survivorColumn
+    val projection = Project(projectList, rewrittenJoin)
 
-
-    Rewrite(rewrittenJoin, provenanceContext)
-
-
-
-
-
+    Rewrite(projection, provenanceContext)
   }
 }
