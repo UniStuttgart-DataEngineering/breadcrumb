@@ -67,7 +67,7 @@ class SchemaSubsetTree {
 
   def getNodeByName(name: String): SchemaNode ={
     var currentNode = rootNode
-    currentNode = currentNode.getChild(name).get
+    currentNode = currentNode.getChild(name).getOrElse(null)
     currentNode
   }
 

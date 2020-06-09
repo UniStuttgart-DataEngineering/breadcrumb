@@ -226,11 +226,14 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
           // Copy the node from why-not question
           val node = whyNotQuestion.getNodeByName(ar.name)
           val newNode: SchemaNode = SchemaNode(ar.name)
-          newNode.deepCopy(node)
 
-          // Add to newRoot
-          newRoot.addChild(newNode)
-          newNode.setParent(newRoot)
+          if (node != null) {
+            newNode.copyNode(node)
+
+            // Add to newRoot
+            newRoot.addChild(newNode)
+            newNode.setParent(newRoot)
+          }
         }
         case a: Alias => {
           a.name //rename
