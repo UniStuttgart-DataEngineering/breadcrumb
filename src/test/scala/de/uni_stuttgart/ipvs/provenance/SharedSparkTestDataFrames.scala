@@ -25,6 +25,7 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToDoc3 = baseDir + "doc3.json"
   protected val pathToDoc4 = baseDir + "doc4.json"
   protected val pathToDemoData = baseDir + "demo.json"
+  protected val pathToDemoData1 = baseDir + "demoOneStruct.json"
   protected val pathToAggregationDoc0 = baseDir + "docAggregation.json"
   protected val pathToJoinDoc0 = baseDir + "docJoin.json"
   protected val pathToUnionDoc0 = baseDir + "docUnion.json"

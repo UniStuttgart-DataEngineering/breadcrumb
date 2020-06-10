@@ -9,7 +9,7 @@ import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.execution.SQLExecution
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -22,84 +22,6 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
 
   var unrestructuredWhyNotQuestionInput: SchemaSubsetTree = null
   var unrestructuredWhyNotQuestionOutput: SchemaSubsetTree = whyNotQuestion
-
-//  def unrestructureExpression(ex: Expression, pathElementsForExpression: ListBuffer[String]): ListBuffer[String] = {
-//
-//    for (child <- ex.children) {
-//      child match {
-//        case ar: AttributeReference => {
-//          pathElementsForExpression += ar.name
-//        }
-//        case lt: Literal => {
-//          //TODO: do nothing
-//        }
-//        case sf: GetStructField => {
-//          pathElementsForExpression += sf.name.get
-//          pathElementsForExpression += sf.child.nodeName
-//        }
-//        case subEx: Expression => {
-//          unrestructureExpression(subEx, pathElementsForExpression)
-//        }
-//      }
-//    }
-//
-//    pathElementsForExpression
-//  }
-//
-//  def unrestructureAliasExpression(alias: Alias): Seq[String] = {
-//    val pathElements = ListBuffer.empty[String]
-//    var child = alias.child
-//    while(child != null){
-//      child match {
-//        case ar: AttributeReference => {
-//          pathElements += ar.name
-//          child = null
-//        }
-//        case sf: GetStructField => {
-//          pathElements += sf.name.get
-//          child = sf.child
-//        }
-//        case other: NamedExpression => {
-//          other.name
-//          child = null
-//        }
-//        case ex: Expression => {
-//          val pathElementsForExpression = ListBuffer.empty[String]
-//          for (elem <- unrestructureExpression(ex, pathElementsForExpression)) {
-//            pathElements += elem
-//          }
-//          child = null
-//        }
-//      }
-//    }
-//
-//    pathElements.toList
-//  }
-//
-//  def unrestructureNode(node: Option[SchemaNode], seq: Seq[String], unrestructuredWhyNotQuestion: SchemaSubsetTree): Unit = {
-//    val newParent = node.get.parent
-//    var newParentChildren = newParent.children
-//
-//    // Remove nodes corresponding to renamed attribute
-//    for (rootChild <- newParent.children) {
-//      if (!seq.contains(rootChild.name)) {
-//        newParentChildren -= rootChild
-//      }
-//    }
-//
-//    // Replace with new children
-//    newParent.children = newParentChildren
-//
-//    // Recursively mapping to new parents from leaf nodes
-//    for (child <- node.get.children) {
-//      if (child.children isEmpty){
-//        unrestructuredWhyNotQuestion.moveNodeToNewParent(child, newParent)
-//      } else {
-//        child.setParent(newParent)
-//        unrestructureNode(Some(child), seq, unrestructuredWhyNotQuestion)
-//      }
-//    }
-//  }
 
   def unrestructureSubExpressions(expressions: Seq[Expression], renamedNode: SchemaNode,
                                   newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]): SchemaNode = {
@@ -151,15 +73,7 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
 
           if (newNode.name != "") {
             if (ar.dataType.typeName.equals("struct")) {
-//              println(ar.dataType.simpleString.substring(ar.dataType.simpleString.indexOf("<")+1,ar.dataType.simpleString.indexOf(":")))
-              //TODO: Access the node inside structType of AttributeReference
-              val start = ar.dataType.simpleString.indexOf("<") + 1
-              val end = ar.dataType.simpleString.indexOf(":")
-              val structFieldName = ar.dataType.simpleString.substring(start,end)
-
-              val childOfNewNode = SchemaNode(structFieldName)
-              newNode.addChild(childOfNewNode)
-              childOfNewNode.setParent(newNode)
+              getAllStructFields(ar.dataType.asInstanceOf[StructType], newNode)
             }
 
             newRoot.addChild(newNode)
@@ -176,9 +90,7 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
 
             // Further collect descendant if the attribute is nested
             each match {
-              case gsf: GetStructField => {
-                exprToName.put(gsf.child, gsf.name.get)
-              }
+              case gsf: GetStructField => exprToName.put(gsf.child, gsf.name.get)
               case _ => // do nothing
             }
             pos += 1
@@ -187,12 +99,10 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
           // Access to the inner renamed child node (attribute)
           if (pos > 0) {
             val name = exprToName.get(cns).getOrElse("")
+
             if (!name.equals("")) {
               val node = renamedNode.getChild(name).getOrElse(null)
-
-              if (node != null) {
-                renamedNode.copyNode(node)
-              }
+              if (node != null) renamedNode.copyNode(node)
             }
           }
 
@@ -203,6 +113,24 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
 
     newRoot
   }
+
+
+  def getAllStructFields(st: StructType, newNode: SchemaNode): SchemaNode = {
+    for (eachStruct <- st) {
+      val structNode = SchemaNode("")
+
+      if (eachStruct.dataType.typeName.equals("struct")) {
+        getAllStructFields(eachStruct.dataType.asInstanceOf[StructType], structNode)
+      }
+
+      structNode.name = eachStruct.name
+      newNode.addChild(structNode)
+      structNode.setParent(newNode)
+    }
+
+    newNode
+  }
+
 
   override def unrestructure(): SchemaSubsetTree = {
     //TODO this is not correct
@@ -228,7 +156,27 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
           val newNode: SchemaNode = SchemaNode(ar.name)
 
           if (node != null) {
-            newNode.copyNode(node)
+//            newNode.copyNode(node)
+
+            if (ar.dataType.typeName.equals("struct")) {
+              newNode.deepCopy(node)
+
+              if (node.children.isEmpty) {
+                getAllStructFields(ar.dataType.asInstanceOf[StructType], newNode)
+              } else {
+                val fields = ar.dataType.asInstanceOf[StructType]
+                var newFields = Array[StructField]()
+
+                for (f <- fields) {
+                  val childName = node.children.find(node => node.name == f.name).getOrElse("")
+                  if (!childName.equals("")) newFields = newFields :+ f
+                }
+
+                getAllStructFields(StructType(newFields), newNode)
+              }
+            } else {
+              newNode.copyNode(node)
+            }
 
             // Add to newRoot
             newRoot.addChild(newNode)
@@ -254,19 +202,6 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
               2) Create a new tree for the why-not question based on the sub-expressions from the logical plan as well as why-not question schema
            */
           unrestructureSubExpressions(a.children, node, newRoot, exprToName)
-
-//          // Collecting original attribute names for ex
-//          val seq = unrestructureAliasExpression(a)
-////          val node = unrestructuredWhyNotQuestion.moveNodeToNewParentByPath(List(a.name), Seq.empty[String])
-//
-//          // Returning the node corresponding renamed attribute that is direct child of the root
-//          val node = unrestructuredWhyNotQuestionInput.getNodeByPath(List(a.name))
-//
-//          if (node.get.children isEmpty){
-//            node.get.name = seq.head
-//          } else {
-//            unrestructureNode(node, seq, unrestructuredWhyNotQuestionInput)
-//          }
         }
         case MultiAlias(child, names) => {
 
