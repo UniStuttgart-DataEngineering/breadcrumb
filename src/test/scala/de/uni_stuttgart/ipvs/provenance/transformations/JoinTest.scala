@@ -34,7 +34,7 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val dfRight = getDataFrame(pathToJoinDoc0)
     val df = dfLeft.join(dfRight, Seq("key"))
     val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
-    assert(df.count() == res.count())
+    assert(df.count() + 2 == res.count())
 
     val survivedFields = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD))
     assert(survivedFields.size > 0, "Rewritten join does not add a survived field, see previous test")

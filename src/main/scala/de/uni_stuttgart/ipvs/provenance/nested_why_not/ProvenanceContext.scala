@@ -92,6 +92,13 @@ class ProvenanceContext {
     {(provenanceExpressions, attribute) => provenanceExpressions ++ getExpressionFromProvenanceAttribute(attribute, expressions)}
   }
 
+  protected[provenance] def isProvenanceAttribute(expression: NamedExpression): Boolean = {
+    //TODO if called from a list of size m, this call yields O(m*n) complexity
+    provenanceAttributes.exists( attribute =>
+      attribute.attributeName == expression.name
+    )
+  }
+
 
 
 
