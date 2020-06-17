@@ -1,12 +1,8 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
 import de.uni_stuttgart.ipvs.provenance.transformations.{AggregateRewrite, FilterRewrite, GenerateRewrite, JoinRewrite, ProjectRewrite, RelationRewrite, UnionRewrite}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Filter, Generate, Join, LeafNode, LocalRelation, LogicalPlan, Project, ReturnAnswer, Subquery, Union}
-import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, Expression, Literal, MonotonicallyIncreasingID, NamedExpression}
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Filter, Generate, Join, LeafNode, LogicalPlan, Project, ReturnAnswer, Union}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
-import javax.management.relation.Relation
 
 
 object WhyNotPlanRewriter {

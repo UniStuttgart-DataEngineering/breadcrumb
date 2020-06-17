@@ -1,7 +1,9 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
+import de.uni_stuttgart.ipvs.provenance.why_not_question.DataFetcherUDF
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types.DataType
 
 import scala.collection.mutable
@@ -27,6 +29,14 @@ object ProvenanceContext {
     provenanceContext.addProvenanceAttribute(provenanceAttribute)
     provenanceContext
   }
+
+  protected var udf : UserDefinedFunction = null
+
+  protected[provenance] def initializeUDF(dataFrame: DataFrame) = {
+    udf = dataFrame.sparkSession.udf.register(Constants.getUDFName, new DataFetcherUDF().call _)
+  }
+
+  def getUDF = udf
 
 }
 

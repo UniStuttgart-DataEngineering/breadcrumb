@@ -3,10 +3,11 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatcher, Twig}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Schema, SchemaMatcher, Twig}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Expression, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
 
 /**
@@ -15,6 +16,7 @@ import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
 object WhyNotProvenance {
 
   def rewrite(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
+    ProvenanceContext.initializeUDF(dataFrame)
     val execState = dataFrame.queryExecution
     val basePlan = execState.analyzed
     val schema = new Schema(dataFrame)

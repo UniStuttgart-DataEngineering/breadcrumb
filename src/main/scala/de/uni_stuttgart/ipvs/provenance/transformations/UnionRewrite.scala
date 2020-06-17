@@ -24,10 +24,6 @@ class UnionRewrite(val union: Union, override val whyNotQuestion: SchemaSubsetTr
     Alias(compatibleExpression, attributeName)()
   }
 
-  //options to ensure order: add all, then order them alphabetically
-
-  //split items in three groups a) original items b) provLeft c) provRight
-
   def generateNullColumns(attributes: Seq[ProvenanceAttribute]): Seq[NamedExpression] = {
     attributes.map { attribute =>
       Alias(Cast(Literal(null), attribute.attributeType), attribute.attributeName)()

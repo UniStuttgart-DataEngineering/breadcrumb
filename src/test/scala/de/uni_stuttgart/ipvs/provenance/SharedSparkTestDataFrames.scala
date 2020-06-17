@@ -38,6 +38,14 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
     twig.validate().get
   }
 
+  def myIntColWhyNotQuestionWithCondition(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("MyIntCol", 1, 1, "3")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
+
   def singleInputColumnDataFrame(): DataFrame = {
     Seq(1, 2, 3, 4, 5, 6).toDF("MyIntCol")
   }

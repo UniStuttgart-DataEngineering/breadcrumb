@@ -1,6 +1,8 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{MatchNode, Schema, SchemaMatch}
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.functions.typedLit
 
 import scala.collection.mutable.ListBuffer
 
@@ -92,6 +94,9 @@ class SchemaSubsetTree {
     }
     node.setParent(newParent)
     newParent.children += node
+  }
+  def getSchemaSubsetTreeExpression : Expression = {
+    typedLit(serialize()).expr
   }
 
 

@@ -88,6 +88,22 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     twig.validate().get
   }
 
+  def whyNotQuestionFlatKeyWithCondition(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("flat_key", 1, 1, "1_2_flat_val")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
+
+  def whyNotQuestionFlatKeyWithCondition2(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("myName", 1, 1, "1_2_flat_val")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
+
   def whyNotQuestionFull(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
@@ -366,6 +382,28 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     assert(flat_key.name == "flat_key")
     assert(size == 1)
 
+  }
+
+  test("[Unrestructure] Preserve Constraints"){
+    val df = getDataFrame()
+    val res = df.select($"flat_key")
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionFlatKeyWithCondition())
+    //    val (rewrittenSchemaSubset, schemaSubset) = getWhyNotTupleOverInput(df, res, whyNotQuestionFlatKey())
+    (rewrittenSchemaSubset, schemaSubset)
+
+    assert(schemaSubset.rootNode.children.head.constraint.attributeValue == "1_2_flat_val")
+    assert(schemaSubset.rootNode.children.head.constraint.attributeValue == rewrittenSchemaSubset.rootNode.children.head.constraint.attributeValue)
+  }
+
+  test("[Unrestructure] Preserve Constraints after rename"){
+    val df = getDataFrame()
+    val res = df.select($"flat_key".alias("myName"))
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionFlatKeyWithCondition2())
+    //    val (rewrittenSchemaSubset, schemaSubset) = getWhyNotTupleOverInput(df, res, whyNotQuestionFlatKey())
+    (rewrittenSchemaSubset, schemaSubset)
+
+    assert(schemaSubset.rootNode.children.head.constraint.attributeValue == "1_2_flat_val")
+    assert(schemaSubset.rootNode.children.head.constraint.attributeValue == rewrittenSchemaSubset.rootNode.children.head.constraint.attributeValue)
   }
 
 }

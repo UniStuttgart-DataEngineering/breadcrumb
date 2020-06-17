@@ -1,15 +1,11 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
-import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
-import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, Expression, GetStructField, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Literal, NamedExpression, Or, Rand}
-import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LocalRelation, Project}
-import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
-
-import scala.collection.mutable
+import org.apache.spark.sql.catalyst.expressions.{Alias, CaseWhen, CreateStruct, Expression, LessThanOrEqual, Literal, NamedExpression, Rand, ScalaUDF}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan, Project}
+import org.apache.spark.sql.types.{BooleanType, DataType, StructField, StructType}
+import scala.collection.mutable.ArrayBuffer
 
 
 object RelationRewrite {
@@ -18,7 +14,27 @@ object RelationRewrite {
 
 class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int) extends InputTransformationRewrite(relation, whyNotQuestion, oid){
 
-  def compatibleColumn(provenanceContext: ProvenanceContext): NamedExpression = {
+  def compatibleColumn(child: LogicalPlan, provenanceContext: ProvenanceContext): NamedExpression = {
+    val udfExpression = getDataFetcherExpression(child)
+    val attributeName = Constants.getCompatibleFieldName(oid)
+    provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
+    Alias(udfExpression,attributeName)()
+  }
+
+  def getDataFetcherExpression(child: LogicalPlan) = {
+    val udf = ProvenanceContext.getUDF
+    val children = ArrayBuffer[Expression](getNamedStructExpression(child.output), whyNotQuestion.getSchemaSubsetTreeExpression)
+    val inputIsNullSafe = true :: true :: Nil
+    val inputTypes = udf.inputTypes.getOrElse(Seq.empty[DataType])
+    val udfName = Some(Constants.getUDFName)
+    ScalaUDF(udf.f, udf.dataType, children, inputIsNullSafe, inputTypes, udfName)
+  }
+
+  def getNamedStructExpression(output: Seq[Expression]): Expression = {
+    CreateStruct(output)
+  }
+
+  def compatibleColumnDepricated(provenanceContext: ProvenanceContext): NamedExpression = {
     //TODO: integrate with unrestructured whyNot question
     val attributeName = Constants.getCompatibleFieldName(oid)
     provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
@@ -26,72 +42,17 @@ class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: 
     val elseValue: Option[Expression] = Some(Literal(false))
     val branches: Seq[(Expression, Expression)] = Seq(Tuple2(condition, Literal(true)))
     Alias(CaseWhen(branches, elseValue), attributeName)()
-
-    /*
-    // Collect attributes from base relation
-    val AttrNameToRef = scala.collection.mutable.Map[String, Expression]()
-    for (attr <- relation.output) {
-      AttrNameToRef.put(attr.name, attr)
-    }
-
-    var condition = List[Expression]()
-    var constant: String = null
-//    val condition = LessThanOrEqual(Rand(Literal(42)), Literal(0.5))
-//    val branches: Seq[(Expression, Expression)] = Seq(Tuple2(condition, Literal(true)))
-
-    // Adapt the condition from the why-not question
-    for (child <- whyNotQuestion.rootNode.children) {
-      if (child.constraint.constraintString == "") {
-        condition = condition :+ Literal(true)
-      } else {
-        val conditionInChild = child.constraint.constraintString
-
-        if (conditionInChild.contains(">")) {
-          constant = conditionInChild.substring(2)
-          condition = condition :+ expressions.GreaterThan(AttrNameToRef.get(child.name).get, Literal(constant))
-        } else if (conditionInChild.contains(">=")) {
-          constant = conditionInChild.substring(3)
-          condition = condition :+ GreaterThanOrEqual(AttrNameToRef.get(child.name).get, Literal(constant))
-        } else if (conditionInChild.contains("<")) {
-          constant = conditionInChild.substring(2)
-          condition = condition :+ LessThan(AttrNameToRef.get(child.name).get, Literal(constant))
-        } else if (conditionInChild.contains("<=")) {
-          constant = conditionInChild.substring(3)
-          condition = condition :+ LessThanOrEqual(AttrNameToRef.get(child.name).get, Literal(constant))
-        } else if (conditionInChild.equals("=")) {
-          constant = conditionInChild.substring(2)
-//          condition = Equal(Literal(child.name), Literal(constant))
-        }
-      }
-    }
-
-//    val elseValue: Option[Expression] = Some(Literal(false))
-//    Alias(CaseWhen(branches, elseValue), attributeName)()
-
-      var conjunctCond: Expression = null
-      if (condition.length == 1) {
-        conjunctCond = condition.head
-      } else {
-        for (eachCond <- condition) {
-          conjunctCond = Or(conjunctCond,eachCond)
-        }
-      }
-
-      Alias(conjunctCond, attributeName) ()
-
-     */
   }
+
 
   override def rewrite: Rewrite = {
     val provenanceContext = new ProvenanceContext()
-    val projectList = relation.output :+ compatibleColumn(provenanceContext)
+    val projectList = relation.output :+ compatibleColumn(relation, provenanceContext)
     val rewrittenLocalRelation = Project(
       projectList,
       relation
     )
-
     //TODO: resolve compatible columns
-
     Rewrite(rewrittenLocalRelation, provenanceContext)
   }
 

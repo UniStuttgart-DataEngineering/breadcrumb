@@ -18,17 +18,9 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
   def runningExample() = {
     var exampleData = getExampleDataFrame()
     exampleData = exampleData.withColumn("address", explode($"address2"))
-    exampleData = exampleData.filter($"address.year" === 2019)
+    exampleData = exampleData.filter($"address.year" >= 2019)
     exampleData = exampleData.select($"name", $"address.city")
     exampleData.groupBy( $"city").agg(collect_list($"name").alias("nList"))
-  }
-
-  def whyNotTupleFilterNewName(newName: String): Twig = {
-    var twig = new Twig()
-    val root = twig.createNode("root", 1, 1, "")
-    val user = twig.createNode(newName, 1, 1, "")
-    twig = twig.createEdge(root, user, false)
-    twig.validate().get
   }
 
   def exampleWhyNotTuple() = {
@@ -52,6 +44,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
     exampleData.show()
     rewrittenData.show()
+    rewrittenData.printSchema()
   }
 
 }
