@@ -2,12 +2,17 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
 case object Constants {
 
-  val PROVENANCE_ID_STRUCT = "__PROVENANCE"
-  val VALID_FIELD = "__VALID"
-  val COMPATIBLE_FIELD = "__COMPATIBLE"
-  val SURVIVED_FIELD = "__SURVIVED"
-  val PROVENANCE_COLLECTION = "__PROVENANCE_COLLECTION"
-  val PROVENANCE_TUPLE = "__PROVENANCE_TUPLE"
+  protected[provenance] val PROVENANCE_ID_STRUCT = "__PROVENANCE"
+  protected[provenance] val VALID_FIELD = "__VALID"
+  protected[provenance] val COMPATIBLE_FIELD = "__COMPATIBLE"
+  protected[provenance] val SURVIVED_FIELD = "__SURVIVED"
+  protected[provenance] val PROVENANCE_COLLECTION = "__PROVENANCE_COLLECTION"
+  protected[provenance] val PROVENANCE_TUPLE = "__PROVENANCE_TUPLE"
+  protected[provenance] val UDF_NAME = "__UDF"
+
+  protected[provenance] def getUDFName = {
+    UDF_NAME
+  }
 
   private def getFieldName(fieldName: String, oid: Int): String = {
     f"${fieldName}_${oid}%04d"
@@ -41,7 +46,5 @@ case object Constants {
 
     contains
   }
-
-
 
 }

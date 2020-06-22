@@ -114,7 +114,7 @@ class DataFetcherSuite extends FunSuite with SharedSparkTestDataFrames {
     val annotatedData = dfAndMatches._1
     val schemaMatch = SchemaSubsetTree(dfAndMatches._2(0), dfAndMatches._3)
     val dataFetcher1 = DataFetcher(annotatedData, schemaMatch)
-    val res = dataFetcher1.getItems()
+    val res = dataFetcher1.markItems("test")
     assert(dfAndMatches._2.size == 1)
     assert(res.count() == 4)
     assert(res.count == 4)

@@ -1,7 +1,9 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
+import de.uni_stuttgart.ipvs.provenance.why_not_question.DataFetcherUDF
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types.DataType
 
 import scala.collection.mutable
@@ -27,6 +29,14 @@ object ProvenanceContext {
     provenanceContext.addProvenanceAttribute(provenanceAttribute)
     provenanceContext
   }
+
+  protected var udf : UserDefinedFunction = null
+
+  protected[provenance] def initializeUDF(dataFrame: DataFrame) = {
+    udf = dataFrame.sparkSession.udf.register(Constants.getUDFName, new DataFetcherUDF().call _)
+  }
+
+  def getUDF = udf
 
 }
 
@@ -90,6 +100,13 @@ class ProvenanceContext {
   protected[provenance] def getExpressionFromAllProvenanceAttributes(expressions: Seq[NamedExpression]): Seq[NamedExpression] = {
     provenanceAttributes.foldLeft(List.empty[NamedExpression])
     {(provenanceExpressions, attribute) => provenanceExpressions ++ getExpressionFromProvenanceAttribute(attribute, expressions)}
+  }
+
+  protected[provenance] def isProvenanceAttribute(expression: NamedExpression): Boolean = {
+    //TODO if called from a list of size m, this call yields O(m*n) complexity
+    provenanceAttributes.exists( attribute =>
+      attribute.attributeName == expression.name
+    )
   }
 
 

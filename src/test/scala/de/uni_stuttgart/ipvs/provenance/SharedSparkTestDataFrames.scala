@@ -25,6 +25,7 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToDoc3 = baseDir + "doc3.json"
   protected val pathToDoc4 = baseDir + "doc4.json"
   protected val pathToDemoData = baseDir + "demo.json"
+  protected val pathToDemoData1 = baseDir + "demoOneStruct.json"
   protected val pathToAggregationDoc0 = baseDir + "docAggregation.json"
   protected val pathToJoinDoc0 = baseDir + "docJoin.json"
   protected val pathToUnionDoc0 = baseDir + "docUnion.json"
@@ -33,6 +34,14 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val flat_key = twig.createNode("MyIntCol", 1, 1, "")
+    twig = twig.createEdge(root, flat_key, false)
+    twig.validate().get
+  }
+
+  def myIntColWhyNotQuestionWithCondition(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val flat_key = twig.createNode("MyIntCol", 1, 1, "3")
     twig = twig.createEdge(root, flat_key, false)
     twig.validate().get
   }

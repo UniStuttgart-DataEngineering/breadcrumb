@@ -25,7 +25,7 @@ class UnionTest extends FunSuite with SharedSparkTestDataFrames {
     val leftCnt = leftRewrite.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
     val rightCnt = rightRewrite.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
     val resCnt = res.columns.filter(name => Constants.columnNameContainsProvenanceConstant(name)).size
-    assert(leftCnt + rightCnt + 2 == resCnt)
+    assert(leftCnt + rightCnt + 1 == resCnt)
   }
 
   test("[Rewrite] Rewritten union retains all non-provenance attributes") {
@@ -33,6 +33,8 @@ class UnionTest extends FunSuite with SharedSparkTestDataFrames {
     val dfRight = getDataFrame(pathToUnionDoc0)
     val df = dfLeft.union(dfRight)
     val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    res.show()
+    res.explain(true)
     checkSchemaContainment(res, df)
   }
 

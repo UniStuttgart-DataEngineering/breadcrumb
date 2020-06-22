@@ -26,6 +26,10 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
 
 
 
+
+
+
+
   //TODO: Add revalidation of compatibles here, i.e. replace this stub with a proper implementation
   def compatibleColumn(rewrite: Rewrite): NamedExpression = {
     val lastCompatibleAttribute = getPreviousCompatible(rewrite)

@@ -2,9 +2,16 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
 import org.apache.spark.sql.DataFrame
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatcher, Twig}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Schema, SchemaMatcher, Twig}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+<<<<<<< HEAD
 import org.apache.spark.sql.types.{StructField, StructType}
+=======
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, Expression, Literal}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.expressions.UserDefinedFunction
+import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
+>>>>>>> ad58039343dac98c463b2df2485b26f4ef9d10d9
 
 /**
  * Entry point for plan rewrites
@@ -17,6 +24,7 @@ object WhyNotProvenance {
   }
 
   protected[provenance] def internalRewrite(dataFrame: DataFrame, whyNotTwig: Twig): Rewrite = {
+    ProvenanceContext.initializeUDF(dataFrame)
     val execState = dataFrame.queryExecution
     val basePlan = execState.analyzed
     val schema = new Schema(dataFrame)
