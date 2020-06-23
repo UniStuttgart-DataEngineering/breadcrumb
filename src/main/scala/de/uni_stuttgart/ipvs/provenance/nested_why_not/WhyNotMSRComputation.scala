@@ -8,6 +8,7 @@ object WhyNotMSRComputation {
 
   private val operatorListName = "pickyOperators"
   private val compatibleCountName = "compatibleCount"
+  private val intermediateTupleUnnestingName = "flattened"
 
   def computeMSR(dataFrame: DataFrame, provenanceContext: ProvenanceContext): DataFrame = {
 
@@ -15,6 +16,8 @@ object WhyNotMSRComputation {
     val compatibleName = lastCompatibleAttribute.get.attributeName
 
     val compatiblesOnly = dataFrame.filter(dataFrame.col(compatibleName) === true)
+
+    val nestedProvenanceCollections = provenanceContext.getNestedProvenanceAttributes()
 
 
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
@@ -24,6 +27,25 @@ object WhyNotMSRComputation {
     val result = survivorsWithLostColumns.groupBy(operatorListName).agg(count(survivorsWithLostColumns.columns.head).alias(compatibleCountName))
     result
 
+  }
+
+
+
+  def flattenNestedProvenanceCollections(dataFrame: DataFrame, provenanceContext: ProvenanceContext): (DataFrame, Seq[ProvenanceContext]) = {
+
+    var resultDataFrame = dataFrame
+    for (nestedAttribute <- provenanceContext.getNestedProvenanceAttributes()) {
+      resultDataFrame = resultDataFrame.withColumn(intermediateTupleUnnestingName, resultDataFrame.col(nestedAttribute.attributeName))
+      resultDataFrame.schema.fields.filter(field => field.name == intermediateTupleUnnestingName)(0)
+      val relevantColumns = resultDataFrame.columns.filter(name => name != intermediateTupleUnnestingName) // ++ resultDataFrame.col
+      resultDataFrame = resultDataFrame.select(relevantColumns.map(col): _*)
+      //resultDataFrame = resultDataFrame.
+    }
+    null
+  }
+
+  def extractNestedItems(dataFrame: DataFrame): Unit ={
+    val tuple = dataFrame.schema.fields.filter(field => field.name == intermediateTupleUnnestingName)(0)
   }
 
 }

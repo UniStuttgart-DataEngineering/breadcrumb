@@ -34,6 +34,10 @@ case object Constants {
     getFieldName(PROVENANCE_TUPLE, oid)
   }
 
+  protected[provenance] def isNestedProvenanceCollection(name: String): Boolean = {
+    name.contains(PROVENANCE_COLLECTION)
+  }
+
   def columnNameContainsProvenanceConstant(name: String): Boolean = {
     var contains = false
 
