@@ -25,8 +25,7 @@ object ProvenanceContext {
 
   def apply(childContext: ProvenanceContext, provenanceAttribute: ProvenanceAttribute) = {
     val provenanceContext = new ProvenanceContext()
-    provenanceContext.addNestedProvenanceContext(childContext)
-    provenanceContext.addProvenanceAttribute(provenanceAttribute)
+    provenanceContext.addNestedProvenanceContext(childContext, provenanceAttribute)
     provenanceContext
   }
 
@@ -44,7 +43,7 @@ class ProvenanceContext {
 
 
   //TODO also associate with nodes in the schema subset tree aka. schema alternatives
-  protected[provenance] val nestedProvenanceContexts = mutable.ListBuffer.empty[ProvenanceContext]
+  protected[provenance] val nestedProvenanceContexts = mutable.Map.empty[ProvenanceAttribute, ProvenanceContext]
 
   protected[provenance] val provenanceAttributes = mutable.ListBuffer.empty[ProvenanceAttribute]
 
@@ -52,8 +51,9 @@ class ProvenanceContext {
   protected[provenance] var mostRecentSurvivorAttribute: ProvenanceAttribute = null
   protected[provenance] var validAttribute: ProvenanceAttribute = null
 
-  protected def addNestedProvenanceContext(provenanceContext: ProvenanceContext): Unit = {
-    nestedProvenanceContexts += provenanceContext
+  protected def addNestedProvenanceContext(provenanceContext: ProvenanceContext, provenanceAttribute: ProvenanceAttribute): Unit = {
+    nestedProvenanceContexts.put(provenanceAttribute, provenanceContext)
+    addProvenanceAttribute(provenanceAttribute)
   }
 
 
@@ -69,6 +69,10 @@ class ProvenanceContext {
   protected[provenance] def addSurvivorAttribute(survivorAttribute: ProvenanceAttribute): Unit = {
     addProvenanceAttribute(survivorAttribute)
     mostRecentSurvivorAttribute = survivorAttribute
+  }
+
+  protected[provenance] def addIDAttribute(idAttribute: ProvenanceAttribute): Unit = {
+    addProvenanceAttribute(idAttribute)
   }
 
   protected[provenance] def getCompatibilityAttribute(oid: Int): Option[ProvenanceAttribute] = {
@@ -102,9 +106,26 @@ class ProvenanceContext {
     {(provenanceExpressions, attribute) => provenanceExpressions ++ getExpressionFromProvenanceAttribute(attribute, expressions)}
   }
 
-  protected[provenance] def getNestedProvenanceAttributes(): Seq[ProvenanceAttribute] = {
-    provenanceAttributes.filter(attribute => Constants.isNestedProvenanceCollection(attribute.attributeName))
+  protected[provenance] def getNestedProvenanceAttributes(): Seq[(ProvenanceAttribute, ProvenanceContext)] = {
+    nestedProvenanceContexts.toSeq
   }
+
+  protected[provenance] def isNestedProvenanceAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
+    nestedProvenanceContexts.contains(provenanceAttribute)
+  }
+
+  protected[provenance] def isMostRecentCompatibleAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
+    provenanceAttribute == mostRecentCompatibleAttribute
+  }
+
+  protected[provenance] def isSurvivedAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
+    Constants.isSurvivedField(provenanceAttribute.attributeName)
+  }
+
+  protected[provenance] def isIDAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
+    Constants.isIDField(provenanceAttribute.attributeName)
+  }
+
 
   protected[provenance] def isProvenanceAttribute(expression: NamedExpression): Boolean = {
     //TODO if called from a list of size m, this call yields O(m*n) complexity
@@ -113,12 +134,8 @@ class ProvenanceContext {
     )
   }
 
-
-
-
-
-
-
-
+  protected[provenance] def getProvenanceAttributes(): Seq[ProvenanceAttribute] = {
+    provenanceAttributes
+  }
 
 }

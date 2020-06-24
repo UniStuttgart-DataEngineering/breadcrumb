@@ -9,6 +9,7 @@ case object Constants {
   protected[provenance] val PROVENANCE_COLLECTION = "__PROVENANCE_COLLECTION"
   protected[provenance] val PROVENANCE_TUPLE = "__PROVENANCE_TUPLE"
   protected[provenance] val UDF_NAME = "__UDF"
+  protected[provenance] val PROVENANCE_ID = "__ID"
 
   protected[provenance] def getUDFName = {
     UDF_NAME
@@ -36,6 +37,14 @@ case object Constants {
 
   protected[provenance] def isNestedProvenanceCollection(name: String): Boolean = {
     name.contains(PROVENANCE_COLLECTION)
+  }
+
+  protected[provenance] def isSurvivedField(name: String): Boolean = {
+    name.contains(SURVIVED_FIELD)
+  }
+
+  protected[provenance] def isIDField(name: String): Boolean = {
+    name.contains(PROVENANCE_ID)
   }
 
   def columnNameContainsProvenanceConstant(name: String): Boolean = {

@@ -47,4 +47,13 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     rewrittenData.printSchema()
   }
 
+  test("Running example with msrComputation") {
+    val exampleData = runningExample()
+    val wnTuple = exampleWhyNotTuple()
+    val rewrittenData = WhyNotProvenance.computeMSRs(exampleData, wnTuple)
+    exampleData.show()
+    rewrittenData.show()
+    rewrittenData.printSchema()
+  }
+
 }

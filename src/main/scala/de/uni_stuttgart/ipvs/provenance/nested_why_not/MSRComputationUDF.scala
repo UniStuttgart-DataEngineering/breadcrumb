@@ -21,7 +21,7 @@ class MSRComputationUDF extends UDF1[Row, mutable.WrappedArray[String]] {
 
     var pickyOperators = mutable.WrappedArray.empty[String]
 
-    val survivorColumns = row.schema.fields.map(field => field.name)
+    val survivorColumns = row.schema.fields.map(field => field.name).filter(name => Constants.isSurvivedField(name))
 
 
     for(col <- survivorColumns) {
