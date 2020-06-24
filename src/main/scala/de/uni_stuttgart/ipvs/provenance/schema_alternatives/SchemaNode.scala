@@ -85,8 +85,10 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
   def copyNode(node: SchemaNode): Unit = {
     name = node.name
 //    parent = null
-    constraint = node.constraint
-    children = node.children
+    constraint = node.constraint.deepCopy()
+    for (child <- node.children){
+      children.add(child.deepCopy(parent))
+    }
   }
 
   def getLeafNode(): SchemaNode = {
