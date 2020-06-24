@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 
 class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 
-  protected val pathToExampleData = baseDir + "exampleData.json"
+//  protected val pathToExampleData = baseDir + "exampleData.json"
 
   def getExampleDataFrame(): DataFrame = getDataFrame(pathToExampleData)
 

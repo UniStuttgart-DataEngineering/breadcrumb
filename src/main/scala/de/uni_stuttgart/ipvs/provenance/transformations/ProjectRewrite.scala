@@ -4,15 +4,12 @@ import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaMatch
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
-import org.apache.spark.sql.execution.SQLExecution
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, Project}
+import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 object ProjectRewrite {
   def apply(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new ProjectRewrite(project, whyNotQuestion, oid)
@@ -22,6 +19,78 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
 
   var unrestructuredWhyNotQuestionInput: SchemaSubsetTree = null
   var unrestructuredWhyNotQuestionOutput: SchemaSubsetTree = whyNotQuestion
+
+  def unrestructureProject(project: Project, tree: SchemaSubsetTree): SchemaSubsetTree = {
+    var newRoot = whyNotQuestion.rootNode.deepCopy(null)
+    newRoot.children.clear()
+    tree.rootNode = newRoot
+    val exprToName = scala.collection.mutable.Map[Expression,String]()
+
+    for (ex <- project.projectList) {
+      ex match {
+        case ar: AttributeReference => unrestructureAttributeRef(ar, newRoot)
+        case a: Alias => {
+          a.name //rename
+          //a.child.asInstanceOf[AttributeReference].name
+          //child.ge
+          //println(child.prettyName + ": " + name)
+
+          // Access the node corresponding to the renamed attribute in the why-not question
+          val node = whyNotQuestion.getNodeByName(a.name)
+          /*
+            Parameters:
+              1) Sub-expressions in projection operator
+              2) A tree that the root is the attribute corresponding to the renamed attribute
+              3) A new tree for creating the unrestructured why-not question
+              4) A map: key = an expression and value = the name for the expression
+            How it works:
+              1) Recursively access child nodes in the tree for the why-not question to find any renamed and restructured attribute
+              2) Create a new tree for the why-not question based on the sub-expressions from the logical plan as well as why-not question schema
+           */
+          unrestructureSubExpressions(a.children, node, newRoot, exprToName)
+        }
+        case MultiAlias(child, names) =>
+        case UnresolvedAlias(child, aliasFunc) => {
+          //maybe we do not want to support this at the beginning?
+        }
+      }
+    }
+
+    tree
+  }
+
+  def unrestructureAttributeRef(ar: AttributeReference, newRoot: SchemaNode): SchemaNode = {
+    val node = whyNotQuestion.getNodeByName(ar.name)
+    val newNode: SchemaNode = SchemaNode(ar.name)
+
+    if (node != null) {
+      if (ar.dataType.typeName.equals("struct")) {
+        newNode.deepCopy(node)
+
+        if (node.children.isEmpty) {
+          getAllStructFields(ar.dataType.asInstanceOf[StructType], newNode)
+        } else {
+          val fields = ar.dataType.asInstanceOf[StructType]
+          var newFields = Array[StructField]()
+
+          for (f <- fields) {
+            val childName = node.children.find(node => node.name == f.name).getOrElse("")
+            if (!childName.equals("")) newFields = newFields :+ f
+          }
+
+          getAllStructFields(StructType(newFields), newNode)
+        }
+      } else {
+        newNode.copyNode(node)
+      }
+
+      // Add to newRoot
+      newRoot.addChild(newNode)
+      newNode.setParent(newRoot)
+    }
+
+    newRoot
+  }
 
   def unrestructureSubExpressions(expressions: Seq[Expression], renamedNode: SchemaNode,
                                   newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]): SchemaNode = {
@@ -42,6 +111,9 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
            */
           if (renamedNode.children.isEmpty) {
             val leafNode = newRoot.getLeafNode()
+
+            if (renamedNode.constraint.attributeValue != "")
+              newNode.constraint = renamedNode.constraint.deepCopy()
 
             if (!leafNode.name.equals(newRoot.name)) {
               leafNode.addChild(newNode)
@@ -131,83 +203,17 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
     newNode
   }
 
-
   override def unrestructure(): SchemaSubsetTree = {
-    //TODO this is not correct
-    //4 cases:
-    // 0) selection: a --> a
-    // 1) renaming: a --> b
-    // 2) tuple unnesting c<a,b> --> a --> d
-    // 3) tuple nesting a, b -> c<a,b>
-
-//    val unrestructuredWhyNotQuestion = whyNotQuestion.deepCopy()
     unrestructuredWhyNotQuestionInput = whyNotQuestion.deepCopy()
 
-    var newRoot = whyNotQuestion.rootNode.deepCopy(null)
-    newRoot.children.clear()
-    unrestructuredWhyNotQuestionInput.rootNode = newRoot
-    val exprToName = scala.collection.mutable.Map[Expression,String]()
-
-    for (ex <- project.projectList) {
-      ex match {
-        case ar: AttributeReference => {
-          // Copy the node from why-not question
-          val node = whyNotQuestion.getNodeByName(ar.name)
-          val newNode: SchemaNode = SchemaNode(ar.name)
-
-          if (node != null) {
-//            newNode.copyNode(node)
-
-            if (ar.dataType.typeName.equals("struct")) {
-              newNode.deepCopy(node)
-
-              if (node.children.isEmpty) {
-                getAllStructFields(ar.dataType.asInstanceOf[StructType], newNode)
-              } else {
-                val fields = ar.dataType.asInstanceOf[StructType]
-                var newFields = Array[StructField]()
-
-                for (f <- fields) {
-                  val childName = node.children.find(node => node.name == f.name).getOrElse("")
-                  if (!childName.equals("")) newFields = newFields :+ f
-                }
-
-                getAllStructFields(StructType(newFields), newNode)
-              }
-            } else {
-              newNode.copyNode(node)
-            }
-
-            // Add to newRoot
-            newRoot.addChild(newNode)
-            newNode.setParent(newRoot)
-          }
+    // Flatten is checked here
+    for (child <- project.children) {
+      child match {
+        case g: Generate => {
+          unrestructuredWhyNotQuestionInput = GenerateRewrite(g, unrestructuredWhyNotQuestionInput, 1).unrestructure()
         }
-        case a: Alias => {
-          a.name //rename
-          //a.child.asInstanceOf[AttributeReference].name
-          //child.ge
-          //println(child.prettyName + ": " + name)
-
-          // Access the node corresponding to the renamed attribute in the why-not question
-          val node = whyNotQuestion.getNodeByName(a.name)
-          /*
-            Parameters:
-              1) Sub-expressions in projection operator
-              2) A tree that the root is the attribute corresponding to the renamed attribute
-              3) A new tree for creating the unrestructured why-not question
-              4) A map: key = an expression and value = the name for the expression
-            How it works:
-              1) Recursively access child nodes in the tree for the why-not question to find any renamed and restructured attribute
-              2) Create a new tree for the why-not question based on the sub-expressions from the logical plan as well as why-not question schema
-           */
-          unrestructureSubExpressions(a.children, node, newRoot, exprToName)
-        }
-        case MultiAlias(child, names) => {
-
-        }
-        case UnresolvedAlias(child, aliasFunc) => {
-          //maybe we do not want to support this at the beginning?
+        case _ => {
+          unrestructuredWhyNotQuestionInput = unrestructureProject(project, unrestructuredWhyNotQuestionInput)
         }
       }
     }

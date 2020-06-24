@@ -29,6 +29,7 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToAggregationDoc0 = baseDir + "docAggregation.json"
   protected val pathToJoinDoc0 = baseDir + "docJoin.json"
   protected val pathToUnionDoc0 = baseDir + "docUnion.json"
+  protected val pathToExampleData = baseDir + "exampleData.json"
 
   def myIntColWhyNotQuestion(): Twig = {
     var twig = new Twig()

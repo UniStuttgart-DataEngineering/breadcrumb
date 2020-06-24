@@ -2,9 +2,10 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import org.apache.spark.sql.catalyst.expressions.{Alias, CaseWhen, CreateStruct, Expression, LessThanOrEqual, Literal, NamedExpression, Rand, ScalaUDF}
+import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, CaseWhen, CreateStruct, Expression, LessThanOrEqual, Literal, NamedExpression, Rand, ScalaUDF}
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan, Project}
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField, StructType}
+
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -58,8 +59,6 @@ class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: 
 
 
   var unrestructuredWhyNotQuestionInput: SchemaSubsetTree = null
-  var unrestructuredWhyNotQuestionOutput: SchemaSubsetTree = whyNotQuestion
-
 
   def getAllStructFields(st: StructType, newNode: SchemaNode): SchemaNode = {
     for (eachStruct <- st) {
@@ -77,6 +76,38 @@ class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: 
     newNode
   }
 
+  def unrestructureFilter(st: StructField, newRoot: SchemaNode): SchemaNode = {
+    val node = whyNotQuestion.getNodeByName(st.name)
+    val newNode: SchemaNode = SchemaNode(st.name)
+
+    if (node != null) {
+      if (st.dataType.typeName.equals("struct")) {
+        newNode.deepCopy(node)
+
+        if (node.children.isEmpty) {
+          getAllStructFields(st.dataType.asInstanceOf[StructType], newNode)
+        } else {
+          val fields = st.dataType.asInstanceOf[StructType]
+          var newFields = Array[StructField]()
+
+          for (f <- fields) {
+            val childName = node.children.find(node => node.name == f.name).getOrElse("")
+            if (!childName.equals("")) newFields = newFields :+ f
+          }
+
+          getAllStructFields(StructType(newFields), newNode)
+        }
+      } else {
+        newNode.copyNode(node)
+      }
+
+      // Add to newRoot
+      newRoot.addChild(newNode)
+      newNode.setParent(newRoot)
+    }
+
+    newRoot
+  }
 
   override def unrestructure(): SchemaSubsetTree = {
     unrestructuredWhyNotQuestionInput = whyNotQuestion.deepCopy()
@@ -88,39 +119,7 @@ class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: 
 
     for (ex <- relation.schema) {
       ex match {
-        case ar: StructField => {
-          // Copy the node from why-not question
-          val node = whyNotQuestion.getNodeByName(ar.name)
-          val newNode: SchemaNode = SchemaNode(ar.name)
-
-          if (node != null) {
-//            newNode.copyNode(node)
-
-            if (ar.dataType.typeName.equals("struct")) {
-              newNode.deepCopy(node)
-
-              if (node.children.isEmpty) {
-                getAllStructFields(ar.dataType.asInstanceOf[StructType], newNode)
-              } else {
-                val fields = ar.dataType.asInstanceOf[StructType]
-                var newFields = Array[StructField]()
-
-                for (f <- fields) {
-                  val childName = node.children.find(node => node.name == f.name).getOrElse("")
-                  if (!childName.equals("")) newFields = newFields :+ f
-                }
-
-                getAllStructFields(StructType(newFields), newNode)
-              }
-            } else {
-              newNode.copyNode(node)
-            }
-
-            // Add to newRoot
-            newRoot.addChild(newNode)
-            newNode.setParent(newRoot)
-          }
-        }
+        case st: StructField => unrestructureFilter(st, newRoot)
         case _ => // do nothing
       }
     }
