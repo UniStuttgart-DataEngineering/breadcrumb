@@ -53,6 +53,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val rewrittenData = WhyNotProvenance.computeMSRs(exampleData, wnTuple)
     exampleData.show()
     rewrittenData.show()
+    rewrittenData.explain(true)
     rewrittenData.printSchema()
   }
 

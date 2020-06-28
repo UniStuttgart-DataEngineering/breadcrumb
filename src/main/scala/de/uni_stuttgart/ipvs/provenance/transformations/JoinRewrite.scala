@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size, EqualTo}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
 import org.apache.spark.sql.types.BooleanType
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftOuter, RightOuter}
@@ -58,21 +58,27 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
     Alias(conditionForNullHandling, survivorAttribute.attributeName)()
   }
 
-  override def rewrite(): Rewrite = {
 
-    //unrestructure whynotquestion
-    //rewrite left child
-    //rewrite right child
-    //merge provenance structure
-    //rewrite plan
+
+  def rewriteJoinConditionToPreserveCompatibles(leftRewrite: Rewrite, rightRewrite: Rewrite): Expression = {
+    val condition = join.condition.getOrElse(Literal(false))
+    val leftCompatible = getPreviousCompatible(leftRewrite)
+    val rightCompatible = getPreviousCompatible(rightRewrite)
+    val leftCompatibleCondition = EqualTo(leftCompatible, Literal(true))
+    val rightCompatibleCondition = EqualTo(rightCompatible, Literal(true))
+    Or(condition, And(leftCompatibleCondition, rightCompatibleCondition))
+  }
+
+  override def rewrite(): Rewrite = {
 
     val leftWhyNotQuestion = unrestructureLeft()
     val rightWhyNotQuestion = unrestructureRight()
     val leftRewrite = WhyNotPlanRewriter.rewrite(join.left, leftWhyNotQuestion)
     val rightRewrite = WhyNotPlanRewriter.rewrite(join.right, rightWhyNotQuestion)
     val provenanceContext = ProvenanceContext.mergeContext(leftRewrite.provenanceContext, rightRewrite.provenanceContext)
+    val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
 
-    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, join.condition)
+    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, Some(rewrittenJoinCondition))
 
     val compatibleColumn = this.compatibleColumn(provenanceContext, leftRewrite, rightRewrite)
     val survivorColumn = this.survivorColumn(provenanceContext,
