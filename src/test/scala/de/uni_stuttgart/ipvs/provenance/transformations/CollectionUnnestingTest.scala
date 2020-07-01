@@ -4,7 +4,7 @@ import com.github.mrpowers.spark.fast.tests.{ColumnComparer, DataFrameComparer}
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, Project}
 import org.apache.spark.sql.functions.explode
@@ -57,9 +57,10 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
   def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
     val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
     val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
-    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project], schemaSubset, 1)
+//    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project], schemaSubset, 1)
+    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
 
-    (rewrite.unrestructure(), schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
   }
 
 
@@ -222,11 +223,11 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
   }
 
 
-  test("[Unrestructure] Explode multiple collections simultaneously") {
-    val df = getDataFrame(pathToExampleData)
-    df.show(false)
-
+//  test("[Unrestructure] Explode multiple collections simultaneously") {
+//    val df = getDataFrame(pathToExampleData)
+//    df.show(false)
+//
 //    val res = df.withColumn("addresses", explode(arrays_zip($"address1", $"address2"))).select($"name", $"vars.varA", $"vars.varB")
 //    res.show(false)
-  }
+//  }
 }

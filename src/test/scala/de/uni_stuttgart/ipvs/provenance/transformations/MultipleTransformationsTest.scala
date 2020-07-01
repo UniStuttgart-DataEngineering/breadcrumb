@@ -3,9 +3,9 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, Twig}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, Project}
 import org.apache.spark.sql.functions.{explode, struct}
 import org.scalatest.FunSuite
 
@@ -33,6 +33,29 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     res.show()
   }
 
+  def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree) = {
+    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
+    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
+
+    val plan = outputDataFrame.queryExecution.analyzed
+    val rewrite = SchemaBackTrace(plan, schemaSubset)
+    val rewrite2 = SchemaBackTrace(plan.children.head, rewrite.unrestructure().head)
+
+    (rewrite.unrestructure().head, rewrite2.unrestructure().head, schemaSubset)
+  }
+
+
+  def getInputAndOutputWhyNotTuple2(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (Seq[SchemaSubsetTree], Seq[SchemaSubsetTree], SchemaSubsetTree) = {
+    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
+    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
+
+    val plan = outputDataFrame.queryExecution.analyzed
+    val rewrite = SchemaBackTrace(plan, schemaSubset)
+    val rewrite2 = SchemaBackTrace(plan.children.head, rewrite.unrestructure().head)
+
+    (rewrite.unrestructure(), rewrite2.unrestructure(), schemaSubset)
+  }
+
 
   def whyNotTupleProjectionNewName(newName: String): Twig = {
     var twig = new Twig()
@@ -49,12 +72,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"flat_key".alias(newName))
     res = res.filter($"renamed" === "1_flat_val_x")
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleProjectionNewName(newName))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -69,12 +87,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.filter($"flat_key" === "1_flat_val_x")
     res = res.select($"flat_key".alias(newName))
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleProjectionNewName(newName))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = ProjectRewrite(plan.asInstanceOf[Project],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = FilterRewrite(plan.children.head.asInstanceOf[Filter],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -89,12 +102,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"obj")
     res = res.filter($"obj.obj_sub.key" === 1)
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleProjectionNewName("obj"))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName("obj"))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -111,12 +119,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"obj".alias(newName))
     res = res.filter($"renamed.obj_sub.key" === 1)
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleProjectionNewName(newName))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -133,12 +136,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"user")
     res = res.filter($"user.name" === "Lisa Paul")
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleProjectionNewName("user"))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName("user"))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -171,12 +169,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"obj")
     res = res.filter($"obj.obj_sub.key" === 1)
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleStruct("obj", "obj_sub"))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleStruct("obj", "obj_sub"))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -194,12 +187,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     var res = df.select($"user")
     res = res.filter($"user.name" === "Lisa Paul")
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleStruct("user", "id_str"))
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset1 = FilterRewrite(plan.asInstanceOf[Filter],schemaSubset, 1).unrestructure()
-    val rewrittenSchemaSubset2 = ProjectRewrite(plan.children.head.asInstanceOf[Project],rewrittenSchemaSubset1, 1).unrestructure()
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleStruct("user", "id_str"))
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset1.rootNode.name)
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset2.rootNode.name)
@@ -211,6 +199,225 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     assert(size == 1)
   }
 
+
+  def whyNotTupleJoinAndProject(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val value = twig.createNode("value", 1, 1, "10")
+    val value2 = twig.createNode("otherValue", 1, 1, "100")
+    twig = twig.createEdge(root, value, false)
+    twig = twig.createEdge(root, value2, false)
+    twig.validate().get
+  }
+
+
+  test("[Unrestructure] Join without renaming attributes over projection") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    var res = dfLeft.join(dfRight, Seq("key"))
+    res = res.select($"value", $"otherValue")
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val projectRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == projectRewrittenSchemaSubset.rootNode.name)
+
+    var value = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  test("[Unrestructure] Join without renaming attributes over projection 2") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
+    var res = dfLeft.join(dfRight, $"key" === $"key2")
+    res = res.select($"value", $"otherValue")
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val projectRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == projectRewrittenSchemaSubset.rootNode.name)
+
+    var value = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  def whyNotTupleJoinAndProject2(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val value = twig.createNode("value", 1, 1, "10")
+    val value2 = twig.createNode("value2", 1, 1, "100")
+    twig = twig.createEdge(root, value, false)
+    twig = twig.createEdge(root, value2, false)
+    twig.validate().get
+  }
+
+
+  test("[Unrestructure] Join with renaming attributes over projection") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    var res = dfLeft.join(dfRight, Seq("key"))
+    res = res.select($"value", $"otherValue".alias("value2"))
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject2())
+
+    val projectRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == projectRewrittenSchemaSubset.rootNode.name)
+
+    var value = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  test("[Unrestructure] Join with renaming attributes over projection 2") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
+    var res = dfLeft.join(dfRight, $"key" === $"key2")
+    res = res.select($"value", $"otherValue".alias("value2"))
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject2())
+
+    val projectRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == projectRewrittenSchemaSubset.rootNode.name)
+
+    var value = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = projectRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  test("[Unrestructure] Join over Filter") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    var res = dfLeft.join(dfRight, Seq("key"))
+    res = res.filter($"value" === 100)
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val filterRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == filterRewrittenSchemaSubset.rootNode.name)
+
+    var value = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  test("[Unrestructure] Join over Filter 2") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
+    var res = dfLeft.join(dfRight, $"key" === $"key2")
+    res = res.filter($"value" === 100)
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val filterRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == filterRewrittenSchemaSubset.rootNode.name)
+
+    var value = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
 
 
 }

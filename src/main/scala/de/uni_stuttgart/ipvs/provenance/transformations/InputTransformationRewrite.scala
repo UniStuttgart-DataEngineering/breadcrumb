@@ -6,6 +6,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 abstract class InputTransformationRewrite (val plan: LogicalPlan, val whyNotQuestion: SchemaSubsetTree, val oid: Int) extends TransformationRewrite {
 
-  def unrestructure():SchemaSubsetTree
+//  def unrestructure():SchemaSubsetTree
 
 }
