@@ -3,6 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, NamedExpression, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
 import org.apache.spark.sql.types.BooleanType
@@ -15,13 +16,8 @@ object FilterRewrite {
 
 class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(filter, whyNotQuestion, oid) {
 
-  override def unrestructure(): SchemaSubsetTree = {
-    //TODO: ReplaceStubWithRealAggregation
-    whyNotQuestion
-  }
-
   override def rewrite: Rewrite = {
-    val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, unrestructure())
+    val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, SchemaBackTrace(filter, whyNotQuestion).unrestructure().head)
     val provenanceContext = childRewrite.provenanceContext
     val rewrittenChild = childRewrite.plan
 

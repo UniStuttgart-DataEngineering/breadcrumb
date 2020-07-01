@@ -2,6 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Literal, NamedExpression, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Union}
 
@@ -10,14 +11,6 @@ object UnionRewrite {
 }
 
 class UnionRewrite(val union: Union, override val whyNotQuestion: SchemaSubsetTree, override val oid: Int) extends BinaryTransformationRewrite(union, whyNotQuestion, oid){
-
-  override def unrestructureLeft(): SchemaSubsetTree = {
-    whyNotQuestion.deepCopy()
-  }
-
-  override def unrestructureRight(): SchemaSubsetTree = {
-    whyNotQuestion.deepCopy()
-  }
 
   def compatibleColumn( rewrite: Rewrite, attributeName: String): NamedExpression = {
     val compatibleExpression = getPreviousCompatible(rewrite)
@@ -59,11 +52,14 @@ class UnionRewrite(val union: Union, override val whyNotQuestion: SchemaSubsetTr
   }
 
   override def rewrite(): Rewrite = {
-    val leftWhyNotQuestion = unrestructureLeft()
-    val rightWhyNotQuestion = unrestructureRight()
+//    val leftWhyNotQuestion = unrestructureLeft()
+//    val rightWhyNotQuestion = unrestructureRight()
     assert(union.children.size == 2, "union does not have exactly two children which are needed for the rewrite")
-    val leftRewrite = WhyNotPlanRewriter.rewrite(union.children(0), leftWhyNotQuestion)
-    val rightRewrite = WhyNotPlanRewriter.rewrite(union.children(1), rightWhyNotQuestion)
+//    val leftRewrite = WhyNotPlanRewriter.rewrite(union.children(0), leftWhyNotQuestion)
+//    val rightRewrite = WhyNotPlanRewriter.rewrite(union.children(1), rightWhyNotQuestion)
+
+    val leftRewrite = WhyNotPlanRewriter.rewrite(union.children(0), SchemaBackTrace(union, whyNotQuestion).unrestructure().head)
+    val rightRewrite = WhyNotPlanRewriter.rewrite(union.children(1), SchemaBackTrace(union, whyNotQuestion).unrestructure().last)
     val provenanceContext = ProvenanceContext.mergeContext(leftRewrite.provenanceContext, rightRewrite.provenanceContext)
     val newCompatibleAttribute = addCompatibleAttributeToProvenanceContext(provenanceContext)
     val leftPlan = getLeftProvenanceProjection(leftRewrite, rightRewrite, newCompatibleAttribute)

@@ -82,4 +82,5 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
     twig = twig.createEdge(root, flat_key, false)
     twig.validate().get
   }
+
 }
