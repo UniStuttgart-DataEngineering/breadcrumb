@@ -15,35 +15,7 @@ object RelationRewrite {
 
 class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int) extends InputTransformationRewrite(relation, whyNotQuestion, oid){
 
-  def compatibleColumn(child: LogicalPlan, provenanceContext: ProvenanceContext): NamedExpression = {
-    val udfExpression = getDataFetcherExpression(child)
-    val attributeName = Constants.getCompatibleFieldName(oid)
-    provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
-    Alias(udfExpression,attributeName)()
-  }
 
-  def getDataFetcherExpression(child: LogicalPlan) = {
-    val udf = ProvenanceContext.getUDF
-    val children = ArrayBuffer[Expression](getNamedStructExpression(child.output), whyNotQuestion.getSchemaSubsetTreeExpression)
-    val inputIsNullSafe = true :: true :: Nil
-    val inputTypes = udf.inputTypes.getOrElse(Seq.empty[DataType])
-    val udfName = Some(Constants.getUDFName)
-    ScalaUDF(udf.f, udf.dataType, children, inputIsNullSafe, inputTypes, udfName)
-  }
-
-  def getNamedStructExpression(output: Seq[Expression]): Expression = {
-    CreateStruct(output)
-  }
-
-  def compatibleColumnDepricated(provenanceContext: ProvenanceContext): NamedExpression = {
-    //TODO: integrate with unrestructured whyNot question
-    val attributeName = Constants.getCompatibleFieldName(oid)
-    provenanceContext.addCompatibilityAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
-    val condition = LessThanOrEqual(Rand(Literal(42)), Literal(0.5))
-    val elseValue: Option[Expression] = Some(Literal(false))
-    val branches: Seq[(Expression, Expression)] = Seq(Tuple2(condition, Literal(true)))
-    Alias(CaseWhen(branches, elseValue), attributeName)()
-  }
 
 
   override def rewrite: Rewrite = {
@@ -53,7 +25,6 @@ class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: 
       projectList,
       relation
     )
-    //TODO: resolve compatible columns
     Rewrite(rewrittenLocalRelation, provenanceContext)
   }
 

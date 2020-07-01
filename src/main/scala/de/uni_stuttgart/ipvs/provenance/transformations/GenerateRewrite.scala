@@ -118,12 +118,15 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
 
 
 
+
   //TODO: Add revalidation of compatibles here, i.e. replace this stub with a proper implementation
   def compatibleColumn(rewrite: Rewrite): NamedExpression = {
     val lastCompatibleAttribute = getPreviousCompatible(rewrite)
     val attributeName = addCompatibleAttributeToProvenanceContext(rewrite.provenanceContext)
     Alias(lastCompatibleAttribute, attributeName)()
   }
+
+
 
   override def rewrite(): Rewrite = {
     val childRewrite = WhyNotPlanRewriter.rewrite(generate.child, unrestructure())
@@ -137,7 +140,7 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
     if (!generate.outer) {
       generateRewrite = generate.generator match {
         case e: Explode => {
-          Project(generateRewrite.output :+ survivorColumnInner(provenanceContext, e.child) :+ compatibleColumn(childRewrite), generateRewrite)
+          Project(generateRewrite.output :+ survivorColumnInner(provenanceContext, e.child) :+ compatibleColumn(childRewrite.plan, childRewrite.provenanceContext), generateRewrite)
         }
         case _ => {
           throw new MatchError("Unsupported generator in Generate Expression")
