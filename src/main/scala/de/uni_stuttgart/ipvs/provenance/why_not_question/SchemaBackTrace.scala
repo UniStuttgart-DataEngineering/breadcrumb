@@ -92,10 +92,10 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
     val fChild = f.child
     fChild match {
       case l: LeafNode => unrestructureFilter(l, newRoot)
-      case j: Join => {
-        newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
-        analyzeJoin(j, newRoot, exprToName)
-      }
+//      case j: Join => {
+//        newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
+//        analyzeJoin(j, newRoot, exprToName)
+//      }
       case _ => newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
     }
   }

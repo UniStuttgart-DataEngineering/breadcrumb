@@ -211,7 +211,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
   }
 
 
-  test("[Unrestructure] 2-way join without renaming attributes over projection") {
+  test("[Unrestructure] Join without renaming attributes over projection") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0)
     var res = dfLeft.join(dfRight, Seq("key"))
@@ -244,7 +244,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
   }
 
 
-  test("[Unrestructure] 2-way join without renaming attributes over projection 2") {
+  test("[Unrestructure] Join without renaming attributes over projection 2") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     var res = dfLeft.join(dfRight, $"key" === $"key2")
@@ -288,7 +288,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
   }
 
 
-  test("[Unrestructure] 2-way join with renaming attributes over projection") {
+  test("[Unrestructure] Join with renaming attributes over projection") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0)
     var res = dfLeft.join(dfRight, Seq("key"))
@@ -321,7 +321,7 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
   }
 
 
-  test("[Unrestructure] 2-way join with renaming attributes over projection 2") {
+  test("[Unrestructure] Join with renaming attributes over projection 2") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     var res = dfLeft.join(dfRight, $"key" === $"key2")
@@ -353,6 +353,71 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     assert(value2.name == "otherValue")
   }
 
+
+  test("[Unrestructure] Join over Filter") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0)
+    var res = dfLeft.join(dfRight, Seq("key"))
+    res = res.filter($"value" === 100)
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val filterRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == filterRewrittenSchemaSubset.rootNode.name)
+
+    var value = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
+
+
+  test("[Unrestructure] Join over Filter 2") {
+    val dfLeft = getDataFrame(pathToAggregationDoc0)
+    val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
+    var res = dfLeft.join(dfRight, $"key" === $"key2")
+    res = res.filter($"value" === 100)
+
+    val (rewrittenSchemaSubset1, rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple2(res, whyNotTupleJoinAndProject())
+
+    val filterRewrittenSchemaSubset  = rewrittenSchemaSubset1.head
+    val leftRewrittenSchemaSubset = rewrittenSchemaSubset2.head
+    val rightRewrittenSchemaSubset = rewrittenSchemaSubset2.last
+
+    // Test after Project
+    assert(schemaSubset.rootNode.name == filterRewrittenSchemaSubset.rootNode.name)
+
+    var value = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    var value2 = filterRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(value.name == "value")
+    assert(value2.name == "otherValue")
+
+    // Test after Join
+    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+
+    value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+    value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    assert(value2.name == "otherValue")
+  }
 
 
 }
