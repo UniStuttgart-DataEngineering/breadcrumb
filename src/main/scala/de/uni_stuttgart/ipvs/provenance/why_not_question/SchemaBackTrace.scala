@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.why_not_question
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, CreateNamedStruct, Explode, Expression, GetStructField, Literal}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Generate, Join, LeafNode, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Generate, Join, LeafNode, LogicalPlan, Project, Union}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.types.{StructField, StructType}
 
@@ -35,8 +35,11 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
     // Map an expression to its name
     val exprToName = scala.collection.mutable.Map[Expression,String]()
 
+    // Map input attribute name to output attribute name (specific to Union)
+    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+
     // Analyze the plan to unrestructure the question
-    analyzePlan(plan, newRoot, exprToName)
+    analyzePlan(plan, newRoot, exprToName, inNameToOutName)
 
     // Return the unrestructured question
     listOfWhyNotQuestionInput = listOfWhyNotQuestionInput :+ unrestructuredWhyNotQuestionInput
@@ -47,18 +50,21 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
     listOfWhyNotQuestionInput
   }
 
-  def analyzePlan(plan: LogicalPlan, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]): SchemaNode = {
+  def analyzePlan(plan: LogicalPlan, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String],
+                  inNameToOutName: mutable.Map[String,String]): SchemaNode = {
     plan match {
-      case p: Project => analyzeProject(p, newRoot, exprToName)
-      case f: Filter => analyzeFilter(f, newRoot, exprToName)
-      case j: Join => analyzeJoin(j, newRoot, exprToName)
+      case p: Project => analyzeProject(p, newRoot, exprToName, inNameToOutName)
+      case f: Filter => analyzeFilter(f, newRoot, inNameToOutName)
+      case j: Join => analyzeJoin(j, newRoot, exprToName, inNameToOutName)
+      case u: Union => analyzeUnion(u, newRoot, inNameToOutName)
       case _ => newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
     }
 
     newRoot
   }
 
-  def analyzeProject(p: Project, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]) = {
+  def analyzeProject(p: Project, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String],
+                     inNameToOutName: mutable.Map[String,String]) = {
     val pChild = p.child
     pChild match {
       // TODO: Flatten comes as Project (better way to analyze)
@@ -79,47 +85,84 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
             projList = projList :+ ar.name
 
         if(projList.size == p.projectList.size)
-          analyzeJoin(j, newRoot, exprToName)
+          analyzeJoin(j, newRoot, exprToName, inNameToOutName)
         else
-          unrestructureProject(p, newRoot, exprToName)
+          unrestructureProject(p, newRoot, exprToName, inNameToOutName)
       }
-      case _ => unrestructureProject(p, newRoot, exprToName)
+      case _ => unrestructureProject(p, newRoot, exprToName, inNameToOutName)
     }
   }
 
-  def analyzeFilter(f:Filter, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]) = {
+  def analyzeFilter(f:Filter, newRoot: SchemaNode, inNameToOutName: mutable.Map[String,String]) = {
     // Filter may occur over another operator or base relation
     val fChild = f.child
     fChild match {
-      case l: LeafNode => unrestructureFilter(l, newRoot)
-//      case j: Join => {
-//        newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
-//        analyzeJoin(j, newRoot, exprToName)
-//      }
+      case l: LogicalRelation => unrestructureLeaf(l, newRoot, inNameToOutName)
       case _ => newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
     }
   }
 
-  def analyzeJoin(j: Join, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]) = {
+  def analyzeJoin(j: Join, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String],
+                  inNameToOutName: mutable.Map[String,String]) = {
     checkConstraintConsistency(j)
-    unrestructureJoin(j, newRoot, exprToName)
+    unrestructureJoin(j, newRoot, exprToName, inNameToOutName)
+  }
+
+  def analyzeUnion(u:Union, newRoot: SchemaNode, inNameToOutName: mutable.Map[String,String]): SchemaNode = {
+    for (child <- u.children) {
+      var attrPos = 0
+
+      child match {
+        case l: LogicalRelation => {
+          for (ar <- l.output) {
+            inNameToOutName.put(ar.name, u.schema.apply(attrPos).name)
+            attrPos += 1
+          }
+        }
+        case _ =>
+      }
+    }
+
+    var pos = 0
+
+    for (child <- u.children) {
+      child match {
+        case l: LogicalRelation => {
+          if (pos == 0)
+            unrestructureLeaf(l, newRoot, inNameToOutName)
+          if (pos == 1)
+            unrestructuredWhyNotQuestionInputRight.rootNode = unrestructureLeaf(l, unrestructuredWhyNotQuestionInputRight.rootNode, inNameToOutName)
+        }
+        case _ => {
+          if (pos == 0)
+            newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
+          if (pos == 1)
+            unrestructuredWhyNotQuestionInputRight.rootNode.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
+        }
+      }
+
+      pos += 1
+    }
+
+    newRoot
   }
 
   def unrestructureGenerate(generate: Generate, newRoot: SchemaNode): SchemaNode = {
     for (ex <- generate.generatorOutput) {
       ex match {
         case ar: AttributeReference => unrestructureAttributeRefForUnnesting(ar, newRoot, generate)
-        case _ => // do nothing
+        case _ => newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
       }
     }
 
     newRoot
   }
 
-  def unrestructureProject(project: Project, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]): SchemaNode = {
+  def unrestructureProject(project: Project, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String],
+                           inNameToOutName: mutable.Map[String,String]): SchemaNode = {
     for (ex <- project.projectList) {
       ex match {
-        case ar: AttributeReference => unrestructureAttributeRef(ar, newRoot)
+        case ar: AttributeReference => unrestructureAttributeRef(ar, newRoot, inNameToOutName)
         case a: Alias => {
           // Access the node corresponding to the renamed attribute in the why-not question
           val node = whyNotQuestion.getNodeByName(a.name)
@@ -145,18 +188,22 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
     newRoot
   }
 
-  def unrestructureFilter(relation: LeafNode, newRoot: SchemaNode): SchemaNode = {
-    for(ex <- relation.schema) {
-      ex match {
-        case st: StructField => unrestructureStructField(st, newRoot)
-        case _ => // do nothing
-      }
+  def unrestructureLeaf(relation: LogicalRelation, newRoot: SchemaNode, inNameToOutName: mutable.Map[String,String]): SchemaNode = {
+    for (ar <- relation.output) {
+      unrestructureAttributeRef(ar, newRoot, inNameToOutName)
     }
+
+//    for (ex <- relation.schema) {
+//      ex match {
+//        case st: StructField => unrestructureStructField(st, newRoot)
+//        case _ => // do nothing
+//      }
+//    }
 
     newRoot
   }
 
-  def unrestructureJoin(j: Join, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String]): SchemaNode = {
+  def unrestructureJoin(j: Join, newRoot: SchemaNode, exprToName: mutable.Map[Expression,String], inNameToOutName: mutable.Map[String,String]): SchemaNode = {
     val lPlan = j.left
     val rPlan = j.right
 
@@ -164,20 +211,20 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
       case lr: LogicalRelation => {
         // Generate a tree for left
         for(lAr <- lr.output)
-          unrestructureAttributeRef(lAr, newRoot)
+          unrestructureAttributeRef(lAr, newRoot, inNameToOutName)
       }
-      case p: Project => unrestructureProject(p, newRoot, exprToName)
-      case _ =>
+      case p: Project => unrestructureProject(p, newRoot, exprToName, inNameToOutName)
+      case _ => newRoot.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
     }
 
     rPlan match {
       case lr: LogicalRelation => {
         // Generate a tree for right
         for(rAr <- lr.output)
-          unrestructureAttributeRef(rAr, unrestructuredWhyNotQuestionInputRight.rootNode)
+          unrestructureAttributeRef(rAr, unrestructuredWhyNotQuestionInputRight.rootNode, inNameToOutName)
       }
-      case p: Project => unrestructureProject(p, unrestructuredWhyNotQuestionInputRight.rootNode, exprToName)
-      case _ =>
+      case p: Project => unrestructureProject(p, unrestructuredWhyNotQuestionInputRight.rootNode, exprToName, inNameToOutName)
+      case _ => unrestructuredWhyNotQuestionInputRight.rootNode.copyNode(unrestructuredWhyNotQuestionOutput.rootNode)
     }
 
     newRoot
@@ -233,42 +280,53 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
     newRoot
   }
 
-  def unrestructureStructField(st: StructField, newRoot: SchemaNode): SchemaNode = {
-    val node = whyNotQuestion.getNodeByName(st.name)
-    val newNode: SchemaNode = SchemaNode(st.name)
+//  def unrestructureStructField(st: StructField, newRoot: SchemaNode): SchemaNode = {
+//    val node = whyNotQuestion.getNodeByName(st.name)
+//    val newNode: SchemaNode = SchemaNode(st.name)
+//
+//    if (node != null) {
+//      if (st.dataType.typeName.equals("struct")) {
+//        newNode.deepCopy(node)
+//
+//        if (node.children.isEmpty) {
+//          getAllStructFields(st.dataType.asInstanceOf[StructType], newNode)
+//        } else {
+//          val fields = st.dataType.asInstanceOf[StructType]
+//          var newFields = Array[StructField]()
+//
+//          for (f <- fields) {
+//            val childName = node.children.find(node => node.name == f.name).getOrElse("")
+//            if (!childName.equals("")) newFields = newFields :+ f
+//          }
+//
+//          getAllStructFields(StructType(newFields), newNode)
+//        }
+//      } else {
+//        newNode.copyNode(node)
+//      }
+//
+//      // Add to newRoot
+//      newRoot.addChild(newNode)
+//      newNode.setParent(newRoot)
+//    }
+//
+//    newRoot
+//  }
 
-    if (node != null) {
-      if (st.dataType.typeName.equals("struct")) {
-        newNode.deepCopy(node)
+  def unrestructureAttributeRef(ar: AttributeReference, newRoot: SchemaNode, inNameToOutName: mutable.Map[String,String]): SchemaNode = {
+    var newAttrName = ar.name
 
-        if (node.children.isEmpty) {
-          getAllStructFields(st.dataType.asInstanceOf[StructType], newNode)
-        } else {
-          val fields = st.dataType.asInstanceOf[StructType]
-          var newFields = Array[StructField]()
+    // For Union, we need to know which attribute in the input maps to the one in the output
+    if (!inNameToOutName.isEmpty) newAttrName = inNameToOutName.get(ar.name).getOrElse("")
 
-          for (f <- fields) {
-            val childName = node.children.find(node => node.name == f.name).getOrElse("")
-            if (!childName.equals("")) newFields = newFields :+ f
-          }
+    // Sanity check although above is safe
+    if (newAttrName == "") newAttrName = ar.name
 
-          getAllStructFields(StructType(newFields), newNode)
-        }
-      } else {
-        newNode.copyNode(node)
-      }
-
-      // Add to newRoot
-      newRoot.addChild(newNode)
-      newNode.setParent(newRoot)
-    }
-
-    newRoot
-  }
-
-  def unrestructureAttributeRef(ar: AttributeReference, newRoot: SchemaNode): SchemaNode = {
-    val node = whyNotQuestion.getNodeByName(ar.name)
+    val node = whyNotQuestion.getNodeByName(newAttrName)
     val newNode: SchemaNode = SchemaNode(ar.name)
+
+    // The original attribute name in the input is brought back
+    if (!newAttrName.equals(ar.name)) node.name = ar.name
 
     if (node != null) {
       if (ar.dataType.typeName.equals("struct")) {
@@ -430,8 +488,8 @@ class SchemaBackTrace(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree) {
         if (rightNode.constraint.constraintString == "")
           rightNode.constraint = leftNode.constraint.deepCopy()
 
-        if (leftNode.constraint != "" && rightNode.constraint != "")
-          assert(leftNode.constraint == rightNode.constraint)
+//        if (leftNode.constraint != "" && rightNode.constraint != "")
+//          assert(leftNode.constraint == rightNode.constraint)
       }
     }
   }
