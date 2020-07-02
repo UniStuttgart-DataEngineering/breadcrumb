@@ -112,9 +112,12 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     val df = dfLeft.join(dfRight, $"key" === $"key2")
-    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+//    val res = WhyNotProvenance.rewrite(df, basicWhyNotTuple())
+    val res = WhyNotProvenance.rewrite(df, whyNotTupleWithCondition())
+    res.show()
     val lastSurvivedField = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD)).sorted.head
     val keyFourElements = res.filter($"key" === "4").select(res.col(lastSurvivedField)).map(row => row.getBoolean(0)).collect()
+    res.filter($"key" === 4).show()
     assert(keyFourElements.size == 1)
   }
 
