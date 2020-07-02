@@ -12,6 +12,8 @@ object UnionRewrite {
 
 class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransformationRewrite(union, oid){
 
+  lazy val attributeMapping = leftChild.plan.output.zip(union.output).toMap
+
   def compatibleColumn( rewrite: Rewrite, attributeName: String): NamedExpression = {
     val compatibleExpression = getPreviousCompatible(rewrite)
     Alias(compatibleExpression, attributeName)()
@@ -71,13 +73,16 @@ class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransf
   }
 
   override protected def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(union, whyNotQuestion).unrestructure().head
-
+    val leftOutput = leftChild.plan.output
+    schemaSubsetTree.deepCopy()
   }
 
   override protected def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    val rightOutput = rightChild.plan.output
+    //TODO: make a deep check on attribute names
     SchemaBackTrace(union, whyNotQuestion).unrestructure().last
   }
+
 
 
 

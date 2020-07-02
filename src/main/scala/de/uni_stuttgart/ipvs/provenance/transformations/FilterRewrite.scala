@@ -6,6 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Expression, NamedExpression, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.types.BooleanType
 
 import scala.collection.mutable.ListBuffer
@@ -56,7 +57,8 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
   }
 
   override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(filter, whyNotQuestion).unrestructure().head
+    schemaSubsetTree.deepCopy()
+    //TODO add filter attributes to the schema
   }
 
 
