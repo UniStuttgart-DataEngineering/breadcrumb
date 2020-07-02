@@ -13,10 +13,10 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import scala.collection.mutable
 
 object ProjectRewrite {
-  def apply(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new ProjectRewrite(project, whyNotQuestion, oid)
+  def apply(project: Project, oid: Int)  = new ProjectRewrite(project, oid)
 }
 
-class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(project, whyNotQuestion, oid){
+class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewrite(project, oid){
 
   //when none is returned, the attribute referenced is not part of the schemasubset, we look at ;)
   def outputNode(ex: Expression, currentSchemaNodeOption: Option[SchemaNode]): Option[SchemaNode] = {
@@ -65,13 +65,18 @@ class ProjectRewrite(project: Project, whyNotQuestion:SchemaSubsetTree, oid: Int
   }
 
   override def rewrite: Rewrite = {
-    val childRewrite = WhyNotPlanRewriter.rewrite(project.child, SchemaBackTrace(project, whyNotQuestion).unrestructure().head)
+    //val childRewrite = WhyNotPlanRewriter.rewrite(project.child, SchemaBackTrace(project, whyNotQuestion).unrestructure().head)
+    val childRewrite = child.rewrite()
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
 
     val projectList = project.projectList ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
     val rewrittenProjection = Project(projectList, rewrittenChild)
     Rewrite(rewrittenProjection, provenanceContext)
+  }
+
+  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaBackTrace(project, whyNotQuestion).unrestructure().head
   }
 
 

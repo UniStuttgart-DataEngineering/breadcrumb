@@ -24,7 +24,9 @@ object WhyNotProvenance {
     val schemaMatcher = SchemaMatcher(whyNotTwig, schema)
     val schemaMatch = schemaMatcher.getCandidate().getOrElse(throw new MatchError("The why not question either does not match or matches multiple times on the given dataframe schema."))
     val schemaSubset = SchemaSubsetTree(schemaMatch, schema)
-    WhyNotPlanRewriter.rewrite(basePlan, schemaSubset)
+    val rewriteTree = WhyNotPlanRewriter.buildRewriteTree(basePlan)
+    rewriteTree.backtraceWhyNotQuestion(schemaSubset)
+    rewriteTree.rewrite()
   }
 
   protected[provenance] def dataFrameAndProvenanceContext(dataFrame: DataFrame, whyNotTwig: Twig): (DataFrame, ProvenanceContext) = {

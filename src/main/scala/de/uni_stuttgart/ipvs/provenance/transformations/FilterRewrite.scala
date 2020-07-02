@@ -11,13 +11,16 @@ import org.apache.spark.sql.types.BooleanType
 import scala.collection.mutable.ListBuffer
 
 object FilterRewrite {
-  def apply(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int)
+  def apply(filter: Filter, oid: Int)  = new FilterRewrite(filter: Filter, oid: Int)
 }
 
-class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(filter, whyNotQuestion, oid) {
+class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite(filter, oid) {
 
   override def rewrite: Rewrite = {
-    val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, SchemaBackTrace(filter, whyNotQuestion).unrestructure().head)
+    //val childRewrite = WhyNotPlanRewriter.rewrite(filter.child, SchemaBackTrace(filter, whyNotQuestion).unrestructure().head)
+    val childRewrite = child.rewrite()
+
+
     val provenanceContext = childRewrite.provenanceContext
     val rewrittenChild = childRewrite.plan
 
@@ -50,6 +53,10 @@ class FilterRewrite(filter: Filter, whyNotQuestion:SchemaSubsetTree, oid: Int) e
     val attributeName = Constants.getSurvivorFieldName(oid)
     rewrite.provenanceContext.addSurvivorAttribute(ProvenanceAttribute(oid, attributeName, BooleanType))
     Alias(filter.condition, attributeName)()
+  }
+
+  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaBackTrace(filter, whyNotQuestion).unrestructure().head
   }
 
 

@@ -9,10 +9,10 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.types.BooleanType
 
 object AggregateRewrite {
-  def apply(aggregate: Aggregate, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new AggregateRewrite(aggregate, whyNotQuestion, oid)
+  def apply(aggregate: Aggregate, oid: Int)  = new AggregateRewrite(aggregate, oid)
 }
 
-class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: SchemaSubsetTree, override val oid: Int) extends UnaryTransformationRewrite(aggregate, whyNotQuestion, oid){
+class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends UnaryTransformationRewrite(aggregate, oid){
 
   //TODO: Add revalidation of compatibles here, i.e. replace this stub with a proper implementation
   def compatibleColumn(rewrite: Rewrite): NamedExpression = {
@@ -25,7 +25,8 @@ class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: Schem
 
 
   override def rewrite(): Rewrite = {
-    val childRewrite = WhyNotPlanRewriter.rewrite(aggregate.child, SchemaBackTrace(aggregate, whyNotQuestion).unrestructure().head)
+    //val childRewrite = WhyNotPlanRewriter.rewrite(aggregate.child, SchemaBackTrace(aggregate, whyNotQuestion).unrestructure().head)
+    val childRewrite = child.rewrite()
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext //array-buffer
 
@@ -66,6 +67,10 @@ class AggregateRewrite (aggregate: Aggregate, override val whyNotQuestion: Schem
 
   def getExpressionFromName(operator: LogicalPlan, name: String): Option[NamedExpression] = {
     operator.output.find(attr => attr.name == name)
+  }
+
+  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    schemaSubsetTree
   }
 
 

@@ -1,8 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stuttgart.ipvs.provenance.transformations.{AggregateRewrite, FilterRewrite, GenerateRewrite, JoinRewrite, ProjectRewrite, RelationRewrite, UnionRewrite}
+import de.uni_stuttgart.ipvs.provenance.transformations.{AggregateRewrite, FilterRewrite, GenerateRewrite, JoinRewrite, ProjectRewrite, RelationRewrite, TransformationRewrite, UnionRewrite}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Filter, Generate, Join, LeafNode, LogicalPlan, Project, ReturnAnswer, Union}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 
 
 object WhyNotPlanRewriter {
@@ -14,37 +13,36 @@ object WhyNotPlanRewriter {
     oid
   }
 
-  def rewrite(plan: LogicalPlan, whyNotQuestion: SchemaSubsetTree): Rewrite = {
+  def buildRewriteTree(plan: LogicalPlan): TransformationRewrite = {
     plan match {
       case ra: ReturnAnswer => {
-        rewrite(ra.child, whyNotQuestion)
+        buildRewriteTree(ra.child)
       }
       case f: Filter => {
-        FilterRewrite(f, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        FilterRewrite(f, getUniqueOperatorIdentifier())
       }
       case p: Project => {
-        ProjectRewrite(p, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        ProjectRewrite(p, getUniqueOperatorIdentifier())
       }
       case l: LeafNode => {
-        RelationRewrite(l, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        RelationRewrite(l, getUniqueOperatorIdentifier())
       }
       case g: Generate => {
-        GenerateRewrite(g, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        GenerateRewrite(g, getUniqueOperatorIdentifier())
       }
       case a: Aggregate => {
-        AggregateRewrite(a, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        AggregateRewrite(a, getUniqueOperatorIdentifier())
       }
       case j: Join => {
-        JoinRewrite(j, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        JoinRewrite(j, getUniqueOperatorIdentifier())
       }
       case u: Union => {
-        UnionRewrite(u, whyNotQuestion, getUniqueOperatorIdentifier()).rewrite
+        UnionRewrite(u, getUniqueOperatorIdentifier())
       }
-
+      case default => {
+        throw new MatchError("Unsopported operator:" + default.nodeName)
+      }
     }
-    //case plan: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan => {
-    //plan.map(plan => annotateAllChildren)
-    //}
   }
 
 }

@@ -1,20 +1,15 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
-import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, CaseWhen, CreateStruct, Expression, LessThanOrEqual, Literal, NamedExpression, Rand, ScalaUDF}
-import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan, Project}
-import org.apache.spark.sql.types.{BooleanType, DataType, StructField, StructType}
-
-import scala.collection.mutable.ArrayBuffer
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceContext, Rewrite}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Project}
 
 
 object RelationRewrite {
-  def apply(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new RelationRewrite(relation, whyNotQuestion, oid)
+  def apply(relation: LeafNode, oid: Int)  = new RelationRewrite(relation, oid)
 }
 
-class RelationRewrite(relation: LeafNode, whyNotQuestion:SchemaSubsetTree, oid: Int) extends InputTransformationRewrite(relation, whyNotQuestion, oid){
+class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationRewrite(relation, oid){
 
 
 

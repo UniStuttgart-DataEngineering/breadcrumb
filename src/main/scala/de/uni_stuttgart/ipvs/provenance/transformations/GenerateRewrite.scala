@@ -1,17 +1,17 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, Explode, Expression, GreaterThan, IsNotNull, Literal, NamedExpression, Size}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Generate, LogicalPlan, Project}
-import org.apache.spark.sql.types.{BooleanType, StructField, StructType}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Explode, Expression, GreaterThan, IsNotNull, Literal, NamedExpression, Size}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
+import org.apache.spark.sql.types.{BooleanType}
 
 object GenerateRewrite {
-  def apply(generate: Generate, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new GenerateRewrite(generate, whyNotQuestion, oid)
+  def apply(generate: Generate, oid: Int)  = new GenerateRewrite(generate, oid)
 }
 
-class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid: Int) extends UnaryTransformationRewrite(generate, whyNotQuestion, oid) {
+class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationRewrite(generate, oid) {
 
   def survivorColumnInner(provenanceContext: ProvenanceContext, flattenInputColumn: Expression): NamedExpression = {
     val attributeName = Constants.getSurvivorFieldName(oid)
@@ -21,7 +21,8 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
 
 
   override def rewrite(): Rewrite = {
-    val childRewrite = WhyNotPlanRewriter.rewrite(generate.child, SchemaBackTrace(generate, whyNotQuestion).unrestructure().head)
+    //val childRewrite = WhyNotPlanRewriter.rewrite(generate.child, SchemaBackTrace(generate, whyNotQuestion).unrestructure().head)
+    val childRewrite = child.rewrite()
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
 
@@ -38,6 +39,10 @@ class GenerateRewrite(generate: Generate, whyNotQuestion: SchemaSubsetTree, oid:
       }
     }
     Rewrite(generateRewrite, provenanceContext)
+  }
+
+  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaBackTrace(generate, whyNotQuestion).unrestructure().head
   }
 
 }

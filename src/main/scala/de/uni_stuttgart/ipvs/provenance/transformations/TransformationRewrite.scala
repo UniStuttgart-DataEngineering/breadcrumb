@@ -11,8 +11,17 @@ import scala.collection.mutable.ArrayBuffer
 trait TransformationRewrite {
 
   def plan: LogicalPlan
-  def whyNotQuestion: SchemaSubsetTree
+  var whyNotQuestion: SchemaSubsetTree = SchemaSubsetTree()
   def oid: Int
+
+  def children: Seq[TransformationRewrite]
+
+  def backtraceWhyNotQuestion(whyNotQuestion: SchemaSubsetTree): Unit = {
+    this.whyNotQuestion = whyNotQuestion
+    backtraceChildrenWhyNotQuestion
+  }
+
+  protected def backtraceChildrenWhyNotQuestion : Unit
 
   def compatibleColumn(child: LogicalPlan, provenanceContext: ProvenanceContext): NamedExpression = {
     val udfExpression = getDataFetcherExpression(child)

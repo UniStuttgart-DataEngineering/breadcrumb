@@ -9,10 +9,10 @@ import org.apache.spark.sql.types.BooleanType
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftOuter, RightOuter}
 
 object JoinRewrite {
-  def apply(join: Join, whyNotQuestion:SchemaSubsetTree, oid: Int)  = new JoinRewrite(join, whyNotQuestion, oid)
+  def apply(join: Join, oid: Int)  = new JoinRewrite(join, oid)
 }
 
-class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree, override val oid: Int) extends BinaryTransformationRewrite(join, whyNotQuestion, oid) {
+class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransformationRewrite(join, oid) {
 
   def compatibleColumn(currentProvenanceContext: ProvenanceContext, leftRewrite: Rewrite, rightRewrite: Rewrite): NamedExpression = {
     val leftCompatibleColumn = getPreviousCompatible(leftRewrite)
@@ -62,8 +62,11 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
   }
 
   override def rewrite(): Rewrite = {
-    val leftRewrite = WhyNotPlanRewriter.rewrite(join.left, SchemaBackTrace(join, whyNotQuestion).unrestructure().head)
-    val rightRewrite = WhyNotPlanRewriter.rewrite(join.right, SchemaBackTrace(join, whyNotQuestion).unrestructure().last)
+    //val leftRewrite = WhyNotPlanRewriter.rewrite(join.left, SchemaBackTrace(join, whyNotQuestion).unrestructure().head)
+    //val rightRewrite = WhyNotPlanRewriter.rewrite(join.right, SchemaBackTrace(join, whyNotQuestion).unrestructure().last)
+    val leftRewrite = leftChild.rewrite()
+    val rightRewrite = rightChild.rewrite()
+
     val provenanceContext = ProvenanceContext.mergeContext(leftRewrite.provenanceContext, rightRewrite.provenanceContext)
     val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
 
@@ -79,4 +82,14 @@ class JoinRewrite (val join: Join, override val whyNotQuestion: SchemaSubsetTree
 
     Rewrite(projection, provenanceContext)
   }
+
+  override protected def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaBackTrace(join, whyNotQuestion).unrestructure().head
+
+  }
+
+  override protected def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaBackTrace(join, whyNotQuestion).unrestructure().last
+  }
+
 }
