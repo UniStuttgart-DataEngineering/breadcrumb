@@ -47,13 +47,24 @@ class RelationTest extends FunSuite with SharedSparkTestDataFrames with DataFram
 
   test("[Rewrite] Relation marks all columns but the 3 as non-compatible") {
     val df = singleInputColumnDataFrame()
-    val res = WhyNotProvenance.rewrite(df, whyNotTupleWithCond())
+    val res = WhyNotProvenance.rewrite(df, myIntColWhyNotQuestionWithCondition())
     res.explain(true)
     res.show()
     val compatibleCol = res.schema.find(field => field.name.contains(Constants.COMPATIBLE_FIELD))
       .getOrElse(fail("Compatible Attribute is not added to input relation"))
     val nonCompatibleCnt = res.filter(res.col(compatibleCol.name) === false).count()
     assert(nonCompatibleCnt == df.count - 1)
+  }
+
+  test("[Rewrite] Relation marks all columns but the 5 and 6 as non-compatible") {
+    val df = singleInputColumnDataFrame()
+    val res = WhyNotProvenance.rewrite(df, myIntColWhyNotQuestionWithConditionGT())
+    res.explain(true)
+    res.show()
+    val compatibleCol = res.schema.find(field => field.name.contains(Constants.COMPATIBLE_FIELD))
+      .getOrElse(fail("Compatible Attribute is not added to input relation"))
+    val nonCompatibleCnt = res.filter(res.col(compatibleCol.name) === false).count()
+    assert(nonCompatibleCnt == df.count - 2)
   }
 
 
