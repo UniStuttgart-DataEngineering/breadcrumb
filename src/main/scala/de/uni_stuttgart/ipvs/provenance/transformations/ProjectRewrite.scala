@@ -4,10 +4,10 @@ import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace, SchemaBackTraceNew}
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
-import org.apache.spark.sql.catalyst.plans.logical.{Generate, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, Join, Project}
 import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.collection.mutable
@@ -76,7 +76,38 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
   }
 
   override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(project, whyNotQuestion).unrestructure().head
+    val newRoot = schemaSubsetTree.rootNode
+    val exprToName = scala.collection.mutable.Map[Expression,String]()
+    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+
+    child match {
+      // TODO: Flatten comes as Project (better way to analyze)
+      case g: Generate => SchemaBackTraceNew(schemaSubsetTree).unrestructureGenerate(g, newRoot)
+      /*
+        TODO: Join may come as Project (better way to analyze)
+              For now, we define the plan as a Join if the plan is Project with no renaming and the child is Join
+       */
+      case j: Join => {
+        var projList = List[String]()
+
+        for(ar <- j.left.output)
+          if (ar.isInstanceOf[AttributeReference] && !projList.contains(ar.name))
+            projList = projList :+ ar.name
+
+        for(ar <- j.right.output)
+          if (ar.isInstanceOf[AttributeReference] && !projList.contains(ar.name))
+            projList = projList :+ ar.name
+
+        if(projList.size == project.projectList.size)
+          schemaSubsetTree.deepCopy()
+        else {
+          SchemaBackTraceNew(schemaSubsetTree).unrestructureProject(project, newRoot, exprToName, inNameToOutName)
+        }
+      }
+      case _ => SchemaBackTraceNew(schemaSubsetTree).unrestructureProject(project, newRoot, exprToName, inNameToOutName)
+    }
+
+    schemaSubsetTree
   }
 
 
