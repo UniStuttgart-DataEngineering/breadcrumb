@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace, SchemaBackTraceNew}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, EqualTo, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
 import org.apache.spark.sql.types.BooleanType
@@ -84,12 +84,23 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
   }
 
   override protected def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(join, whyNotQuestion).unrestructure().head
-
+    val newRoot = schemaSubsetTree.rootNode
+    val exprToName = scala.collection.mutable.Map[Expression,String]()
+    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+    //TODO: find the right place for consistency check
+    SchemaBackTraceNew(schemaSubsetTree).checkConstraintConsistency(join)
+    SchemaBackTraceNew(schemaSubsetTree).unrestructureJoin(leftChild, newRoot, exprToName, inNameToOutName)
+    schemaSubsetTree
   }
 
   override protected def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(join, whyNotQuestion).unrestructure().last
+    val newRoot = schemaSubsetTree.rootNode
+    val exprToName = scala.collection.mutable.Map[Expression,String]()
+    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+    //TODO: find the right place for consistency check
+    SchemaBackTraceNew(schemaSubsetTree).checkConstraintConsistency(join)
+    SchemaBackTraceNew(schemaSubsetTree).unrestructureJoin(rightChild, newRoot, exprToName, inNameToOutName)
+    schemaSubsetTree
   }
 
 }

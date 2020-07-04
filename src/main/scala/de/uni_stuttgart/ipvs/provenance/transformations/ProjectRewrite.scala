@@ -4,10 +4,11 @@ import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree, SchemaSubsetTreeModifications}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace}
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
-import org.apache.spark.sql.catalyst.plans.logical.{Generate, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, Join, Project}
 import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.collection.mutable
@@ -78,11 +79,5 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
     SchemaSubsetTreeModifications(schemaSubsetTree, child.plan.output, project.output, project.projectList)
       .getInputTree()
-    //SchemaBackTrace(project, whyNotQuestion).unrestructure().head
   }
-
-
-
-
-
 }

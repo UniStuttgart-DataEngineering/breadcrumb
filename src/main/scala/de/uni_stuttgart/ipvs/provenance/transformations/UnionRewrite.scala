@@ -2,9 +2,10 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Literal, NamedExpression}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTraceNew
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Union}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 object UnionRewrite {
   def apply(union: Union, oid: Int)  = new UnionRewrite(union, oid)
@@ -73,14 +74,34 @@ class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransf
   }
 
   override protected def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    val leftOutput = leftChild.plan.output
+//    val leftOutput = leftChild.plan.output
     schemaSubsetTree.deepCopy()
   }
 
   override protected def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    val rightOutput = rightChild.plan.output
+//    val rightOutput = rightChild.plan.output
     //TODO: make a deep check on attribute names
-    SchemaBackTrace(union, whyNotQuestion).unrestructure().last
+
+    val newRoot = schemaSubsetTree.rootNode
+    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+
+    var attrPos = 0
+    rightChild match {
+      case l: LogicalRelation => {
+        for (ar <- l.output) {
+          inNameToOutName.put(ar.name, union.schema.apply(attrPos).name)
+          attrPos += 1
+        }
+      }
+      case _ =>
+    }
+
+    rightChild match {
+      case l: LogicalRelation => SchemaBackTraceNew(schemaSubsetTree).unrestructureLeaf(l, newRoot, inNameToOutName)
+      case _ => schemaSubsetTree.deepCopy()
+    }
+
+    schemaSubsetTree
   }
 
 
