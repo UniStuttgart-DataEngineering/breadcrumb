@@ -3,8 +3,8 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import com.github.mrpowers.spark.fast.tests.DataFrameComparer
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvenance}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatch, SchemaMatcher, Twig, SchemaBackTrace}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, SchemaMatch, SchemaMatcher, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.Project
 import org.apache.spark.sql.functions._
@@ -18,10 +18,9 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 //    val schemaMatch = getSchemaMatch(outputDataFrame, whyNotQuestionFlatKey())
     val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
     val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
-//    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project], schemaSubset, 1)
-    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
-
-    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project], -1)
+    //val rewrite = SchemaSubsetTreeModifications(schemaSubset, )//SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
+    (rewrite.undoSchemaModifications(schemaSubset), schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
   }
 
 //  def getWhyNotTupleOverInput(inputDataFrame: DataFrame, outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
@@ -318,7 +317,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val newName1 = "tupleOne"
     val newName2 = "tupleTwo"
     val df = getDataFrame()
-    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1))
+    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1), $"flat_key")
 
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting3(newName1, newName2))
 
@@ -330,6 +329,21 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     assert(flat_key.name == "flat_key")
     assert(nested_obj1.name == "nested_obj")
     assert(nested_obj2.name == "nested_obj")
+  }
+
+  test("[Unrestructure] Create multiple attributes in multiple structures and multiple unnesting, but reference just one WN Question"){
+    val newName1 = "tupleOne"
+    val newName2 = "tupleTwo"
+    val df = getDataFrame()
+    val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1), $"flat_key")
+
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionFlatKey)
+
+
+
+    val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
+    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
+
   }
 
   def whyNotQuestionWithNesting4(newName1: String, newName2: String): Twig = {
