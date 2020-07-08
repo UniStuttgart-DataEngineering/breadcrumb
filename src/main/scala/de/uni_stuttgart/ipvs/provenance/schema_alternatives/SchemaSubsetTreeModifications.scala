@@ -10,7 +10,8 @@ object SchemaSubsetTreeModifications {
   }
 }
 
-class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute], outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) {
+class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute],
+                                    outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) {
 
   val inputWhyNotQuestion = SchemaSubsetTree()
 
@@ -52,7 +53,6 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   }
 
-
   def backtraceAlias(alias: Alias): Boolean = {
     currentOutputNode = currentOutputNode.getChild(alias.name).getOrElse(return false)
     directChildOfAlias = true
@@ -62,11 +62,15 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   def backtraceAttribute(attribute: Attribute): Boolean = {
     if (!directChildOfAlias) {
       currentOutputNode = currentOutputNode.getChild(attribute.name).getOrElse(return false)
-
     }
     directChildOfAlias = false
     val newNode = SchemaNode(attribute.name, currentOutputNode.constraint, currentInputNode)
     currentInputNode.addChild(newNode)
+
+    if (attribute.dataType.typeName.equals("struct") && currentInputNode.name.equals("root")) {
+        backtraceStructType(attribute, attribute.dataType.asInstanceOf[StructType])
+    }
+
     currentOutputNode = currentOutputNode.parent
     true
   }
@@ -122,6 +126,25 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     val newNode = SchemaNode(attributeReference.name, currentOutputNode.constraint, currentInputNode)
     currentInputNode.addChild(newNode)
     currentInputNode = newNode
+    true
+  }
+
+  def backtraceStructType(a: Attribute, st: StructType): Boolean = {
+    currentInputNode = currentInputNode.getChild(a.name).getOrElse(return false)
+
+    for (child <- st.fields) {
+      currentOutputNode = currentOutputNode.getChild(child.name).getOrElse(SchemaNode("", parent = currentOutputNode))
+      val newNode = SchemaNode(child.name, null, currentInputNode)
+
+      if (!currentOutputNode.name.equals("")) {
+        newNode.constraint = currentOutputNode.constraint.deepCopy()
+        currentInputNode.addChild(newNode)
+      }
+
+      currentOutputNode = currentOutputNode.parent
+    }
+
+    currentInputNode = currentInputNode.parent
     true
   }
 

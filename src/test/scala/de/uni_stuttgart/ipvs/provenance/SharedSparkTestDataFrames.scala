@@ -1,7 +1,11 @@
 package de.uni_stuttgart.ipvs.provenance
 
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, JoinRewrite, ProjectRewrite, RelationRewrite}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatch, SchemaMatcher, Twig}
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LeafNode, LogicalPlan, Project}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
 
@@ -90,5 +94,40 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
     twig = twig.createEdge(root, flat_key, false)
     twig.validate().get
   }
+
+
+  def getSchemaSubsetTree(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): SchemaSubsetTree = {
+    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
+    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
+
+    schemaSubset
+  }
+
+
+  def getInputAndOutputWhyNotTupleFlex(plan: LogicalPlan, schemaSubset: SchemaSubsetTree, branch: String): SchemaSubsetTree = {
+    var rewrite: SchemaSubsetTree = null
+
+    plan match {
+      case p: Project => rewrite = ProjectRewrite(p, -1).undoSchemaModifications(schemaSubset)
+      case f: Filter => rewrite = FilterRewrite(f, -1).undoSchemaModifications(schemaSubset)
+      case j: Join => {
+        if (branch.equals("L")) {
+          val lChild = j.left
+          rewrite = JoinRewrite(j, -1).undoLeftSchemaModifications(schemaSubset)
+          rewrite = RelationRewrite(lChild.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite)
+        }
+        if (branch.equals("R")) {
+          val rChild = j.right
+          rewrite = JoinRewrite(j, -1).undoRightSchemaModifications(schemaSubset)
+          rewrite = ProjectRewrite(rChild.asInstanceOf[Project], 0).undoSchemaModifications(rewrite)
+          rewrite = RelationRewrite(rChild.children.head.asInstanceOf[LeafNode], 1).undoSchemaModifications(rewrite)
+        }
+      }
+      case l: LeafNode => rewrite = RelationRewrite(l, -1).undoSchemaModifications(schemaSubset)
+    }
+
+    rewrite
+  }
+
 
 }

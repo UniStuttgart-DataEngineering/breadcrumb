@@ -40,13 +40,18 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
   }
 
 
-  def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
-    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
-    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
-
-    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
-  }
+//  def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree) = {
+//    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
+////    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
+////
+////    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+//
+//    val rewrite = FilterRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Filter], -1)
+//    val rewrite2 = RelationRewrite(rewrite.child.plan.asInstanceOf[LeafNode], -1)
+//
+//    (rewrite.undoSchemaModifications(schemaSubset), rewrite2.undoSchemaModifications(schemaSubset), schemaSubset)
+//  }
 
 
   def whyNotTupleFilterNewName(newName: String): Twig = {
@@ -87,15 +92,22 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     val df = getDataFrame(pathToDemoData1)
     val res = df.filter($"user.name" === "Lisa Paul")
 
-    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName("user"))
+    val plan = res.queryExecution.analyzed
+    val schemaSubset = getSchemaSubsetTree(res, whyNotTupleFilterNewName("user"))
+    val rewrittenSchemaSubsetFilter = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+    val rewrittenSchemaSubsetRelation = getInputAndOutputWhyNotTupleFlex(plan.children.head, rewrittenSchemaSubsetFilter, "")
 
-    assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    val id = rewrittenSchemaSubset.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
-    val userName = rewrittenSchemaSubset.rootNode.children.head.children.find(node => node.name == "name").getOrElse(fail("name not where it is supposed to be"))
+//    val (rewrittenSchemaSubsetFilter, rewrittenSchemaSubsetRelation, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName("user"))
 
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "user")
-    assert(id.name == "id_str")
-    assert(userName.name == "name")
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetFilter.rootNode.name)
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetRelation.rootNode.name)
+
+//    val id = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
+//    val userName = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "name").getOrElse(fail("name not where it is supposed to be"))
+
+    assert(rewrittenSchemaSubsetRelation.rootNode.children.head.name == "user")
+//    assert(id.name == "id_str")
+//    assert(userName.name == "name")
   }
 
 
@@ -104,15 +116,22 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     val df = getDataFrame(pathToDemoData1)
     val res = df.filter($"user.name" === "Lisa Paul")
 
-    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName2("user", "id_str"))
+    val plan = res.queryExecution.analyzed
+    val schemaSubset = getSchemaSubsetTree(res, whyNotTupleFilterNewName2("user", "id_str"))
+    val rewrittenSchemaSubsetFilter = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+    val rewrittenSchemaSubsetRelation = getInputAndOutputWhyNotTupleFlex(plan.children.head, rewrittenSchemaSubsetFilter, "")
 
-    assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "user")
+//    val (rewrittenSchemaSubsetFilter, rewrittenSchemaSubsetRelation, schemaSubset) =
+//      getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName2("user", "id_str"))
 
-    val id = rewrittenSchemaSubset.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetFilter.rootNode.name)
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetRelation.rootNode.name)
+    assert(rewrittenSchemaSubsetRelation.rootNode.children.head.name == "user")
+
+    val id = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
     assert(id.name == "id_str")
 
-    val size = rewrittenSchemaSubset.rootNode.children.head.children.size
+    val size = rewrittenSchemaSubsetRelation.rootNode.children.head.children.size
     assert(size == 1)
   }
 
@@ -122,14 +141,21 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     val df = getDataFrame(pathToDemoData1)
     val res = df.filter($"user.name" === "Lisa Paul")
 
-    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName3("user", "id_str", "name"))
+    val plan = res.queryExecution.analyzed
+    val schemaSubset = getSchemaSubsetTree(res, whyNotTupleFilterNewName3("user", "id_str", "name"))
+    val rewrittenSchemaSubsetFilter = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+    val rewrittenSchemaSubsetRelation = getInputAndOutputWhyNotTupleFlex(plan.children.head, rewrittenSchemaSubsetFilter, "")
 
-    assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
+//    val (rewrittenSchemaSubsetFilter, rewrittenSchemaSubsetRelation, schemaSubset) =
+//      getInputAndOutputWhyNotTuple(res, whyNotTupleFilterNewName3("user", "id_str", "name"))
 
-    val id = rewrittenSchemaSubset.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
-    val userName = rewrittenSchemaSubset.rootNode.children.head.children.find(node => node.name == "name").getOrElse(fail("name not where it is supposed to be"))
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetFilter.rootNode.name)
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubsetRelation.rootNode.name)
 
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "user")
+    val id = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
+    val userName = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "name").getOrElse(fail("name not where it is supposed to be"))
+
+    assert(rewrittenSchemaSubsetRelation.rootNode.children.head.name == "user")
     assert(id.name == "id_str")
     assert(userName.name == "name")
   }
