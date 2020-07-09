@@ -58,9 +58,12 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
     val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
     val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
 //    val rewrite = ProjectRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Project], schemaSubset, 1)
-    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
+    //val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
 
-    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+    val rewrite = GenerateRewrite(outputDataFrame.queryExecution.analyzed.children.head.asInstanceOf[Generate], -1)
+
+    (rewrite.undoSchemaModifications(schemaSubset), schemaSubset)
+    //(rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
   }
 
 
@@ -77,6 +80,10 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
     val df = getDataFrame(pathToNestedData0)
     val res = df.withColumn("flattened", explode($"nested_list"))
 //    res.printSchema()
+
+    //println(res.queryExecution.analyzed.toString())
+    //println("==============================")
+    //res.explain(true)
 
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleUnnested())
 

@@ -1,11 +1,11 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Explode, Expression, GreaterThan, IsNotNull, Literal, NamedExpression, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
-import org.apache.spark.sql.types.{BooleanType}
+import org.apache.spark.sql.types.BooleanType
 
 object GenerateRewrite {
   def apply(generate: Generate, oid: Int)  = new GenerateRewrite(generate, oid)
@@ -41,8 +41,16 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     Rewrite(generateRewrite, provenanceContext)
   }
 
-  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaBackTrace(generate, whyNotQuestion).unrestructure().head
+  override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    assert(generate.generator.children.size == 1)
+    assert(generate.generatorOutput.size == 1)
+
+    val modifications = SchemaSubsetTreeModifications(whyNotQuestion, generate.child.output, generate.generatorOutput, generate.generator.children)
+    //TODO remove generatorOutput
+    modifications.setInitialInputTree(whyNotQuestion.deepCopy())
+    modifications.backtraceGenerator()
+    modifications.getInputTree()
+    //SchemaBackTrace(generate, whyNotQuestion).unrestructure().head
   }
 
 }
