@@ -6,7 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvena
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, Twig}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.catalyst.plans.logical.Join
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LeafNode, Project}
 import org.scalatest.FunSuite
 import org.apache.spark.sql.functions.when
 
@@ -113,10 +113,10 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     val df = dfLeft.join(dfRight, $"key" === $"key2")
     val res = WhyNotProvenance.rewrite(df, whyNotTupleWithCondition())
-    res.show()
+//    res.show()
     val lastSurvivedField = res.columns.filter(name => name.contains(Constants.SURVIVED_FIELD)).sorted.head
     val keyFourElements = res.filter($"key" === "4").select(res.col(lastSurvivedField)).map(row => row.getBoolean(0)).collect()
-    res.filter($"key" === 4).show()
+//    res.filter($"key" === 4).show()
     assert(keyFourElements.size == 1)
   }
 
@@ -131,12 +131,32 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
   }
 
 
-  def getInputAndOutputWhyNotTuple(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree) = {
-    val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
-    val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed.children.head, schemaSubset)
+  // Schema of left branch of join: JOIN - RELATION
+  def getInputAndOutputWhyNotTupleLeft(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree) = {
+    val schemaSubset = getSchemaSubsetTree(outputDataFrame, outputWhyNotTuple)
+    val plan = outputDataFrame.queryExecution.analyzed
+    val child = plan.children.head
 
-    (rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
+    val rewrite1 = JoinRewrite(plan.asInstanceOf[Join], -1).undoLeftSchemaModifications(schemaSubset)
+    val rewrite2 = RelationRewrite(child.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite1)
+
+    (rewrite1, rewrite2, schemaSubset)
+  }
+
+
+  // Schema of right branch of join: JOIN - PROJECT - RELATION
+  def getInputAndOutputWhyNotTupleRight(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree) = {
+    val schemaSubset = getSchemaSubsetTree(outputDataFrame, outputWhyNotTuple)
+
+    val plan = outputDataFrame.queryExecution.analyzed
+    val child = plan.children.last
+    val base = child.children.head
+
+    val rewrite1 = JoinRewrite(plan.asInstanceOf[Join], -1).undoRightSchemaModifications(schemaSubset)
+    val rewrite2 = ProjectRewrite(child.asInstanceOf[Project], 0).undoSchemaModifications(rewrite1)
+    val rewrite3 = RelationRewrite(base.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite2)
+
+    (rewrite1, rewrite2, rewrite3, schemaSubset)
   }
 
 
@@ -155,37 +175,37 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
   }
 
 
-  test("[Unrestructure] 2-way join without renaming attributes") {
-    val dfLeft = getDataFrame(pathToAggregationDoc0)
-    val dfRight = getDataFrame(pathToJoinDoc0)
-    val res = dfLeft.join(dfRight, Seq("key"))
-
-//    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, fullWhyNotTupleBasicJoin())
-
-    val schemaMatch = getSchemaMatch(res, fullWhyNotTupleBasicJoin())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
-
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
-
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
-
-    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
-
-    assert(key.name == "key")
-    assert(value.name == "value")
-
-    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    val value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
-
-    assert(key2.name == "key")
-    assert(value2.name == "otherValue")
-  }
+//  test("[Unrestructure] 2-way join without renaming attributes") {
+//    val dfLeft = getDataFrame(pathToAggregationDoc0)
+//    val dfRight = getDataFrame(pathToJoinDoc0)
+//    val res = dfLeft.join(dfRight, Seq("key"))
+//
+////    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, fullWhyNotTupleBasicJoin())
+//
+//    val schemaMatch = getSchemaMatch(res, fullWhyNotTupleBasicJoin())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
+//
+//    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+//    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+//
+//    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+//
+//    assert(key.name == "key")
+//    assert(value.name == "value")
+//
+//    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    val value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+//
+//    assert(key2.name == "key")
+//    assert(value2.name == "otherValue")
+//  }
 
 
   def whyNotTupleBasicJoinSingleRef(): Twig = {
@@ -197,32 +217,32 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
   }
 
 
-  test("[Unrestructure] 2-way join without renaming attributes (reference one attribute)") {
-    val dfLeft = getDataFrame(pathToAggregationDoc0)
-    val dfRight = getDataFrame(pathToJoinDoc0)
-    val res = dfLeft.join(dfRight, Seq("key"))
-
-    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
-
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
-
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
-
-    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rightRewrittenSchemaSubset.rootNode.children.size == 1)
-
-    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    assert(key.name == "key")
-
-    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    assert(key2.name == "key")
-  }
+//  test("[Unrestructure] 2-way join without renaming attributes (reference one attribute)") {
+//    val dfLeft = getDataFrame(pathToAggregationDoc0)
+//    val dfRight = getDataFrame(pathToJoinDoc0)
+//    val res = dfLeft.join(dfRight, Seq("key"))
+//
+//    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
+//
+//    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+//    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+//
+//    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
+//    assert(rightRewrittenSchemaSubset.rootNode.children.size == 1)
+//
+//    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    assert(key.name == "key")
+//
+//    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    assert(key2.name == "key")
+//  }
 
 
   def whyNotTupleBasicJoinSingleRef2(): Twig = {
@@ -234,25 +254,25 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
   }
 
 
-  test("[Unrestructure] 2-way join without renaming attributes (reference one attribute) 2") {
-    val dfLeft = getDataFrame(pathToAggregationDoc0)
-    val dfRight = getDataFrame(pathToJoinDoc0)
-    val res = dfLeft.join(dfRight, Seq("key"))
-
-    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
-
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.size == 1)
-    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
-
-    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
-    assert(value.name == "value")
-  }
+//  test("[Unrestructure] 2-way join without renaming attributes (reference one attribute) 2") {
+//    val dfLeft = getDataFrame(pathToAggregationDoc0)
+//    val dfRight = getDataFrame(pathToJoinDoc0)
+//    val res = dfLeft.join(dfRight, Seq("key"))
+//
+//    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef2())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//
+//    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+//    assert(rewrittenSchemaSubset.size == 1)
+//    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
+//
+//    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+//    assert(value.name == "value")
+//  }
 
 
   def fullWhyNotTupleBasicJoin2(): Twig = {
@@ -270,83 +290,168 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
   }
 
 
-  test("[Unrestructure] 2-way join with renaming the join attribute") {
+  test("[Unrestructure] Join with renaming the join attribute") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     val res = dfLeft.join(dfRight, $"key" === $"key2")
 
-    val schemaMatch = getSchemaMatch(res, fullWhyNotTupleBasicJoin2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//    val schemaMatch = getSchemaMatch(res, fullWhyNotTupleBasicJoin2())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
 
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+    // Evaluate left branch
+    val (rewrittenSchemaSubsetLeft, rewrittenSchemaSubsetLeftRelation, schemaSubsetLeft) =
+      getInputAndOutputWhyNotTupleLeft(res, fullWhyNotTupleBasicJoin2())
 
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
-
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
-
-    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(schemaSubsetLeft.rootNode.name == rewrittenSchemaSubsetLeft.rootNode.name)
+    var key = rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (left) not where it is supposed to be"))
+    var value = rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
 
     assert(key.name == "key")
     assert(value.name == "value")
 
-    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    val value2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+    key = rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    value = rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+
+    assert(key.name == "key")
+    assert(value.name == "value")
+
+    // Evaluate right branch
+    val (rewrittenSchemaSubsetRight, rewrittenSchemaSubsetRightProject, rewrittenSchemaSubsetRightRelation, schemaSubsetRight) =
+      getInputAndOutputWhyNotTupleRight(res, fullWhyNotTupleBasicJoin2())
+
+    assert(schemaSubsetRight.rootNode.name == rewrittenSchemaSubsetRight.rootNode.name)
+    var key2 = rewrittenSchemaSubsetRight.rootNode.children.find(node => node.name == "key2").getOrElse(fail("key2 (right) not where it is supposed to be"))
+    var value2 = rewrittenSchemaSubsetRight.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(key2.name == "key2")
+    assert(value2.name == "otherValue")
+
+    key2 = rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
+    value2 = rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
+
+    assert(key2.name == "key")
+    assert(value2.name == "otherValue")
+
+    key2 = rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
+    value2 = rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue not where it is supposed to be"))
 
     assert(key2.name == "key")
     assert(value2.name == "otherValue")
   }
 
 
-  test("[Unrestructure] 2-way join with renaming attributes (reference one attribute)") {
+  test("[Unrestructure] Join with renaming attributes and reference one join attribute") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     val res = dfLeft.join(dfRight, $"key" === $"key2")
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+    // Evaluate left branch
+    val (rewrittenSchemaSubsetLeft, rewrittenSchemaSubsetLeftRelation, schemaSubsetLeft) =
+      getInputAndOutputWhyNotTupleLeft(res, whyNotTupleWithCondition())
 
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+    assert(schemaSubsetLeft.rootNode.name == rewrittenSchemaSubsetLeft.rootNode.name)
 
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
-
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
-
-    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rightRewrittenSchemaSubset.rootNode.children.size == 1)
-
-    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    assert(rewrittenSchemaSubsetLeft.rootNode.children.size == 1)
+    var key = rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (left) not where it is supposed to be"))
     assert(key.name == "key")
 
-    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    assert(rewrittenSchemaSubsetLeftRelation.rootNode.children.size == 1)
+    key = rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    assert(key.name == "key")
+
+
+    // Evaluate right branch
+    val (rewrittenSchemaSubsetRight, rewrittenSchemaSubsetRightProject, rewrittenSchemaSubsetRightRelation, schemaSubsetRight) =
+      getInputAndOutputWhyNotTupleRight(res, whyNotTupleWithCondition())
+
+    assert(schemaSubsetRight.rootNode.name == rewrittenSchemaSubsetRight.rootNode.name)
+
+    assert(rewrittenSchemaSubsetRight.rootNode.children.size == 1)
+    var key2 = rewrittenSchemaSubsetRight.rootNode.children.find(node => node.name == "key2").getOrElse(fail("key2 (right) not where it is supposed to be"))
+    assert(key2.name == "key2")
+
+    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 1)
+    key2 = rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
     assert(key2.name == "key")
+
+    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 1)
+    key2 = rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
+    assert(key2.name == "key")
+
+
+//
+//    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val rightRewrittenSchemaSubset = rewrittenSchemaSubset.last
+//
+//    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+//    assert(schemaSubset.rootNode.name == rightRewrittenSchemaSubset.rootNode.name)
+//
+//    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
+//    assert(rightRewrittenSchemaSubset.rootNode.children.size == 1)
+//
+//    val key = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    assert(key.name == "key")
+//
+//    val key2 = rightRewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+//    assert(key2.name == "key")
   }
 
 
-  test("[Unrestructure] 2-way join with renaming attributes (reference one attribute) 2") {
+  test("[Unrestructure] Join with renaming attributes and reference one attribute from left") {
     val dfLeft = getDataFrame(pathToAggregationDoc0)
     val dfRight = getDataFrame(pathToJoinDoc0).withColumnRenamed("key", "key2")
     val res = dfLeft.join(dfRight, $"key" === $"key2")
 
-    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef2())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+    // Evaluate left branch
+    val (rewrittenSchemaSubsetLeft, rewrittenSchemaSubsetLeftRelation, schemaSubsetLeft) =
+      getInputAndOutputWhyNotTupleLeft(res, whyNotTupleBasicJoinSingleRef2())
 
-    val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
-    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+    assert(schemaSubsetLeft.rootNode.name == rewrittenSchemaSubsetLeft.rootNode.name)
 
-    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.size == 1)
-    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
-
-    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(rewrittenSchemaSubsetLeft.rootNode.children.size == 1)
+    var value = rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
     assert(value.name == "value")
+
+    assert(rewrittenSchemaSubsetLeftRelation.rootNode.children.size == 1)
+    value = rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    assert(value.name == "value")
+
+
+    // Evaluate right branch
+    val (rewrittenSchemaSubsetRight, rewrittenSchemaSubsetRightProject, rewrittenSchemaSubsetRightRelation, schemaSubsetRight) =
+      getInputAndOutputWhyNotTupleRight(res, whyNotTupleBasicJoinSingleRef2())
+
+    assert(schemaSubsetRight.rootNode.name == rewrittenSchemaSubsetRight.rootNode.name)
+    assert(rewrittenSchemaSubsetRight.rootNode.children.size == 0)
+    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 0)
+    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 0)
+
+//
+//    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef2())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//    val leftRewrittenSchemaSubset = rewrittenSchemaSubset.head
+//
+//    assert(schemaSubset.rootNode.name == leftRewrittenSchemaSubset.rootNode.name)
+//    assert(rewrittenSchemaSubset.size == 1)
+//    assert(leftRewrittenSchemaSubset.rootNode.children.size == 1)
+//
+//    val value = leftRewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+//    assert(value.name == "value")
   }
 
 

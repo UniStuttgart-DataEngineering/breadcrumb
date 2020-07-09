@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Project}
 
 
@@ -24,5 +24,8 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     Rewrite(rewrittenLocalRelation, provenanceContext)
   }
 
+  override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaSubsetTreeModifications(schemaSubsetTree, Nil, relation.output, relation.expressions).getInputTree()
+  }
 
 }

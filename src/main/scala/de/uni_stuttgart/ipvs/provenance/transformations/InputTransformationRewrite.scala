@@ -8,6 +8,10 @@ abstract class InputTransformationRewrite (val plan: LeafNode, val oid: Int) ext
 
   def children: Seq[TransformationRewrite] = Seq.empty[TransformationRewrite]
 
-  override protected def backtraceChildrenWhyNotQuestion: Unit = {}
+  override protected def backtraceChildrenWhyNotQuestion: Unit = {
+    undoSchemaModifications(whyNotQuestion)
+  }
+
+  protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree
 
 }
