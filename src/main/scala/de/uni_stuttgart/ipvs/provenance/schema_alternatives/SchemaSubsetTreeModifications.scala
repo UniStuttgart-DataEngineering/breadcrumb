@@ -51,7 +51,6 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   }
 
-<<<<<<< HEAD
   def backtraceGenerator(): Unit = {
     currentOutputNode = currentOutputNode.getChild(outputAttributes.head.name).getOrElse(return)
     directChildOfAlias = true
@@ -60,9 +59,6 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     generateAccess = false
   }
 
-
-=======
->>>>>>> b8832342b7db4ea27e14595525e396679ffb68a7
   def backtraceAlias(alias: Alias): Boolean = {
     currentOutputNode = currentOutputNode.getChild(alias.name).getOrElse(return false)
     directChildOfAlias = true
