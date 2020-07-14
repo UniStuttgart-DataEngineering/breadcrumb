@@ -21,6 +21,9 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   var directChildOfAlias = false
   var generateAccess = false
 
+  val inToOutAttr = scala.collection.mutable.Map[String,String]()
+  var unionAccess = false
+
 
   def backtraceExpressions(): Unit = {
     for (expression <- modificationExpressions){
@@ -52,14 +55,15 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   }
 
   def backtraceGenerator(): SchemaSubsetTree = {
-//    currentOutputNode = currentOutputNode.getChild(outputAttributes.head.name).getOrElse(return)
-    val flattenedAttrName = outputAttributes.head.name
-    currentOutputNode = currentOutputNode.getChild(flattenedAttrName).getOrElse(SchemaNode(flattenedAttrName, currentOutputNode.constraint, currentOutputNode))
     directChildOfAlias = true
     generateAccess = true
+
+    val flattenedAttrName = outputAttributes.head.name
+    currentOutputNode = currentOutputNode.getChild(flattenedAttrName)
+      .getOrElse(SchemaNode(flattenedAttrName, currentOutputNode.constraint, currentOutputNode))
+
     val flattenedExpr = modificationExpressions.head
     backtraceExpression(flattenedExpr)
-    generateAccess = false
 
     // Keep the inputWhyNotQuestion has same structure as outputWhyNotQuestion
     if (currentInputNode.children.size != outputWhyNotQuestion.rootNode.children) {
@@ -74,6 +78,27 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
       }
     }
 
+    generateAccess = false
+    inputWhyNotQuestion
+  }
+
+  def backtraceUnion(): SchemaSubsetTree = {
+    directChildOfAlias = true
+    unionAccess = true
+
+    /*
+      Create a map: (output attr, input attr)
+      Purpose: only the left child has same attribute names as output
+        For other children, we use map to check which input attr corresponds to which output attr
+        Later, we add the node with input attr name but copy the constraint from the corresponding node in the output tree.
+     */
+    val inAndOutPair = inputAttributes.zip(outputAttributes)
+    for (pair <- inAndOutPair) {
+      inToOutAttr.put(pair._1.name, pair._2.name)
+    }
+    backtraceExpressions()
+
+    unionAccess = false
     inputWhyNotQuestion
   }
 
@@ -84,13 +109,21 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   }
 
   def backtraceAttribute(attribute: Attribute): Boolean = {
+    if (unionAccess) {
+      directChildOfAlias = true
+    }
+
     val name = attribute.name
 
     if (!directChildOfAlias) {
       currentOutputNode = currentOutputNode.getChild(name).getOrElse(return false)
-//      currentOutputNode = currentOutputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentOutputNode))
     }
     directChildOfAlias = false
+
+    if (unionAccess) {
+      val outputName = inToOutAttr.get(name).getOrElse(return false)
+      currentOutputNode = currentOutputNode.getChild(outputName).getOrElse(return false)
+    }
 
     //TODO: if an attribute is referenced multiple times, constraints need special handling
     currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
@@ -107,6 +140,7 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     }
 
     currentInputNode = currentInputNode.parent
+    currentOutputNode = currentOutputNode.parent
 
     /*
     val newNode = SchemaNode(attribute.name, currentOutputNode.constraint, currentInputNode)
@@ -114,9 +148,9 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
     if (attribute.dataType.typeName.equals("struct") && currentInputNode.name.equals("root")) {
         backtraceStructType(attribute, attribute.dataType.asInstanceOf[StructType])
-    }*/
+    }
+    */
 
-    currentOutputNode = currentOutputNode.parent
     true
   }
 
@@ -128,13 +162,12 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   }
 
   def handleGenerateAccess(): Unit = {
-    currentInputNode.constraint = Constraint("") // TODO: potentially faulty, if attribute already exists in the input schema subset
+//    currentInputNode.constraint = Constraint("") // TODO: potentially faulty, if attribute already exists in the input schema subset
     val name = "element"
-//    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
-//    currentInputNode.parent.addChild(currentOutputNode)
     currentOutputNode = currentOutputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentOutputNode))
     val newNode = currentOutputNode.deepCopy(currentInputNode)
     currentInputNode.addChild(newNode)
+
     currentOutputNode = currentOutputNode.parent
     currentInputNode = currentInputNode.getChild(name).getOrElse(null)
     assert(currentInputNode != null)
@@ -215,10 +248,10 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     inputWhyNotQuestion
   }
 
-  def setInitialInputTree(initialInputTree: SchemaSubsetTree): Unit = {
-    inputWhyNotQuestion = initialInputTree
-    currentInputNode = inputWhyNotQuestion.rootNode
-  }
+//  def setInitialInputTree(initialInputTree: SchemaSubsetTree): Unit = {
+//    inputWhyNotQuestion = initialInputTree
+//    currentInputNode = inputWhyNotQuestion.rootNode
+//  }
 
 
 

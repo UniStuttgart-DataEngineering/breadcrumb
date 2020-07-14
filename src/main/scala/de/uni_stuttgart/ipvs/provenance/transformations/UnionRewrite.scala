@@ -74,35 +74,12 @@ class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransf
   }
 
   override protected[provenance] def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-//    val leftOutput = leftChild.plan.output
     schemaSubsetTree.deepCopy()
   }
 
   override protected[provenance] def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, rightChild.plan.output, union.children.last.output, rightChild.plan.output).getInputTree()
-
-////    val rightOutput = rightChild.plan.output
-//    //TODO: make a deep check on attribute names
-//    val newRoot = schemaSubsetTree.rootNode
-//    val inNameToOutName = scala.collection.mutable.Map[String,String]()
-//
-//    var attrPos = 0
-//    rightChild match {
-//      case l: LogicalRelation => {
-//        for (ar <- l.output) {
-//          inNameToOutName.put(ar.name, union.schema.apply(attrPos).name)
-//          attrPos += 1
-//        }
-//      }
-//      case _ =>
-//    }
-//
-//    rightChild match {
-//      case l: LogicalRelation => SchemaBackTraceNew(schemaSubsetTree).unrestructureLeaf(l, newRoot, inNameToOutName)
-//      case _ => schemaSubsetTree.deepCopy()
-//    }
-//
-//    schemaSubsetTree
+    SchemaSubsetTreeModifications(schemaSubsetTree, rightChild.plan.output, union.output, rightChild.plan.output).backtraceUnion()
+    //TODO: make a deep check on attribute names
   }
 
 

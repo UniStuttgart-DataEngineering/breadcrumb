@@ -25,7 +25,8 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, Nil, relation.output, relation.expressions).getInputTree()
+    schemaSubsetTree.deepCopy()
+//    SchemaSubsetTreeModifications(schemaSubsetTree, Nil, relation.output, relation.expressions).getInputTree()
   }
 
 }

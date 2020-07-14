@@ -127,12 +127,12 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
         if (branch.equals("L")) {
           val lChild = u.children.head
           rewrite = UnionRewrite(u, -1).undoLeftSchemaModifications(schemaSubset)
-          rewrite = RelationRewrite(lChild.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite)
+//          rewrite = RelationRewrite(lChild.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite)
         }
         if (branch.equals("R")) {
           val rChild = u.children.last
           rewrite = UnionRewrite(u, -1).undoRightSchemaModifications(schemaSubset)
-          rewrite = RelationRewrite(rChild.children.head.asInstanceOf[LeafNode], 1).undoSchemaModifications(rewrite)
+//          rewrite = RelationRewrite(rChild.asInstanceOf[LeafNode], 1).undoSchemaModifications(rewrite)
         }
       }
       case l: LeafNode => rewrite = RelationRewrite(l, -1).undoSchemaModifications(schemaSubset)
