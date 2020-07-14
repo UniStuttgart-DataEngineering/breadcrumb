@@ -57,14 +57,21 @@ class UnionTest extends FunSuite with SharedSparkTestDataFrames {
     val dfRight = getDataFrame(pathToUnionDoc0)
     val res = dfLeft.union(dfRight)
 
-    val schemaMatch = getSchemaMatch(res, fullBasicWhyNotTuple())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
-
     val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+    val schemaSubset = getSchemaSubsetTree(res, fullBasicWhyNotTuple())
 
-    val child1RewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val child2RewrittenSchemaSubset = rewrittenSchemaSubset.last
+    val lChild = plan.children.head
+    val rChild = plan.children.last
+
+    val child1RewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(lChild, schemaSubset, "L")
+    val child2RewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(rChild, schemaSubset, "R")
+
+//    val schemaMatch = getSchemaMatch(res, fullBasicWhyNotTuple())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//    val child1RewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val child2RewrittenSchemaSubset = rewrittenSchemaSubset.last
 
     assert(schemaSubset.rootNode.name == child1RewrittenSchemaSubset.rootNode.name)
     assert(schemaSubset.rootNode.name == child2RewrittenSchemaSubset.rootNode.name)
@@ -88,14 +95,23 @@ class UnionTest extends FunSuite with SharedSparkTestDataFrames {
     val dfRight = getDataFrame(pathToJoinDoc0)
     val res = dfLeft.union(dfRight)
 
-    val schemaMatch = getSchemaMatch(res, fullBasicWhyNotTuple())
-    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//    val schemaMatch = getSchemaMatch(res, fullBasicWhyNotTuple())
+//    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
+//
+//    val plan = res.queryExecution.analyzed
+//    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+//
+//    val child1RewrittenSchemaSubset = rewrittenSchemaSubset.head
+//    val child2RewrittenSchemaSubset = rewrittenSchemaSubset.last
 
     val plan = res.queryExecution.analyzed
-    val rewrittenSchemaSubset = SchemaBackTrace(plan, schemaSubset).unrestructure()
+    val schemaSubset = getSchemaSubsetTree(res, fullBasicWhyNotTuple())
 
-    val child1RewrittenSchemaSubset = rewrittenSchemaSubset.head
-    val child2RewrittenSchemaSubset = rewrittenSchemaSubset.last
+    val lChild = plan.children.head
+    val rChild = plan.children.last
+
+    val child1RewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(lChild, schemaSubset, "L")
+    val child2RewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(rChild, schemaSubset, "R")
 
     assert(schemaSubset.rootNode.name == child1RewrittenSchemaSubset.rootNode.name)
     assert(schemaSubset.rootNode.name == child2RewrittenSchemaSubset.rootNode.name)

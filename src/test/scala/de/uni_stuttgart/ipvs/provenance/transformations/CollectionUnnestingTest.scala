@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import com.github.mrpowers.spark.fast.tests.{ColumnComparer, DataFrameComparer}
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvenance}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, Twig}
 import org.apache.spark.sql.DataFrame
@@ -14,21 +14,22 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
 
     import spark.implicits._
 
-
     def nestedWhyNotTuple(): Twig = {
       var twig = new Twig()
       val root = twig.createNode("root", 1, 1, "")
-      val nested_list = twig.createNode("nested_list", 1, 1, "")
-      val element1 = twig.createNode("element", 1, 1, "1_list_val_1_1")
+//      val nested_list = twig.createNode("nested_list", 1, 1, "")
+      val nested_list = twig.createNode("flattened", 1, 1, "1_list_val_1_1")
+//      val element1 = twig.createNode("element", 1, 1, "1_list_val_1_1")
       twig = twig.createEdge(root, nested_list, false)
-      twig = twig.createEdge(nested_list, element1, false)
+//      twig = twig.createEdge(nested_list, element1, false)
       twig.validate().get
     }
 
     test("[Rewrite] Explode contains survived field") {
       val df = getDataFrame(pathToNestedData0)
-      val otherDf = df.withColumn("flattened", explode($"nested_list"))
+      var otherDf = df.withColumn("flattened", explode($"nested_list"))
       val res = WhyNotProvenance.rewrite(otherDf, nestedWhyNotTuple)
+      res.show(false)
       assert(res.schema.filter(field => field.name.contains(Constants.SURVIVED_FIELD)).size == 1)
     }
 
@@ -61,7 +62,6 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
     //val rewrite = SchemaBackTrace(outputDataFrame.queryExecution.analyzed, schemaSubset)
 
     val rewrite = GenerateRewrite(outputDataFrame.queryExecution.analyzed.children.head.asInstanceOf[Generate], -1)
-
     (rewrite.undoSchemaModifications(schemaSubset), schemaSubset)
     //(rewrite.unrestructure().head, schemaSubset) // (inputWhyNotTuple, outputWhyNotTuple)
   }
@@ -79,11 +79,6 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
   test("[Unrestructure] Explode a single element") {
     val df = getDataFrame(pathToNestedData0)
     val res = df.withColumn("flattened", explode($"nested_list"))
-//    res.printSchema()
-
-    //println(res.queryExecution.analyzed.toString())
-    //println("==============================")
-    //res.explain(true)
 
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleUnnested())
 
@@ -211,7 +206,9 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
 //    res = res.withColumn("flattened_address2", explode($"address2"))
 //    res.printSchema()
 
-    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleUnnestedMultiElem3())
+    val (rewrittenSchemaSubset2, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleUnnestedMultiElem3())
+    val grandChild = res.queryExecution.analyzed.children.head.children.head
+    val rewrittenSchemaSubset = GenerateRewrite(grandChild.children.head.asInstanceOf[Generate], -1).undoSchemaModifications(rewrittenSchemaSubset2)
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     val address1 = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "address1").getOrElse(fail("address1 not where it is supposed to be"))

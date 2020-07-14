@@ -1,10 +1,10 @@
 package de.uni_stuttgart.ipvs.provenance
 
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, JoinRewrite, ProjectRewrite, RelationRewrite}
+import de.uni_stuttgart.ipvs.provenance.transformations.{FilterRewrite, JoinRewrite, ProjectRewrite, RelationRewrite, UnionRewrite}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaMatch, SchemaMatcher, Twig}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LeafNode, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LeafNode, LogicalPlan, Project, Union}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
@@ -120,6 +120,18 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
           val rChild = j.right
           rewrite = JoinRewrite(j, -1).undoRightSchemaModifications(schemaSubset)
           rewrite = ProjectRewrite(rChild.asInstanceOf[Project], 0).undoSchemaModifications(rewrite)
+          rewrite = RelationRewrite(rChild.children.head.asInstanceOf[LeafNode], 1).undoSchemaModifications(rewrite)
+        }
+      }
+      case u: Union => {
+        if (branch.equals("L")) {
+          val lChild = u.children.head
+          rewrite = UnionRewrite(u, -1).undoLeftSchemaModifications(schemaSubset)
+          rewrite = RelationRewrite(lChild.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite)
+        }
+        if (branch.equals("R")) {
+          val rChild = u.children.last
+          rewrite = UnionRewrite(u, -1).undoRightSchemaModifications(schemaSubset)
           rewrite = RelationRewrite(rChild.children.head.asInstanceOf[LeafNode], 1).undoSchemaModifications(rewrite)
         }
       }

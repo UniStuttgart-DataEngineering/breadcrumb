@@ -51,12 +51,30 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   }
 
-  def backtraceGenerator(): Unit = {
-    currentOutputNode = currentOutputNode.getChild(outputAttributes.head.name).getOrElse(return)
+  def backtraceGenerator(): SchemaSubsetTree = {
+//    currentOutputNode = currentOutputNode.getChild(outputAttributes.head.name).getOrElse(return)
+    val flattenedAttrName = outputAttributes.head.name
+    currentOutputNode = currentOutputNode.getChild(flattenedAttrName).getOrElse(SchemaNode(flattenedAttrName, currentOutputNode.constraint, currentOutputNode))
     directChildOfAlias = true
     generateAccess = true
-    backtraceExpression(modificationExpressions.head)
+    val flattenedExpr = modificationExpressions.head
+    backtraceExpression(flattenedExpr)
     generateAccess = false
+
+    // Keep the inputWhyNotQuestion has same structure as outputWhyNotQuestion
+    if (currentInputNode.children.size != outputWhyNotQuestion.rootNode.children) {
+      val tempOrigWhyNotQuestion = outputWhyNotQuestion.deepCopy()
+      val rewrittenChildNode = tempOrigWhyNotQuestion.rootNode.getChild(flattenedAttrName).getOrElse(null)
+
+      if (rewrittenChildNode != null) {
+        tempOrigWhyNotQuestion.rootNode.removeChild(rewrittenChildNode)
+
+        for (child <- tempOrigWhyNotQuestion.rootNode.children)
+          currentInputNode.addChild(child)
+      }
+    }
+
+    inputWhyNotQuestion
   }
 
   def backtraceAlias(alias: Alias): Boolean = {
@@ -66,22 +84,28 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
   }
 
   def backtraceAttribute(attribute: Attribute): Boolean = {
+    val name = attribute.name
+
     if (!directChildOfAlias) {
-      currentOutputNode = currentOutputNode.getChild(attribute.name).getOrElse(return false)
+      currentOutputNode = currentOutputNode.getChild(name).getOrElse(return false)
+//      currentOutputNode = currentOutputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentOutputNode))
     }
     directChildOfAlias = false
 
     //TODO: if an attribute is referenced multiple times, constraints need special handling
-    val name = attribute.name
     currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
     currentInputNode.parent.addChild(currentInputNode)
-    if (generateAccess){
+
+    if (generateAccess) {
       handleGenerateAccess()
     }
+
     copyChildrenOfOutputAttributeToInputAttribute()
-    if (generateAccess){
+
+    if (generateAccess) {
       currentInputNode = currentInputNode.parent
     }
+
     currentInputNode = currentInputNode.parent
 
     /*
@@ -91,21 +115,29 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     if (attribute.dataType.typeName.equals("struct") && currentInputNode.name.equals("root")) {
         backtraceStructType(attribute, attribute.dataType.asInstanceOf[StructType])
     }*/
+
     currentOutputNode = currentOutputNode.parent
     true
   }
 
   def copyChildrenOfOutputAttributeToInputAttribute(): Unit = {
     for (child <- currentOutputNode.children) {
-      child.deepCopy(currentOutputNode)
+      val newNode = child.deepCopy(currentInputNode)
+      currentInputNode.addChild(newNode)
     }
   }
 
   def handleGenerateAccess(): Unit = {
     currentInputNode.constraint = Constraint("") // TODO: potentially faulty, if attribute already exists in the input schema subset
     val name = "element"
-    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
-    currentInputNode.parent.addChild(currentInputNode)
+//    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
+//    currentInputNode.parent.addChild(currentOutputNode)
+    currentOutputNode = currentOutputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentOutputNode))
+    val newNode = currentOutputNode.deepCopy(currentInputNode)
+    currentInputNode.addChild(newNode)
+    currentOutputNode = currentOutputNode.parent
+    currentInputNode = currentInputNode.getChild(name).getOrElse(null)
+    assert(currentInputNode != null)
   }
 
   def backtraceCreateNamedStruct(createNamedStruct: CreateNamedStruct): Boolean = {
@@ -155,24 +187,24 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     valid
   }
 
-  def backtraceStructType(a: Attribute, st: StructType): Boolean = {
-    currentInputNode = currentInputNode.getChild(a.name).getOrElse(return false)
-
-    for (child <- st.fields) {
-      currentOutputNode = currentOutputNode.getChild(child.name).getOrElse(SchemaNode("", parent = currentOutputNode))
-      val newNode = SchemaNode(child.name, null, currentInputNode)
-
-      if (!currentOutputNode.name.equals("")) {
-        newNode.constraint = currentOutputNode.constraint.deepCopy()
-        currentInputNode.addChild(newNode)
-      }
-
-      currentOutputNode = currentOutputNode.parent
-    }
-
-    currentInputNode = currentInputNode.parent
-    true
-  }
+//  def backtraceStructType(a: Attribute, st: StructType): Boolean = {
+//    currentInputNode = currentInputNode.getChild(a.name).getOrElse(return false)
+//
+//    for (child <- st.fields) {
+//      currentOutputNode = currentOutputNode.getChild(child.name).getOrElse(SchemaNode("", parent = currentOutputNode))
+//      val newNode = SchemaNode(child.name, null, currentInputNode)
+//
+//      if (!currentOutputNode.name.equals("")) {
+//        newNode.constraint = currentOutputNode.constraint.deepCopy()
+//        currentInputNode.addChild(newNode)
+//      }
+//
+//      currentOutputNode = currentOutputNode.parent
+//    }
+//
+//    currentInputNode = currentInputNode.parent
+//    true
+//  }
 
   def backtraceLiteral(l: Literal): Boolean = {
     throw new MatchError("Literals are not supported, yet.")

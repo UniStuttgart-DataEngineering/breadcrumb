@@ -16,10 +16,11 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
   def nestedWhyNotTuple(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
-    val nested_list = twig.createNode("nested_list", 1, 1, "")
-    val element1 = twig.createNode("element", 1, 1, "1_list_val_1_1")
+    //      val nested_list = twig.createNode("nested_list", 1, 1, "")
+    val nested_list = twig.createNode("flattened", 1, 1, "1_list_val_1_1")
+    //      val element1 = twig.createNode("element", 1, 1, "1_list_val_1_1")
     twig = twig.createEdge(root, nested_list, false)
-    twig = twig.createEdge(nested_list, element1, false)
+    //      twig = twig.createEdge(nested_list, element1, false)
     twig.validate().get
   }
 
@@ -27,7 +28,8 @@ class MultipleTransformationsTest extends FunSuite with SharedSparkTestDataFrame
     val df = getDataFrame(pathToNestedData00)
     var otherDf = df.withColumn("flattened", explode($"nested_list"))
     otherDf = otherDf.filter($"flat_key" === "1_flat_val_x")
-    otherDf = otherDf.select($"nested_list")
+//    otherDf = otherDf.select($"nested_list")
+    otherDf = otherDf.select($"flattened")
     val res = WhyNotProvenance.rewrite(otherDf, nestedWhyNotTuple)
     res.explain(true)
     res.show()

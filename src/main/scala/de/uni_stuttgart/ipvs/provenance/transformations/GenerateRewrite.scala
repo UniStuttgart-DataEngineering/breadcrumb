@@ -45,12 +45,14 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     assert(generate.generator.children.size == 1)
     assert(generate.generatorOutput.size == 1)
 
-    val modifications = SchemaSubsetTreeModifications(whyNotQuestion, generate.child.output, generate.generatorOutput, generate.generator.children)
-    //TODO remove generatorOutput
-    modifications.setInitialInputTree(whyNotQuestion.deepCopy())
-    modifications.backtraceGenerator()
-    modifications.getInputTree()
-    //SchemaBackTrace(generate, whyNotQuestion).unrestructure().head
+    SchemaSubsetTreeModifications(schemaSubsetTree, generate.child.output, generate.generatorOutput, generate.generator.children).backtraceGenerator()
+
+//    val modifications = SchemaSubsetTreeModifications(schemaSubsetTree, generate.child.output, generate.generatorOutput, generate.generator.children)
+//    if (whyNotQuestion.rootNode.children.size != schemaSubsetTree.rootNode.children.size)
+//      modifications.setInitialInputTree(whyNotQuestion.deepCopy())
+//    modifications.backtraceGenerator()
+//    modifications.getInputTree()
+//    //SchemaBackTrace(generate, whyNotQuestion).unrestructure().head
   }
 
 }

@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTraceNew
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Union}
@@ -73,35 +73,36 @@ class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransf
     Rewrite(rewrittenUnion, provenanceContext)
   }
 
-  override protected def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+  override protected[provenance] def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
 //    val leftOutput = leftChild.plan.output
     schemaSubsetTree.deepCopy()
   }
 
-  override protected def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-//    val rightOutput = rightChild.plan.output
-    //TODO: make a deep check on attribute names
+  override protected[provenance] def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaSubsetTreeModifications(schemaSubsetTree, rightChild.plan.output, union.children.last.output, rightChild.plan.output).getInputTree()
 
-    val newRoot = schemaSubsetTree.rootNode
-    val inNameToOutName = scala.collection.mutable.Map[String,String]()
-
-    var attrPos = 0
-    rightChild match {
-      case l: LogicalRelation => {
-        for (ar <- l.output) {
-          inNameToOutName.put(ar.name, union.schema.apply(attrPos).name)
-          attrPos += 1
-        }
-      }
-      case _ =>
-    }
-
-    rightChild match {
-      case l: LogicalRelation => SchemaBackTraceNew(schemaSubsetTree).unrestructureLeaf(l, newRoot, inNameToOutName)
-      case _ => schemaSubsetTree.deepCopy()
-    }
-
-    schemaSubsetTree
+////    val rightOutput = rightChild.plan.output
+//    //TODO: make a deep check on attribute names
+//    val newRoot = schemaSubsetTree.rootNode
+//    val inNameToOutName = scala.collection.mutable.Map[String,String]()
+//
+//    var attrPos = 0
+//    rightChild match {
+//      case l: LogicalRelation => {
+//        for (ar <- l.output) {
+//          inNameToOutName.put(ar.name, union.schema.apply(attrPos).name)
+//          attrPos += 1
+//        }
+//      }
+//      case _ =>
+//    }
+//
+//    rightChild match {
+//      case l: LogicalRelation => SchemaBackTraceNew(schemaSubsetTree).unrestructureLeaf(l, newRoot, inNameToOutName)
+//      case _ => schemaSubsetTree.deepCopy()
+//    }
+//
+//    schemaSubsetTree
   }
 
 
