@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
@@ -49,6 +50,9 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
       }
       case l: Literal => {
         backtraceLiteral(l)
+      }
+      case ag: AggregateExpression => {
+        backtraceAggregateExpression(ag)
       }
     }
 
@@ -100,6 +104,11 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
     unionAccess = false
     inputWhyNotQuestion
+  }
+
+  def backtraceAggregateExpression(ag: AggregateExpression): Boolean = {
+    directChildOfAlias = true
+    backtraceExpression(ag.aggregateFunction.children.head)
   }
 
   def backtraceAlias(alias: Alias): Boolean = {
