@@ -93,7 +93,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val sum = twig.createNode("some_val", 1, 1, "")
-    val key = twig.createNode("key", 1, 1, "")
+    val key = twig.createNode("nested_key", 1, 1, "")
     twig = twig.createEdge(root, sum, false)
     twig = twig.createEdge(root, key, false)
     twig.validate().get
@@ -129,7 +129,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val sum = twig.createNode("some_val", 1, 1, "")
-    val key = twig.createNode("key", 1, 1, "")
+    val key = twig.createNode("flat_key", 1, 1, "")
     twig = twig.createEdge(root, sum, false)
     twig = twig.createEdge(root, key, false)
     twig.validate().get

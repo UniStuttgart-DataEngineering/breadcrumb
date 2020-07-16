@@ -313,6 +313,30 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     assert(nested_obj.name == "nested_obj")
   }
 
+  def whyNotQuestionNestedElement(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val nested_key = twig.createNode("nested_key", 1, 1, "")
+    twig = twig.createEdge(root, nested_key, false)
+    twig.validate().get
+  }
+
+  test("[Unrestructure] Access nested attribute"){
+    val df = getDataFrame()
+    val res = df.select($"nested_obj.nested_obj.nested_key")
+
+    val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(res, whyNotQuestionNestedElement())
+
+
+    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    assert(nested_obj1.name == "nested_obj")
+    val nested_obj2 = nested_obj1.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
+    assert(nested_obj2.name == "nested_obj")
+    val nested_key = nested_obj2.children.headOption.getOrElse(fail("nested_key not where it is supposed to be"))
+    assert(nested_key.name == "nested_key")
+  }
+
+
   test("[Unrestructure] Create multiple attributes in multiple structures and multiple unnesting"){
     val newName1 = "tupleOne"
     val newName2 = "tupleTwo"
