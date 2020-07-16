@@ -70,11 +70,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, aggregate.child.output, aggregate.output, aggregate.aggregateExpressions).backtraceExpressions()
-
-
-
-    schemaSubsetTree
+    SchemaSubsetTreeModifications(schemaSubsetTree, child.plan.output, aggregate.output, aggregate.aggregateExpressions).getInputTree()
   }
 
 

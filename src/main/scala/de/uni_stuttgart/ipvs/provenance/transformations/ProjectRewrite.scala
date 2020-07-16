@@ -77,7 +77,6 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, child.plan.output, project.output, project.projectList)
-      .getInputTree()
+    SchemaSubsetTreeModifications(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
   }
 }

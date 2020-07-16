@@ -19,7 +19,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val schemaMatch = getSchemaMatch(outputDataFrame, outputWhyNotTuple)
     val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(outputDataFrame))
 
-    val rewrite = AggregateRewrite(outputDataFrame.queryExecution.analyzed.children.head.asInstanceOf[Aggregate], -1)
+    val rewrite = AggregateRewrite(outputDataFrame.queryExecution.analyzed.asInstanceOf[Aggregate], -1)
     (rewrite.undoSchemaModifications(schemaSubset), schemaSubset)
   }
 
@@ -135,7 +135,6 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     twig.validate().get
   }
 
-
   test("[Unrestructure] Unrestructure nested aggregation attribute") {
     val df = getDataFrame(pathToNestedData1)
     val aggregatedDf = df.groupBy($"flat_key").agg(max($"nested_obj.nested_obj.nested_key").alias("some_val"))
@@ -202,11 +201,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
   }
 
-
-
-
-
-  test("[Rewrite] Aggregation ") {
+  test("[Rewrite] Aggregation") {
     val df = getDataFrame(pathToAggregationDoc0)
     val aggregatedDf = df.groupBy($"key").agg(sum($"value").alias("sum"))
     val res = WhyNotProvenance.rewrite(aggregatedDf, keySumWhyNotTuple)
@@ -271,5 +266,91 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     var testDf = df.withColumn("boolCol", rand(42) < 0.5)
     testDf = testDf.groupBy($"key").agg(collect_list($"boolCol").alias("list"), max($"boolCol"), min($"boolCol"))
   }
+
+
+  test("[Unrestructure] Aggregate with a single function 1") {
+    val df = getDataFrame(pathToAggregationDoc0)
+    val res = df.groupBy($"key").agg(sum($"value").alias("sum"))
+
+    val plan = res.queryExecution.analyzed
+    val schemaSubset = getSchemaSubsetTree(res, sumWhyNotTuple())
+    val rewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+
+    assert(schemaSubset.rootNode.name === rewrittenSchemaSubset.rootNode.name)
+    val key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    val value = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+
+    assert(key.name == "key")
+    assert(value.name == "value")
+  }
+
+
+  def collectListWhyNotTuple(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val list = twig.createNode("list", 1, 1, "")
+    val key = twig.createNode("key", 1, 1, "")
+    twig = twig.createEdge(root, list, false)
+    twig = twig.createEdge(root, key, false)
+    twig.validate().get
+  }
+
+
+  test("[Unrestructure] Aggregate with a single function 2") {
+    val df = getDataFrame(pathToAggregationDoc0)
+    val res = df.groupBy($"key").agg(collect_list($"value").alias("list"))
+
+    val plan = res.queryExecution.analyzed
+    val schemaSubset = getSchemaSubsetTree(res, collectListWhyNotTuple())
+    val rewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+
+    assert(schemaSubset.rootNode.name === rewrittenSchemaSubset.rootNode.name)
+    val key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    val value = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+
+    assert(key.name == "key")
+    assert(value.name == "value")
+  }
+
+
+  def doubleAggWhyNotTuple(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("key", 1, 1, "")
+    val maxSum = twig.createNode("maxSum", 1, 1, "")
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, maxSum, false)
+    twig.validate().get
+  }
+
+
+  test("[Unrestructure] Aggregate over an aggregate") {
+    val df = getDataFrame(pathToAggregationDoc0)
+    var res = df.groupBy($"key").agg(sum($"value").alias("sum"))
+    res = res.groupBy($"key").agg(max($"sum").alias("maxSum"))
+
+    val plan = res.queryExecution.analyzed
+    val childPlan = plan.children.head
+    val schemaSubset = getSchemaSubsetTree(res, doubleAggWhyNotTuple())
+
+    val rewrittenSchemaSubset1 = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
+    val rewrittenSchemaSubset2 = getInputAndOutputWhyNotTupleFlex(childPlan, rewrittenSchemaSubset1, "")
+
+    assert(schemaSubset.rootNode.name === rewrittenSchemaSubset1.rootNode.name)
+    assert(schemaSubset.rootNode.name === rewrittenSchemaSubset2.rootNode.name)
+
+    var key = rewrittenSchemaSubset1.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    var value = rewrittenSchemaSubset1.rootNode.children.find(node => node.name == "sum").getOrElse(fail("sum not where it is supposed to be"))
+
+    assert(key.name == "key")
+    assert(value.name == "sum")
+
+    key = rewrittenSchemaSubset2.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
+    value = rewrittenSchemaSubset2.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+
+    assert(key.name == "key")
+    assert(value.name == "value")
+  }
+
 
 }
