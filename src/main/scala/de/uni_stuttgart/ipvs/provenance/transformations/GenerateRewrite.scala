@@ -42,6 +42,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    //TODO: Are these assumptions well-chosen?
     assert(generate.generator.children.size == 1)
     assert(generate.generatorOutput.size == 1)
 

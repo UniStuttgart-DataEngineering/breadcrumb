@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, CreateNamedStruct, CreateStruct, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, Max, Min}
@@ -69,7 +69,11 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     operator.output.find(attr => attr.name == name)
   }
 
-  override protected def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+  override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
+    SchemaSubsetTreeModifications(schemaSubsetTree, aggregate.child.output, aggregate.output, aggregate.aggregateExpressions).backtraceExpressions()
+
+
+
     schemaSubsetTree
   }
 
