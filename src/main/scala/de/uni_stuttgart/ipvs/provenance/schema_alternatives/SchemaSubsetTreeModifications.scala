@@ -219,14 +219,42 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   def backtraceGetStructField(field: GetStructField): Boolean = {
     val name = field.name.getOrElse(return false)
-    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, parent = currentInputNode))
-    currentInputNode.parent.addChild(currentInputNode)
     var valid = true
+
+    /*
+      Note: the field expression should have to be the leaf node in the tree
+        and, thus, we investigate from the deepest child in the expression to be added to the tree
+     */
     for (child <- field.children) {
       valid |= backtraceExpression(child)
     }
-    currentInputNode = currentInputNode.parent
+
+    /*
+      Note:
+        1) The "currentInputNode" is always the root node of the tree
+        2) Need to find the correct path for the corresponding node to the field expression (in case the parent node has multiple children)
+        3) Add the node as a leaf node
+        4) Then, return to the root node
+     */
+    val childName = getChildName(field.child)
+    currentInputNode = currentInputNode.getChild(childName).getOrElse(return false)
+    currentInputNode = currentInputNode.getLeafNode()
+    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentInputNode.constraint.deepCopy(), currentInputNode))
+    currentInputNode.parent.addChild(currentInputNode)
+    currentInputNode = currentInputNode.getRootNode()
     valid
+  }
+
+  def getChildName(expression: Expression): String = {
+    var childName = ""
+
+    expression match {
+      case al: Alias => childName = al.name
+      case a: Attribute => childName = a.name
+      case gs: GetStructField => childName = gs.name.get
+    }
+
+    childName
   }
 
 //  def backtraceStructType(a: Attribute, st: StructType): Boolean = {

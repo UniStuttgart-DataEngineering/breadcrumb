@@ -170,6 +170,15 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     twig.validate().get
   }
 
+
+//  def nestedColTwig2(): Twig = {
+//    var twig = new Twig()
+//    val root = twig.createNode("root", 1, 1, "")
+//    val list = twig.createNode("list", 1, 100, "1")
+//    twig = twig.createEdge(root, list, false)
+//    twig.validate().get
+//  }
+
   test("[Unrestructure] Unrestructure aggregated collection element") {
     val df = getDataFrame(pathToAggregationDoc0)
     val aggregatedDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
@@ -182,23 +191,28 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val df = getDataFrame(pathToAggregationDoc0)
     val aggregatedDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
     val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig())
+//    val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig())
+
     assert(rewrittenSchemaSubset.rootNode.constraint.max == -1)
     assert(rewrittenSchemaSubset.rootNode.constraint.min == 1)
     assert(rewrittenSchemaSubset.rootNode.children.size == 1)
     assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.min == 1)
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
+//    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == 100)
   }
 
   test("[Unrestructure] Unrestructure aggregated collection element retains value constraint") {
     val df = getDataFrame(pathToAggregationDoc0)
-    val aggregatedDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
+    var aggregatedDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
     val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig())
+//    val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig2())
 
     assert(rewrittenSchemaSubset.rootNode.children.size == 1)
     assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.constraintString == "1")
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
+//    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == 100)
   }
 
   test("[Rewrite] Aggregation") {
@@ -273,7 +287,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val res = df.groupBy($"key").agg(sum($"value").alias("sum"))
 
     val plan = res.queryExecution.analyzed
-    val schemaSubset = getSchemaSubsetTree(res, sumWhyNotTuple())
+    val schemaSubset = getSchemaSubsetTree(res, keySumWhyNotTuple())
     val rewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
 
     assert(schemaSubset.rootNode.name === rewrittenSchemaSubset.rootNode.name)
@@ -328,6 +342,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val df = getDataFrame(pathToAggregationDoc0)
     var res = df.groupBy($"key").agg(sum($"value").alias("sum"))
     res = res.groupBy($"key").agg(max($"sum").alias("maxSum"))
+//    res = res.groupBy($"key").agg(max($"sum")).alias("maxSum")
 
     val plan = res.queryExecution.analyzed
     val childPlan = plan.children.head

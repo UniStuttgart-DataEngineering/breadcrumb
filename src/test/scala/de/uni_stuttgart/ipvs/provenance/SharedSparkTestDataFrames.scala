@@ -136,7 +136,7 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
         }
       }
       case a: Aggregate => rewrite = AggregateRewrite(a, -1).undoSchemaModifications(schemaSubset)
-      case s: SubqueryAlias => rewrite = AggregateRewrite(s.child.asInstanceOf[Aggregate], -1).undoSchemaModifications(schemaSubset)
+//      case s: SubqueryAlias => rewrite = AggregateRewrite(s.child.asInstanceOf[Aggregate], -1).undoSchemaModifications(schemaSubset)
       case l: LeafNode => rewrite = RelationRewrite(l, -1).undoSchemaModifications(schemaSubset)
     }
 

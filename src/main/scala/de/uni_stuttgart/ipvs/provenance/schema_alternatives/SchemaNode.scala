@@ -84,7 +84,7 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
 
   def copyNode(node: SchemaNode): Unit = {
     name = node.name
-//    parent = null
+    parent = node.parent
     constraint = node.constraint.deepCopy()
     for (child <- node.children){
       children.add(child.deepCopy(parent))
@@ -92,18 +92,23 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
   }
 
   def getLeafNode(): SchemaNode = {
-    val leafNode = SchemaNode("")
+    var leafNode = this
 
-    if (!children.isEmpty) {
-      leafNode.copyNode(children.head)
-      leafNode.getLeafNode()
-    } else {
-      leafNode.name = name
-      leafNode.parent = parent
-      leafNode.constraint = constraint
+    while (!leafNode.children.isEmpty) {
+      leafNode = leafNode.children.head
     }
 
     leafNode
+  }
+
+  def getRootNode(): SchemaNode = {
+    var root = parent
+
+    while (!root.name.equals("root")) {
+      root = root.parent
+    }
+
+    root
   }
 
   def getChild(name: String): Option[SchemaNode] = {

@@ -327,7 +327,6 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
     val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(res, whyNotQuestionNestedElement())
 
-
     val nested_obj1 = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
     assert(nested_obj1.name == "nested_obj")
     val nested_obj2 = nested_obj1.children.headOption.getOrElse(fail("nested_obj not where it is supposed to be"))
@@ -343,7 +342,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val df = getDataFrame()
     val res = df.select(struct($"flat_key", struct($"nested_obj.nested_obj").alias(newName2)).alias(newName1), $"flat_key")
 
-    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting3(newName1, newName2))
+    val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting3(newName1, newName2))
 
     val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
     val nested_obj1 = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "nested_obj").getOrElse(fail("nested_obj not where it is supposed to be"))
