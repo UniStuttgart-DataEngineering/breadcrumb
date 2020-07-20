@@ -164,7 +164,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
     val list = twig.createNode("list", 1, 100, "")
-    val element = twig.createNode("element", 1, 1, "1")
+    val element = twig.createNode("element", 1, -1, "1")
     twig = twig.createEdge(root, list, false)
     twig = twig.createEdge(list, element, false)
     twig.validate().get
@@ -199,7 +199,6 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.min == 1)
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
-//    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == 100)
   }
 
   test("[Unrestructure] Unrestructure aggregated collection element retains value constraint") {
@@ -211,8 +210,6 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     assert(rewrittenSchemaSubset.rootNode.children.size == 1)
     assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
     assert(rewrittenSchemaSubset.rootNode.children.head.constraint.constraintString == "1")
-    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
-//    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == 100)
   }
 
   test("[Rewrite] Aggregation") {
@@ -319,11 +316,9 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val rewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
 
     assert(schemaSubset.rootNode.name === rewrittenSchemaSubset.rootNode.name)
+    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
     val key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
-    val value = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
-
     assert(key.name == "key")
-    assert(value.name == "value")
   }
 
 

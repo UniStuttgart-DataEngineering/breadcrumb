@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
@@ -21,6 +21,7 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   var directChildOfAlias = false
   var generateAccess = false
+  var inside_aggregation_function = false
 
   val inToOutAttr = scala.collection.mutable.Map[String,String]()
   var unionAccess = false
@@ -108,7 +109,26 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
 
   def backtraceAggregateExpression(ag: AggregateExpression): Boolean = {
     directChildOfAlias = true
-    backtraceExpression(ag.aggregateFunction.children.head)
+    ag.aggregateFunction match {
+      case nesting @ ( _:CollectList | _:CollectSet) => {
+        currentOutputNode = currentOutputNode.children.find(node => node.name == "element").getOrElse({
+          currentOutputNode = currentOutputNode.parent
+          return false
+        })
+        inside_aggregation_function = false
+      }
+      case _ => {
+        inside_aggregation_function = true
+      }
+    }
+    val res = backtraceExpression(ag.aggregateFunction.children.head)
+    if (inside_aggregation_function) {
+      inside_aggregation_function = false
+    } else {
+      currentOutputNode = currentOutputNode.parent
+    }
+
+    res
   }
 
   def backtraceAlias(alias: Alias): Boolean = {
@@ -135,14 +155,27 @@ class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inpu
     }
 
     //TODO: if an attribute is referenced multiple times, constraints need special handling
-    currentInputNode = currentInputNode.getChild(name).getOrElse(SchemaNode(name, currentOutputNode.constraint, currentInputNode))
+    var currentConstraint = Constraint("")
+    if (! inside_aggregation_function){
+      currentConstraint = currentOutputNode.constraint
+    }
+    if (currentInputNode.getChild(name).isDefined){
+      currentInputNode = currentInputNode.getChild(name).get
+
+    } else {
+      currentInputNode = SchemaNode(name, currentConstraint, currentInputNode)
+
+    }
     currentInputNode.parent.addChild(currentInputNode)
 
     if (generateAccess) {
       handleGenerateAccess()
     }
 
-    copyChildrenOfOutputAttributeToInputAttribute()
+    if (!inside_aggregation_function){
+      copyChildrenOfOutputAttributeToInputAttribute()
+    }
+
 
     if (generateAccess) {
       currentInputNode = currentInputNode.parent
