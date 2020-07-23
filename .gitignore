@@ -1,4 +1,15 @@
 /project
 /target
 /.idea/
-/src/main/resources/DBLP/
+/src/main/external_resources/DBLP/
+/src/main/external_resources/TwitterData/08_09_17_00_stream000000.log
+/src/main/external_resources/DBLPData/article.json
+/src/main/external_resources/DBLPData/book.json
+/src/main/external_resources/DBLPData/data.json
+/src/main/external_resources/DBLPData/incollection.json
+/src/main/external_resources/DBLPData/inproceedings.json
+/src/main/external_resources/DBLPData/mastersthesis.json
+/src/main/external_resources/DBLPData/person.json
+/src/main/external_resources/DBLPData/phdthesis.json
+/src/main/external_resources/DBLPData/proceedings.json
+/src/main/external_resources/DBLPData/www.json
