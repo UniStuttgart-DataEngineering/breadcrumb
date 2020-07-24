@@ -15,12 +15,17 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 
   import spark.implicits._
 
-  def runningExample() = {
+  def runningExample(): DataFrame = {
     var exampleData = getExampleDataFrame()
     exampleData = exampleData.withColumn("address", explode($"address2"))
     exampleData = exampleData.filter($"address.year" >= 2019)
     exampleData = exampleData.select($"name", $"address.city")
     exampleData.groupBy( $"city").agg(collect_list($"name").alias("nList"))
+  }
+
+  def runningExampleShortened(): DataFrame = {
+    val exampleData = getExampleDataFrame()
+    exampleData.withColumn("address", explode($"address2"))
   }
 
   def exampleWhyNotTuple() = {
@@ -29,7 +34,16 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val user = twig.createNode("city", 1, 1, "NY")
     twig = twig.createEdge(root, user, false)
     twig.validate().get
+  }
 
+  def exampleWhyNotTupleShortened() = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val address = twig.createNode("address", 1, 1, "")
+    val user = twig.createNode("city", 1, 1, "NY")
+    twig = twig.createEdge(root, address, false)
+    twig = twig.createEdge(address, user, false)
+    twig.validate().get
   }
 
 
@@ -42,6 +56,15 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val exampleData = runningExample()
     val wnTuple = exampleWhyNotTuple()
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
+    exampleData.show()
+    rewrittenData.show()
+    rewrittenData.printSchema()
+  }
+
+  test("Flatten example with rewrite") {
+    val exampleData = runningExample()
+    val wnTuple = exampleWhyNotTupleShortened()
+    val rewrittenData = WhyNotProvenance.rewrite(runningExampleShortened, wnTuple)
     exampleData.show()
     rewrittenData.show()
     rewrittenData.printSchema()

@@ -31,7 +31,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     if (!generate.outer) {
       generateRewrite = generate.generator match {
         case e: Explode => {
-          Project(generateRewrite.output :+ survivorColumnInner(provenanceContext, e.child) :+ compatibleColumn(childRewrite.plan, childRewrite.provenanceContext), generateRewrite)
+          Project(generateRewrite.output :+ survivorColumnInner(provenanceContext, e.child) :+ compatibleColumn(generateRewrite, childRewrite.provenanceContext), generateRewrite)
         }
         case _ => {
           throw new MatchError("Unsupported generator in Generate Expression")
