@@ -45,6 +45,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   def executeScenarios(): Unit = {
     for (scenario <- selectedScenarios) {
       executeScenario(scenario)
+//      deleteResult(scenario.getName)
     }
   }
 

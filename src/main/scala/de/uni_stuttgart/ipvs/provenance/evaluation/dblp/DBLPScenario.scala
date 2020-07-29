@@ -6,7 +6,10 @@ import org.apache.spark.sql.types.StructType
 
 abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfiguration) extends TestScenario(spark, testConfiguration) {
 
-  val pathToGeniueDBLP = "/user/hadoop/diesterf/data/dblp/json/"
+  // path for run in cluster
+//  val pathToGeniueDBLP = "/user/hadoop/diesterf/data/dblp/json/"
+  // path for run in local
+  val pathToGeniueDBLP = "src/main/external_resources/DBLP/"
   val inproceedingsSchema = getInproceedingsSchema()
   val proceedingsSchema = getProceedingsSchema()
   val articleSchema = getArticleSchema()
@@ -34,13 +37,14 @@ abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfigur
     w.schema
   }
 
+
   def loadInproceedings(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/inproceedings_"+ testConfiguration.getZeros() +"*.json"
+    val completePath = testConfiguration.pathToData + "/inproceedings"+ testConfiguration.getZeros() +".json"
     spark.read.schema(inproceedingsSchema).json(completePath)
   }
 
   def loadProceedings(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/proceedings_"+ testConfiguration.getZeros() +"*.json"
+    val completePath = testConfiguration.pathToData + "/proceedings"+ testConfiguration.getZeros() +".json"
     spark.read.schema(proceedingsSchema).json(completePath)
   }
 

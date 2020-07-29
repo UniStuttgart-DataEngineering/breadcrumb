@@ -17,16 +17,28 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 
   def runningExample(): DataFrame = {
     var exampleData = getExampleDataFrame()
+    exampleData.show(false)
     exampleData = exampleData.withColumn("address", explode($"address2"))
     exampleData = exampleData.filter($"address.year" >= 2019)
     exampleData = exampleData.select($"name", $"address.city")
-    exampleData.groupBy( $"city").agg(collect_list($"name").alias("nList"))
+    exampleData.groupBy($"city").agg(collect_list($"name").alias("nList"))
   }
 
   def runningExampleShortened(): DataFrame = {
     val exampleData = getExampleDataFrame()
+    exampleData.show(false)
     exampleData.withColumn("address", explode($"address2"))
   }
+
+  def runningExampleShortened2(): DataFrame = {
+    var exampleData = getExampleDataFrame()
+    exampleData.show(false)
+    exampleData = exampleData.withColumn("address", explode($"address2"))
+    exampleData = exampleData.filter($"address.year" >= 2019)
+    exampleData = exampleData.select($"name", $"address.city")
+    exampleData
+  }
+
 
   def exampleWhyNotTuple() = {
     var twig = new Twig()
@@ -46,6 +58,16 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     twig.validate().get
   }
 
+  def exampleWhyNotTupleShortened2() = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+//    val address = twig.createNode("address", 1, 1, "")
+    val user = twig.createNode("city", 1, 1, "NY")
+//    twig = twig.createEdge(root, address, false)
+    twig = twig.createEdge(root, user, false)
+    twig.validate().get
+  }
+
 
   test("Running example without rewrite") {
     val exampleData = runningExample()
@@ -62,11 +84,20 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
   }
 
   test("Flatten example with rewrite") {
-    val exampleData = runningExample()
+    val exampleData = runningExampleShortened()
     val wnTuple = exampleWhyNotTupleShortened()
-    val rewrittenData = WhyNotProvenance.rewrite(runningExampleShortened, wnTuple)
-    exampleData.show()
-    rewrittenData.show()
+    val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
+    exampleData.show(false)
+    rewrittenData.show(false)
+    rewrittenData.printSchema()
+  }
+
+  test("Project example with rewrite") {
+    val exampleData = runningExampleShortened2()
+    val wnTuple = exampleWhyNotTupleShortened2()
+    val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
+    exampleData.show(false)
+    rewrittenData.show(false)
     rewrittenData.printSchema()
   }
 
