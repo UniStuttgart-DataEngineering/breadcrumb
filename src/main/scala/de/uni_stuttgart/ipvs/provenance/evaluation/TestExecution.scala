@@ -35,6 +35,7 @@ object TestExecution extends App {
 
   val spark = init("Provenance_Evaluation")
   val testConfiguration = TestConfiguration(args.tail)
+  println("CommitId:" + testConfiguration.getCommitId())
   val testSuite = this.getTestSuite(spark, testConfiguration)
   testSuite.executeScenarios()
 

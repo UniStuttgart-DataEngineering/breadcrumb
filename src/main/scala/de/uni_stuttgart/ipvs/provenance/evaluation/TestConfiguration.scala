@@ -1,5 +1,14 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
+import java.io.IOException
+import java.net.URLClassLoader
+import java.util.jar.Manifest
+
+import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration.getClass
+import org.slf4j.LoggerFactory
+
+import scala.reflect.ManifestFactory
+
 object TestConfiguration {
 
   private def toInt(s: String):Option[Int] = {
@@ -67,6 +76,8 @@ object TestConfiguration {
 }
 
 class TestConfiguration {
+
+  lazy val logger = LoggerFactory.getLogger(getClass)
 
   private var _referenceScenario: Boolean = false
   private var _pathToData : String = "/"
@@ -148,6 +159,35 @@ class TestConfiguration {
   def build() : TestConfiguration = {
     _built = true
     this
+  }
+
+  def getCommitId(): String = {
+    if (isLocal) {
+      return "local"
+    }
+    var clOpt: Option[URLClassLoader] = None
+    try {
+      clOpt = Some(this.getClass().getClassLoader().asInstanceOf[URLClassLoader])
+    } catch  {
+      case t: Throwable => logger.warn("Failed to get URLClassLoader", t)
+    }
+    val cl = clOpt.getOrElse(return "noCommit")
+    val url = cl.findResource("META-INF/MANIFEST.MF")
+    if (url == null) {
+      logger.warn("Failed to get Manifest file")
+      return "noManifest"
+    }
+    var manifestOpt : Option[Manifest] = None
+    try {
+      manifestOpt = Some(new Manifest(url.openStream()))
+    }
+    catch {
+      case t: Throwable => logger.warn("Failed to read Manifest", t)
+    }
+    val manifest = manifestOpt.getOrElse(return "noReadManifest")
+    val attributes = manifest.getAttributes("Implementation-SCM-Revision")
+    attributes.getValue("Implementation-SCM-Revision")
+
   }
 
 }
