@@ -185,7 +185,7 @@ class TestConfiguration {
       case t: Throwable => logger.warn("Failed to read Manifest", t)
     }
     val manifest = manifestOpt.getOrElse(return "noReadManifest")
-    val attributes = manifest.getAttributes("Implementation-SCM-Revision")
+    val attributes = manifest.getMainAttributes()
     attributes.getValue("Implementation-SCM-Revision")
 
   }
