@@ -12,14 +12,9 @@ object TwitterSuite {
 class TwitterSuite(spark: SparkSession, testConfiguration: TestConfiguration) extends TestSuite(spark, testConfiguration) {
 
   lazy override val  logger = LoggerFactory.getLogger(getClass)
-  val twitterSchema = getTwitterSchema()
 
   addScenario(new TwitterScenario1(spark, testConfiguration))
 
-  def getTwitterSchema() : StructType = {
-    val t = spark.read.json(testConfiguration.pathToData + "08_09_17_00_stream000000.log")
-    t.schema
-  }
 
   override def getName(): String = "Twitter"
 

@@ -13,10 +13,12 @@ object WhyNotMSRComputation {
 
   def computeMSR(dataFrame: DataFrame, provenanceContext: ProvenanceContext): DataFrame = {
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
+//    dataFrame.show(false)
 
     val provenanceAttributesOnly = dataFrame.select(
       provenanceContext.getProvenanceAttributes().map(attribute => col(attribute.attributeName)): _*)
     val (provenanceWithUid, uidAttribute) = addUID(provenanceAttributesOnly, provenanceContext)
+//    provenanceWithUid.show(false)
 
 
     val lastCompatibleAttribute = provenanceContext.getMostRecentCompatibilityAttribute()
@@ -28,6 +30,7 @@ object WhyNotMSRComputation {
     val survivorColumns = flattenedCompatiblesOnly.columns.filter(name => Constants.isSurvivedField(name) || Constants.isIDField(name))
     val survivorsOnly = flattenedCompatiblesOnly.select(survivorColumns.map(col): _*)
     val survivorsWithLostColumns = survivorsOnly.withColumn(operatorListName, msrUDF(struct(survivorsOnly.columns.toSeq.map(col(_)): _*)))
+//    survivorsWithLostColumns.show(false)
     val result = survivorsWithLostColumns.groupBy(operatorListName).agg(countDistinct(col(uidAttribute.attributeName)).alias(compatibleCountName))
     result
 

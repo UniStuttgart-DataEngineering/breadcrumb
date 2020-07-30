@@ -6,7 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
-  override def getName: String = "D1"
+  override def getName: String = "T1"
 
   import spark.implicits._
 
