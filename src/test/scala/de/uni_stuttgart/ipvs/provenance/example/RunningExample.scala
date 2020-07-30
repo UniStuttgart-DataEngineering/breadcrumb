@@ -36,6 +36,19 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     twig.validate().get
   }
 
+  def exampleWhyNotTupleRefined() = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val user = twig.createNode("city", 1, 1, "NY")
+    val nList = twig.createNode("nList", 1, 1000000, "")
+    val element = twig.createNode("element", 1, 1, "")
+
+    twig = twig.createEdge(root, user, false)
+    twig = twig.createEdge(root, nList, false)
+    twig = twig.createEdge(nList, element, false)
+    twig.validate().get
+  }
+
   def exampleWhyNotTupleShortened() = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
@@ -54,7 +67,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 
   test("Running example with rewrite") {
     val exampleData = runningExample()
-    val wnTuple = exampleWhyNotTuple()
+    val wnTuple = exampleWhyNotTupleRefined()
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
     exampleData.show()
     rewrittenData.show()

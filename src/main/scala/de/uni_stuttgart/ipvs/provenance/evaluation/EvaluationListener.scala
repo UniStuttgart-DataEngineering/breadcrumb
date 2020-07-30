@@ -33,4 +33,10 @@ class EvaluationListener extends SparkListener {
     logger.warn(s"Application completed, runTime: ${applicationEnd.time}")
   }
 
+  //TODO: Add git commit here
+  //TODO: Add date and time
+  //TODO: Create a repository for results
+  //TODO: integrate Spark, Hadoop, Scala and Java version
+  //
+
 }

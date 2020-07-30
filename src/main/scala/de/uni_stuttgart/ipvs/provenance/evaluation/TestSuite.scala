@@ -63,6 +63,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
       collectDataFrame(result, scenario.getName)
       val t1 = System.nanoTime()
       logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
+      //TODO: log plan on debug level
     }
 
   }
