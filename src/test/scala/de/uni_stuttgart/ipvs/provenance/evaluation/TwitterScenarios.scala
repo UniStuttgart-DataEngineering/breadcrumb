@@ -7,8 +7,8 @@ import org.scalatest.FunSuite
 class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   val pathToData = "src/main/external_resources/TwitterData/"
-  val testConfiguration1 = TestConfiguration.default(pathToData)
-  val testConfiguration2 = TestConfiguration.default(pathToData)
+  val testConfiguration1 = TestConfiguration.local(pathToData)
+  val testConfiguration2 = TestConfiguration.local(pathToData)
 
   test("[Reference] Scenario 1"){
     val scenario = new TwitterScenario1(spark, testConfiguration1)

@@ -55,11 +55,12 @@ object TestConfiguration {
     testConfiguration.build()
   }
 
-  def default(pathToData: String) = {
+  def local(pathToData: String) = {
     val testConfiguration = new TestConfiguration()
     testConfiguration._pathToData = pathToData
     testConfiguration._dataSize = -1
     testConfiguration._testMask = 127
+    testConfiguration._local = true
     testConfiguration.build()
   }
 
@@ -73,6 +74,8 @@ class TestConfiguration {
   private var _warmUp: Boolean = false
   private var _dataSize : Int = 100
   private var _testMask = 0
+
+  private var _local = false
 
   private var _built = false
 
@@ -132,6 +135,13 @@ class TestConfiguration {
 
   def dataSize(dataSize:Int) : TestConfiguration = {
     if (!_built) _dataSize = dataSize
+    this
+  }
+
+  def isLocal: Boolean = _local
+
+  def isLocal(local: Boolean) : TestConfiguration = {
+    if (!_built) _local = local
     this
   }
 

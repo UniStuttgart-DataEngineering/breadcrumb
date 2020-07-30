@@ -9,13 +9,21 @@ abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfigur
   // path for run in cluster
 //  val pathToGeniueDBLP = "/user/hadoop/diesterf/data/dblp/json/"
   // path for run in local
-  val pathToGeniueDBLP = "src/main/external_resources/DBLP/"
+  val pathToGeniueDBLP = getPathToGeniueDBLP()
   val inproceedingsSchema = getInproceedingsSchema()
   val proceedingsSchema = getProceedingsSchema()
   val articleSchema = getArticleSchema()
   val wwwSchema = getWWWSchema()
 
   import spark.implicits._
+
+  protected def getPathToGeniueDBLP(): String = {
+    if (testConfiguration.isLocal) {
+      testConfiguration.pathToData
+    } else {
+      testConfiguration.pathToData + "../"
+    }
+  }
 
   def getInproceedingsSchema() : StructType = {
     val i = spark.read.json(pathToGeniueDBLP + "inproceedings.json")
@@ -37,24 +45,34 @@ abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfigur
     w.schema
   }
 
+  def getPathOffset: String = {
+    if (testConfiguration.isLocal) {
+      "_"
+    } else {
+      ""
+    }
+  }
+
+
+
 
   def loadInproceedings(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/inproceedings"+ testConfiguration.getZeros() +".json"
+    val completePath = testConfiguration.pathToData + "/inproceedings"+ getPathOffset() + testConfiguration.getZeros() +"*.json"
     spark.read.schema(inproceedingsSchema).json(completePath)
   }
 
   def loadProceedings(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/proceedings"+ testConfiguration.getZeros() +".json"
+    val completePath = testConfiguration.pathToData + "/proceedings*"+ getPathOffset() + testConfiguration.getZeros() +"*.json"
     spark.read.schema(proceedingsSchema).json(completePath)
   }
 
   def loadArticle(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/article_"+ testConfiguration.getZeros() +"*.json"
+    val completePath = testConfiguration.pathToData + "/article"+ getPathOffset() + testConfiguration.getZeros() +"*.json"
     spark.read.schema(articleSchema).json(completePath)
   }
 
   def loadWWW(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/www_"+ testConfiguration.getZeros() +"*.json"
+    val completePath = testConfiguration.pathToData + "/www"+ getPathOffset() + testConfiguration.getZeros() +"*.json"
     spark.read.schema(wwwSchema).json(completePath)
   }
 

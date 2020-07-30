@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
 class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   val pathToData = "src/main/external_resources/DBLP/"
-  val testConfiguration1 = TestConfiguration.default(pathToData)
+  val testConfiguration1 = TestConfiguration.local(pathToData)
 
   test("[Reference] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
