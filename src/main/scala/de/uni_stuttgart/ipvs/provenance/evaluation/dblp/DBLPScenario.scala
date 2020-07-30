@@ -45,7 +45,7 @@ abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfigur
     w.schema
   }
 
-  def getPathOffset: String = {
+  def getPathOffset(): String = {
     if (testConfiguration.isLocal) {
       "_"
     } else {
