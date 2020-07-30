@@ -184,8 +184,17 @@ class TestConfiguration {
     catch {
       case t: Throwable => logger.warn("Failed to read Manifest", t)
     }
+
     val manifest = manifestOpt.getOrElse(return "noReadManifest")
+    if (manifest == null) {
+      return "nullManifest"
+    }
     val attributes = manifest.getMainAttributes()
+    val keys = attributes.keySet()
+    val keyArr = keys.toArray()
+    for (key <- keyArr) {
+      println("key: " + key.toString())
+    }
     attributes.getValue("Implementation-SCM-Revision")
 
   }
