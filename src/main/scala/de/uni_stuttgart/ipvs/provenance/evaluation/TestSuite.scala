@@ -66,13 +66,18 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     collectDataFrame(result, scenario.getName)
     val t1 = System.nanoTime()
     logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
-    evaluationResult.writeRunRow(scenario, iteration, t1-t0)
+    if (iteration >= 0) {
+      evaluationResult.writeRunRow(scenario, iteration, t1-t0)
+    }
     result
   }
 
   def executeScenario(scenario: TestScenario): Unit = {
     var result = spark.emptyDataFrame
     evaluationResult.reset()
+    if (testConfiguration.warmUp) {
+      result = executeScenarioIteration(scenario, -1)
+    }
     for (iteration <- 0 until testConfiguration.iterations) {
       result = executeScenarioIteration(scenario, iteration)
     }
