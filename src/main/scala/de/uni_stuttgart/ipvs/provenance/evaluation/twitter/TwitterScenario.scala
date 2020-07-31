@@ -15,7 +15,7 @@ abstract class TwitterScenario (spark: SparkSession, testConfiguration: TestConf
   }
 
   def loadTweets(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/*" + testConfiguration.getZeros() + ".log"
+    val completePath = testConfiguration.pathToData + "*" + testConfiguration.getZeros() + ".log"
     spark.read.schema(twitterSchema).json(completePath)
   }
 
