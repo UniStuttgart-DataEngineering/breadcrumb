@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-repetitions="1"
+repetitions="3"
 testMask="127"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 provQuery="none"
 warmup="false"
 
-for testSuite in "dblp"; do
+for testSuite in "twitter"; do
     if [ $testSuite = "twitter" ]; then
         dataPath=$twitterPath
     else

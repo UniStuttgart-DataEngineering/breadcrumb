@@ -44,8 +44,8 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   }
 
   def executeScenarios(): Unit = {
-    evaluationResult.writeRunHeaderRow()
-    evaluationResult.writeRunsHeaderRow()
+    //evaluationResult.writeRunHeaderRow()
+    //evaluationResult.writeRunsHeaderRow()
     for (scenario <- selectedScenarios) {
       executeScenario(scenario)
 //      deleteResult(scenario.getName)
@@ -67,21 +67,21 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     val t1 = System.nanoTime()
     logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
     if (iteration >= 0) {
-      evaluationResult.writeRunRow(scenario, iteration, t1-t0)
+      //evaluationResult.writeRunRow(scenario, iteration, t1-t0)
     }
     result
   }
 
   def executeScenario(scenario: TestScenario): Unit = {
     var result = spark.emptyDataFrame
-    evaluationResult.reset()
+    //evaluationResult.reset()
     if (testConfiguration.warmUp) {
       result = executeScenarioIteration(scenario, -1)
     }
     for (iteration <- 0 until testConfiguration.iterations) {
       result = executeScenarioIteration(scenario, iteration)
     }
-    evaluationResult.writeRunsRow(scenario)
+    //evaluationResult.writeRunsRow(scenario)
     logger.debug("Analyzed Plan: ")
     logger.debug(result.queryExecution.analyzed.toString())
     logger.debug("Executed Plan: ")
