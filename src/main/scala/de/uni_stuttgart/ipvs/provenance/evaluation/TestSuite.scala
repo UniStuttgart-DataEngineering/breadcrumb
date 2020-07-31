@@ -9,7 +9,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   lazy val logger = LoggerFactory.getLogger(getClass)
   lazy val resultWritePath = getBasePath() + "trash/" + getName() + "/"
   val scenarios = scala.collection.mutable.ListBuffer.empty[TestScenario]
-  var selectedScenarios = selectScenarios()
+  lazy val selectedScenarios = selectScenarios()
 
   val evaluationResult = EvaluationResult(spark, this)
 
@@ -28,7 +28,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   def getName() : String
 
   def addScenario(scenario: TestScenario) : Unit = {
-    scenarios :+ scenario
+    scenarios.append(scenario)
   }
 
   def selectScenarios(): scala.collection.immutable.List[TestScenario] = {
@@ -46,7 +46,9 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   def executeScenarios(): Unit = {
     evaluationResult.writeRunHeaderRow()
     evaluationResult.writeRunsHeaderRow()
+    logger.warn("ScenariosNumber: " + selectedScenarios.size.toString())
     for (scenario <- selectedScenarios) {
+      logger.warn("Execute Scenario: " + scenario.getName())
       executeScenario(scenario)
 //      deleteResult(scenario.getName)
     }

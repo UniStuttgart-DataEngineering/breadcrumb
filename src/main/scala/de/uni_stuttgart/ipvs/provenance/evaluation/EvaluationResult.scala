@@ -110,8 +110,8 @@ class EvaluationResult(spark: SparkSession, testSuite: TestSuite) {
     val builder = scala.collection.mutable.StringBuilder.newBuilder
     builder.append(getApplicationId)
     builder.append(";")
-    builder.append(getSparkConfigurationHeader)
-    builder.append(testSuite.toCSVHeader())
+    builder.append(getSparkConfiguration)
+    builder.append(testSuite.toCSV())
     builder.toString()
   }
 

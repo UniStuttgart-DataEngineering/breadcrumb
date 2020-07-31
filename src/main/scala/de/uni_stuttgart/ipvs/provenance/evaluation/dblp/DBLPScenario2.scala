@@ -21,7 +21,7 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
     val proceedings_tenyears = proceedings_springer.filter($"year" > 2010) // Potential RP?
     val proceedings_selected = proceedings_tenyears.select($"_key", $"publisher._VALUE".alias("ppublisher"), $"year")
     val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
-    val res = proceedings_with_inproceedings.groupBy($"iauthor").agg(collect_list($"ititle"))
+    val res = proceedings_with_inproceedings.groupBy($"iauthor").agg(collect_list($"ititle").alias("ititleList"))
 
 //    inproceedings.show(false)
 //    inproceedings_selected.show(false)

@@ -4,9 +4,9 @@ testMask="127"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 provQuery="none"
-warmup="false"
+warmup="true"
 
-for testSuite in "twitter"; do
+for testSuite in "dblp"; do
     if [ $testSuite = "twitter" ]; then
         dataPath=$twitterPath
     else
