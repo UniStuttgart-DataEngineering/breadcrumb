@@ -23,15 +23,24 @@ class EvaluationResult(spark: SparkSession, testSuite: TestSuite) {
 
 
   def getAverageRuntime(): Long = {
+    if (runs.size == 0) {
+      return 0L
+    }
     runs.sum / runs.size
   }
 
   def getMedianRuntime(): Long = {
+    if (runs.size == 0) {
+      return 0L
+    }
     val (lower, upper) = runs.sortWith(_<_).splitAt(runs.size / 2)
     if (runs.size % 2 == 0) (lower.last + upper.head) / 2 else upper.head
   }
 
   def getRuntimeStandardDeviation: Double = {
+    if (runs.size == 0) {
+      return 0.0
+    }
     val avg = getAverageRuntime().toDouble
     math.sqrt(runs.map(_.toDouble).map(run => math.pow(run - avg, 2)).sum / runs.size)
   }
@@ -40,17 +49,9 @@ class EvaluationResult(spark: SparkSession, testSuite: TestSuite) {
     runs = mutable.ListBuffer.empty[Long]
   }
 
-
-
-
-
   def recordEntry(testScenario: TestScenario, iteration: Int, executionTime: Long) = {
     runs.append(executionTime)
     writeRunRow(testScenario, iteration, executionTime)
-  }
-
-  def recordScenario(testScenario: TestScenario): Unit = {
-
   }
 
   def getTimeString(): String = {

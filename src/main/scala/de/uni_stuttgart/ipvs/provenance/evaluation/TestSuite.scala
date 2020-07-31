@@ -67,7 +67,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     val t1 = System.nanoTime()
     logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
     if (iteration >= 0) {
-      evaluationResult.writeRunRow(scenario, iteration, t1-t0)
+      evaluationResult.recordEntry(scenario, iteration, t1-t0)
     }
     result
   }
