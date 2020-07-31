@@ -1,16 +1,17 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
 
 abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfiguration) {
 
   lazy val logger = LoggerFactory.getLogger(getClass)
-  lazy val pathToCache = "/user/hadoop/diesterf/cache/" + getName() + "/"
-  lazy val resultWritePath = "/user/hadoop/diesterf/trash/" + getName() + "/"
+  lazy val resultWritePath = getBasePath() + "trash/" + getName() + "/"
   val scenarios = scala.collection.mutable.ListBuffer.empty[TestScenario]
   var selectedScenarios = selectScenarios()
+
+  val evaluationResult = EvaluationResult(spark, this)
 
 
 
@@ -43,6 +44,8 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   }
 
   def executeScenarios(): Unit = {
+    evaluationResult.writeRunHeaderRow()
+    evaluationResult.writeRunsHeaderRow()
     for (scenario <- selectedScenarios) {
       executeScenario(scenario)
 //      deleteResult(scenario.getName)
@@ -53,19 +56,31 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     spark.sqlContext.clearCache()
   }
 
-  def executeScenario(scenario: TestScenario): Unit = {
-    for (iteration <- 0 until testConfiguration.iterations) {
-      logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize} begins")
-      val t0 = System.nanoTime()
-      val result = testConfiguration.referenceScenario match {
-        case false => scenario.extendedScenario
-        case _ => scenario.referenceScenario
-      }
-      collectDataFrame(result, scenario.getName)
-      val t1 = System.nanoTime()
-      logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
-      //TODO: log plan on debug level
+  def executeScenarioIteration(scenario: TestScenario, iteration: Int): DataFrame = {
+    logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize} begins")
+    val t0 = System.nanoTime()
+    val result = testConfiguration.referenceScenario match {
+      case false => scenario.extendedScenario
+      case _ => scenario.referenceScenario
     }
+    collectDataFrame(result, scenario.getName)
+    val t1 = System.nanoTime()
+    logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
+    evaluationResult.writeRunRow(scenario, iteration, t1-t0)
+    result
+  }
+
+  def executeScenario(scenario: TestScenario): Unit = {
+    var result = spark.emptyDataFrame
+    evaluationResult.reset()
+    for (iteration <- 0 until testConfiguration.iterations) {
+      result = executeScenarioIteration(scenario, iteration)
+    }
+    evaluationResult.writeRunsRow(scenario)
+    logger.debug("Analyzed Plan: ")
+    logger.debug(result.queryExecution.analyzed.toString())
+    logger.debug("Executed Plan: ")
+    logger.debug(result.queryExecution.executedPlan.toString())
 
   }
 
@@ -82,6 +97,28 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   def collectDataFrame(df: Dataset[_], scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(getWritePath(scenarioName))
     df.explain()
+  }
+
+  def toCSVHeader(): String = {
+    val builder = scala.collection.mutable.StringBuilder.newBuilder
+    builder.append("TestSuite")
+    builder.append(";")
+    builder.append(testConfiguration.toCSVHeader())
+    builder.toString()
+
+  }
+
+  def toCSV(): String = {
+    val builder = scala.collection.mutable.StringBuilder.newBuilder
+    builder.append(getName())
+    builder.append(";")
+    builder.append(testConfiguration.toCSV())
+    builder.toString()
+  }
+
+  def getBasePath(): String = {
+    val parts = testConfiguration.pathToData.split(getName().toLowerCase)
+    parts(0)
   }
 
 }

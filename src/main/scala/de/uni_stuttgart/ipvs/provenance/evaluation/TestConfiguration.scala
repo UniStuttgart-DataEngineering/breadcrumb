@@ -90,6 +90,8 @@ class TestConfiguration {
 
   private var _built = false
 
+  private lazy val _commitId = getCommitId()
+
 
 
 
@@ -161,7 +163,11 @@ class TestConfiguration {
     this
   }
 
-  def getCommitId(): String = {
+  def commitId = _commitId
+
+
+
+  private def getCommitId(): String = {
     if (isLocal) {
       return "local"
     }
@@ -189,14 +195,40 @@ class TestConfiguration {
     if (manifest == null) {
       return "nullManifest"
     }
-    val attributes = manifest.getMainAttributes()
-    val keys = attributes.keySet()
-    val keyArr = keys.toArray()
-    for (key <- keyArr) {
-      println("key: " + key.toString())
-    }
+    val attributes = manifest.getAttributes("Versions")
     attributes.getValue("Implementation-SCM-Revision")
+  }
 
+  def toCSV() = {
+    val builder = scala.collection.mutable.StringBuilder.newBuilder
+    builder.append(referenceScenario)
+    builder.append(";")
+    builder.append(pathToData)
+    builder.append(";")
+    builder.append(iterations)
+    builder.append(";")
+    builder.append(warmUp)
+    builder.append(";")
+    builder.append(dataSize)
+    builder.append(";")
+    builder.append(testMask)
+    builder.append(";")
+    builder.append(commitId)
+    builder.append(";")
+    builder.toString()
+  }
+
+
+  def toCSVHeader() = {
+    val builder = scala.collection.mutable.StringBuilder.newBuilder
+    builder.append("referenceScenario;")
+    builder.append("pathToData;")
+    builder.append("iterations;")
+    builder.append("warmUp;")
+    builder.append("dataSize;")
+    builder.append("testMask;")
+    builder.append("commitId;")
+    builder.toString()
   }
 
 }
