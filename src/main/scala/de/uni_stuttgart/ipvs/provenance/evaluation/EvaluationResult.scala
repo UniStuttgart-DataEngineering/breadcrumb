@@ -186,7 +186,7 @@ class EvaluationResult(spark: SparkSession, testSuite: TestSuite) {
     val path: Path = new Path(_path)
     val exists = hdfs.exists(path)
     var dataOutputStream: FSDataOutputStream = null
-    if (!exists) {
+    if (exists) {
       dataOutputStream = hdfs.append(path)
     } else {
       dataOutputStream = hdfs.create(path)
