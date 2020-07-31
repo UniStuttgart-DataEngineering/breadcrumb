@@ -6,13 +6,13 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfiguration) {
 
-  def getName: String
+  def getName(): String
 
-  def whyNotQuestion : Twig
+  def whyNotQuestion(): Twig
 
-  def referenceScenario : DataFrame
+  def referenceScenario() : DataFrame
 
-  def extendedScenario : DataFrame = {
+  def extendedScenario() : DataFrame = {
     WhyNotProvenance.computeMSRs(referenceScenario, whyNotQuestion)
   }
 
