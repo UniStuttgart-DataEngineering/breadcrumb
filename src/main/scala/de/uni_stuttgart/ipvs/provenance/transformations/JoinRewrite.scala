@@ -6,7 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace, Schem
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, EqualTo, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
 import org.apache.spark.sql.types.BooleanType
-import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftOuter, RightOuter}
+import org.apache.spark.sql.catalyst.plans.{Cross, FullOuter, Inner, LeftOuter, RightOuter}
 
 object JoinRewrite {
   def apply(join: Join, oid: Int)  = new JoinRewrite(join, oid)
@@ -68,10 +68,10 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     val rightRewrite = rightChild.rewrite()
 
     val provenanceContext = ProvenanceContext.mergeContext(leftRewrite.provenanceContext, rightRewrite.provenanceContext)
-    //val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
-
-    val rewrittenJoinCondition = join.condition.getOrElse(Literal(false))
-    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, Some(rewrittenJoinCondition))
+    val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
+    //val rewrittenJoinCondition = join.condition.getOrElse(Literal(false))
+    //val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, Some(rewrittenJoinCondition))
+    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, Cross, Some(rewrittenJoinCondition))
 
     val compatibleColumn = this.compatibleColumn(provenanceContext, leftRewrite, rightRewrite)
     val survivorColumn = this.survivorColumn(provenanceContext,
