@@ -68,10 +68,12 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     val rightRewrite = rightChild.rewrite()
 
     val provenanceContext = ProvenanceContext.mergeContext(leftRewrite.provenanceContext, rightRewrite.provenanceContext)
-    val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
-    //val rewrittenJoinCondition = join.condition.getOrElse(Literal(false))
-    //val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, Some(rewrittenJoinCondition))
-    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, Cross, Some(rewrittenJoinCondition))
+    val rewrittenJoinCondition = join.condition.getOrElse(Literal(false))
+    val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, FullOuter, Some(rewrittenJoinCondition))
+    //val rewrittenJoinCondition = rewriteJoinConditionToPreserveCompatibles(leftRewrite, rightRewrite)
+    //val rewrittenJoin = Join(leftRewrite.plan, rightRewrite.plan, Cross, Some(rewrittenJoinCondition))
+
+
 
     val compatibleColumn = this.compatibleColumn(provenanceContext, leftRewrite, rightRewrite)
     val survivorColumn = this.survivorColumn(provenanceContext,
