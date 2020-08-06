@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-repetitions="3"
+repetitions="1"
 testMask="127"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"

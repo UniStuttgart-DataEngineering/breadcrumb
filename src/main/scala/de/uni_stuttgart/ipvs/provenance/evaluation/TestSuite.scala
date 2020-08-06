@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfiguration) {
 
   lazy val logger = LoggerFactory.getLogger(getClass)
-  lazy val resultWritePath = getBasePath() + "trash/" + getName() + "/"
+  lazy val resultWritePath = getBasePath() + "measurements/" + getName() + "/"
   val scenarios = scala.collection.mutable.ListBuffer.empty[TestScenario]
   lazy val selectedScenarios = selectScenarios()
 
@@ -71,6 +71,8 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     if (iteration >= 0) {
       evaluationResult.recordEntry(scenario, iteration, t1-t0)
     }
+
+//    evaluationResult.getExpl(scenario, iteration, result)
     result
   }
 
@@ -101,8 +103,10 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     }
   }
 
-  def collectDataFrame(df: Dataset[_], scenarioName: String): Unit = {
+//  def collectDataFrame(df: Dataset[_], scenarioName: String): Unit = {
+  def collectDataFrame(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(getWritePath(scenarioName))
+//    df.write.mode(SaveMode.Overwrite).json(getWritePath(scenarioName))
     df.explain()
   }
 
