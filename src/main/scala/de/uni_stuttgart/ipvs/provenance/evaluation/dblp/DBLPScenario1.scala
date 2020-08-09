@@ -13,8 +13,8 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def referenceScenario: DataFrame = {
     val inproceedings = loadInproceedings()
     val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_filter1 = inproceedings_flattened.filter($"iauthor._VALUE" === "Adriane Chapman")
-    val inproceedings_filter2 = inproceedings_filter1.filter($"booktitle" === "SIGMOD")
+    val inproceedings_filter1 = inproceedings_flattened.filter($"iauthor._VALUE".contains("Adriane Chapman"))
+    val inproceedings_filter2 = inproceedings_filter1.filter($"booktitle".contains("SIGMOD"))
     val res = inproceedings_filter2.select($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("title"), $"booktitle")
 
 //    inproceedings_filter1.show(false)
@@ -25,7 +25,7 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("title", 1, 1, "Why not?")
+    val text = twig.createNode("title", 1, 1, "containsWhy not?")
     twig = twig.createEdge(root, text, false)
     twig.validate.get
   }
