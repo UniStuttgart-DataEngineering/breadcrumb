@@ -4,7 +4,7 @@ import java.io.{BufferedWriter, IOException, OutputStreamWriter}
 import java.text.SimpleDateFormat
 
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.collection.mutable
@@ -18,9 +18,15 @@ class EvaluationResult(spark: SparkSession, testSuite: TestSuite) {
   lazy val resultBasePath = testSuite.getBasePath() + "measurements/"
   lazy val runPath = resultBasePath + "runs.csv"
   lazy val runsPath = resultBasePath + "aggregated_runs.csv"
+//  lazy val explPath = resultBasePath + "testExpl"
 
   var runs = mutable.ListBuffer.empty[Long]
 
+
+//  def getExpl(scenario: TestScenario, iteration: Int, df: DataFrame) = {
+//    val fullExplPath = explPath + scenario.getName() + iteration.toString + ".csv"
+//    df.write.csv(fullExplPath)
+//  }
 
   def getAverageRuntime(): Long = {
     if (runs.size == 0) {
