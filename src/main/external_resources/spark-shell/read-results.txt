@@ -1,0 +1,20 @@
+val res1 = spark.read.parquet("/user/hadoop/diesterf/results/DBLP/D1")
+
+val res2 = spark.read.parquet("/user/hadoop/diesterf/results/DBLP/D2")
+
+val res2i = spark.read.parquet("/user/hadoop/diesterf/results/DBLP/D2i")
+
+val res2p = spark.read.parquet("/user/hadoop/diesterf/results/DBLP/D2p")
+
+val res2wn = spark.read.parquet("/user/hadoop/diesterf/results/DBLP/D2wn")
+
+println("D1")
+res1.show()
+println("D2")
+res2.show()
+println("D2i")
+res2i.show()
+println("D2p")
+res2p.show()
+println("D2wn")
+res2wn.show()
