@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfiguration) {
 
   lazy val logger = LoggerFactory.getLogger(getClass)
-  lazy val resultWritePath = getBasePath() + "measurements/" + getName() + "/"
+  lazy val resultWritePath = getBasePath() + "results/" + getName() + "/"
   val scenarios = scala.collection.mutable.ListBuffer.empty[TestScenario]
   lazy val selectedScenarios = selectScenarios()
 
@@ -128,7 +128,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   }
 
   def getBasePath(): String = {
-    val parts = testConfiguration.pathToData.split(getName().toLowerCase)
+    val parts = testConfiguration.pathToData.split("data")
     parts(0)
   }
 
