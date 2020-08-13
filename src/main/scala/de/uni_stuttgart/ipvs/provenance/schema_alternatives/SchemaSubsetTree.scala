@@ -7,6 +7,12 @@ import org.apache.spark.sql.functions.typedLit
 import scala.collection.mutable.ListBuffer
 
 object SchemaSubsetTree {
+  private var currentId = 0
+  protected def getId(): Int = {
+    currentId += 1
+    currentId
+  }
+
   private def fromSchemaMatch(schemaMatch: SchemaMatch, schema: Schema): SchemaSubsetTree = {
     val schemaSubsetTree = new SchemaSubsetTree()
     val root = fromSchemaMatchRecursive(schemaMatch.getRoot(), schema, null)
@@ -33,6 +39,8 @@ object SchemaSubsetTree {
 }
 
 class SchemaSubsetTree {
+
+  val id = SchemaSubsetTree.getId()
 
   var rootNode: SchemaNode = null
 

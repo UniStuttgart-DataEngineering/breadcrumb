@@ -161,4 +161,25 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
   }
 
 
+  def whyNotTupleAlternatives(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("key", 1, 1, "1")
+    val value = twig.createNode("value", 1, 1, "2")
+
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, value, false)
+    twig.validate().get
+  }
+
+
+  test("[ProvenanceWithSchemaAlternatives]  Initial alternatives test") {
+    val df = getDataFrame(pathToSchemaAlternative)
+    val otherDf = df.filter($"value" < 101)
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleAlternatives())
+    res.show()
+  }
+
+
+
 }

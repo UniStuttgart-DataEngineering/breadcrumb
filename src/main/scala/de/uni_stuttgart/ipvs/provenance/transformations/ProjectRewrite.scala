@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree, SchemaSubsetTreeModifications}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace}
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
@@ -77,6 +77,8 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
+    SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
   }
+
+  override def rewriteWithAlternatives(): Rewrite = rewrite()
 }

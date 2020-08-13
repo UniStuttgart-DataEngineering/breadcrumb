@@ -1,0 +1,8 @@
+{"key": "1", "value":  1, "otherValue":  2},
+{"key": "2", "value":  10, "otherValue":  3},
+{"key": "1", "value":  100, "otherValue":  4},
+{"key": "3", "value":  1000, "otherValue":  5},
+{"key": "3", "value":  10000, "otherValue":  6},
+{"key": "2", "value":  100000, "otherValue":  7},
+{"key": "1", "value":  1000000, "otherValue":  8},
+{"key": "4", "value":  10000000, "otherValue":  9}

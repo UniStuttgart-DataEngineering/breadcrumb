@@ -5,14 +5,14 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeRef
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
-object SchemaSubsetTreeModifications {
+object SchemaSubsetTreeBackTracing {
   def apply(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute], outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) = {
-    new SchemaSubsetTreeModifications(outputWhyNotQuestion, inputAttributes, outputAttributes, modificationExpressions)
+    new SchemaSubsetTreeBackTracing(outputWhyNotQuestion, inputAttributes, outputAttributes, modificationExpressions)
   }
 }
 
-class SchemaSubsetTreeModifications(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute],
-                                    outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) {
+class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute],
+                                  outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) {
 
   var inputWhyNotQuestion = SchemaSubsetTree()
 

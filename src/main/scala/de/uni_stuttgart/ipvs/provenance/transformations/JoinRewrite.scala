@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace, SchemaBackTraceNew}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, CaseWhen, EqualTo, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, Project}
@@ -87,11 +87,13 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
   }
 
   override protected[provenance] def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, leftChild.plan.output, join.left.output, leftChild.plan.output).getInputTree()
+    SchemaSubsetTreeBackTracing(schemaSubsetTree, leftChild.plan.output, join.left.output, leftChild.plan.output).getInputTree()
   }
 
   override protected[provenance] def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, rightChild.plan.output, join.right.output, rightChild.plan.output).getInputTree()
+    SchemaSubsetTreeBackTracing(schemaSubsetTree, rightChild.plan.output, join.right.output, rightChild.plan.output).getInputTree()
   }
+
+  override def rewriteWithAlternatives(): Rewrite = rewrite()
 
 }

@@ -44,11 +44,11 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
     parent = _parent
   }
 
-  def addChild(child: SchemaNode) = {
+  def addChild(child: SchemaNode): Unit = {
     children += child
   }
 
-  def removeChild(child: SchemaNode) = {
+  def removeChild(child: SchemaNode): Unit = {
     children -= child
   }
 

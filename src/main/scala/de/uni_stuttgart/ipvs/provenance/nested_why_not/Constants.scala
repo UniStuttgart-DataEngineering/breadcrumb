@@ -19,12 +19,28 @@ case object Constants {
     f"${fieldName}_${oid}%04d"
   }
 
+  private def getFieldName(fieldName: String, oid: Int, alternativeIdx: Int): String = {
+    f"${getFieldName(fieldName, oid)}_${getAlternativeIdxString(alternativeIdx)}"
+  }
+
+  def getAlternativeIdxString(alternativeIdx: Int): String = {
+    f"${alternativeIdx}%04d"
+  }
+
   protected[provenance] def getSurvivorFieldName(oid: Int): String = {
     getFieldName(SURVIVED_FIELD, oid)
   }
 
+  protected[provenance] def getSurvivorFieldName(oid: Int, alternativeIdx: Int): String = {
+    getFieldName(SURVIVED_FIELD, oid, alternativeIdx)
+  }
+
   protected[provenance] def getCompatibleFieldName(oid: Int): String = {
     getFieldName(COMPATIBLE_FIELD, oid)
+  }
+
+  protected[provenance] def getCompatibleFieldName(oid: Int, alternativeIdx: Int): String = {
+    getFieldName(COMPATIBLE_FIELD, oid, alternativeIdx)
   }
 
   protected[provenance] def getProvenanceCollectionFieldName(oid: Int): String = {
@@ -33,6 +49,10 @@ case object Constants {
 
   protected[provenance] def getProvenanceTupleFieldName(oid: Int): String = {
     getFieldName(PROVENANCE_TUPLE, oid)
+  }
+
+  protected[provenance] def getValidFieldName(alternativeIdx: Int): String = {
+    getFieldName(VALID_FIELD,0, alternativeIdx)
   }
 
   protected[provenance] def isNestedProvenanceCollection(name: String): Boolean = {
@@ -46,6 +66,8 @@ case object Constants {
   protected[provenance] def isIDField(name: String): Boolean = {
     name.contains(PROVENANCE_ID)
   }
+
+
 
   def columnNameContainsProvenanceConstant(name: String): Boolean = {
     var contains = false

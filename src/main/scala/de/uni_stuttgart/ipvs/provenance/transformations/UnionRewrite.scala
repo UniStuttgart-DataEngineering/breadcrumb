@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeModifications}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaSubsetTree, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTraceNew
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Union}
@@ -78,9 +78,11 @@ class UnionRewrite(val union: Union, override val oid: Int) extends BinaryTransf
   }
 
   override protected[provenance] def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeModifications(schemaSubsetTree, rightChild.plan.output, union.output, rightChild.plan.output).backtraceUnion()
+    SchemaSubsetTreeBackTracing(schemaSubsetTree, rightChild.plan.output, union.output, rightChild.plan.output).backtraceUnion()
     //TODO: make a deep check on attribute names
   }
+
+  override def rewriteWithAlternatives(): Rewrite = rewrite()
 
 
 

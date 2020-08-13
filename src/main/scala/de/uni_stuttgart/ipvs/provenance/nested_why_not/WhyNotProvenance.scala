@@ -2,6 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
 import org.apache.spark.sql.DataFrame
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
+import de.uni_stuttgart.ipvs.provenance.transformations.TransformationRewrite
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Schema, SchemaMatcher, Twig}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -16,7 +17,7 @@ object WhyNotProvenance {
     WhyNotMSRComputation.computeMSR(rewrittenDF, provenanceContext)
   }
 
-  protected[provenance] def internalRewrite(dataFrame: DataFrame, whyNotTwig: Twig): Rewrite = {
+  protected[provenance] def internalSetup(dataFrame: DataFrame, whyNotTwig: Twig): TransformationRewrite  = {
     ProvenanceContext.initializeUDF(dataFrame)
     val execState = dataFrame.queryExecution
     val basePlan = execState.analyzed
@@ -26,13 +27,26 @@ object WhyNotProvenance {
     val schemaSubset = SchemaSubsetTree(schemaMatch, schema)
     val rewriteTree = WhyNotPlanRewriter.buildRewriteTree(basePlan)
     rewriteTree.backtraceWhyNotQuestion(schemaSubset)
+    rewriteTree
+
+  }
+
+
+  protected[provenance] def internalRewrite(dataFrame: DataFrame, whyNotTwig: Twig): Rewrite = {
+    val rewriteTree = internalSetup(dataFrame, whyNotTwig)
     rewriteTree.rewrite()
   }
 
-  protected[provenance] def dataFrameAndProvenanceContext(dataFrame: DataFrame, whyNotTwig: Twig): (DataFrame, ProvenanceContext) = {
+  protected[provenance] def internalRewriteWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): Rewrite = {
+    val rewriteTree = internalSetup(dataFrame, whyNotTwig)
+    rewriteTree.rewriteWithAlternatives()
+  }
+
+  protected[provenance] def dataFrameAndProvenanceContext(dataFrame: DataFrame, whyNotTwig: Twig, rewriteFunction: (DataFrame, Twig) => Rewrite = internalRewrite): (DataFrame, ProvenanceContext) = {
     val execState = dataFrame.queryExecution
-    val rewrite = internalRewrite(dataFrame, whyNotTwig)
+    val rewrite = rewriteFunction(dataFrame, whyNotTwig)
     val plan = dataFrame.sparkSession.sessionState.analyzer.executeAndCheck(rewrite.plan)
+    //plan.resolve(Seq("otherValue"), dataFrame.sparkSession.conf.res)
     val outputStruct = StructType(
       rewrite.plan.output.map(out => StructField(out.name, out.dataType))
     )
@@ -47,6 +61,10 @@ object WhyNotProvenance {
 
   def rewrite(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
     dataFrameAndProvenanceContext(dataFrame, whyNotTwig)._1
+  }
+
+  def rewriteWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
+    dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)._1
   }
 
 
