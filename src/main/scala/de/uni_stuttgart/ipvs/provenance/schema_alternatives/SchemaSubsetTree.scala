@@ -29,8 +29,9 @@ object SchemaSubsetTree {
   }
 
   def apply(schemaMatch: SchemaMatch,schema: Schema) = fromSchemaMatch(schemaMatch, schema: Schema)
-  def apply(withRootNode: Boolean = true) = {
-    val schemaSubTree = new SchemaSubsetTree
+
+  def apply(withRootNode: Boolean = true, id: Int = -1) = {
+    val schemaSubTree = new SchemaSubsetTree(id)
     if (withRootNode) {
       schemaSubTree.rootNode = SchemaNode("root")
     }
@@ -38,9 +39,9 @@ object SchemaSubsetTree {
   }
 }
 
-class SchemaSubsetTree {
+class SchemaSubsetTree(_id: Int = -1) {
 
-  val id = SchemaSubsetTree.getId()
+  val id = if (_id < 0) SchemaSubsetTree.getId() else _id
 
   var rootNode: SchemaNode = null
 

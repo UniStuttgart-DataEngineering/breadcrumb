@@ -21,6 +21,7 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToNestedData4 = baseDir + "nestedData_moreComplex_renamed.json"
   protected val pathToNestedData5 = baseDir + "nestedData_renamedKeys.json"
   protected val pathToNestedData6 = baseDir + "nestedData_deepNested.json"
+  protected val pathToNestedDataWithSchemaAlternatives = baseDir + "nestedData_schemaAlternatives.json"
   protected var pathToNestedData7 = baseDir + "orders.json"
   protected var pathToNestedData8 = baseDir + "countMinMax.json"
   protected val pathToTweetsDummy = baseDir + "tweets_dummy.json"
@@ -35,6 +36,9 @@ trait SharedSparkTestDataFrames extends SharedSparkTestInstance {
   protected val pathToUnionDoc0 = baseDir + "docUnion.json"
   protected val pathToExampleData = baseDir + "exampleData.json"
   protected val pathToSchemaAlternative = baseDir + "docSchemaAlternativeSimple.json"
+  protected val pathToExampleDataSimple = baseDir + "exampleDataSimple.json"
+  protected val pathToExampleDataFlatten = baseDir + "exampleDataFlatten.json"
+
 
   def myIntColWhyNotQuestion(): Twig = {
     var twig = new Twig()

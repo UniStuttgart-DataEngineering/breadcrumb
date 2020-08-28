@@ -7,6 +7,10 @@ object PrimarySchemaNode {
   def apply(schemaNode: SchemaNode, parent: PrimarySchemaNode): PrimarySchemaNode = {
     new PrimarySchemaNode(schemaNode.name, schemaNode.constraint, parent)
   }
+
+  def apply(name: String, constraint: Constraint, parent: PrimarySchemaNode): PrimarySchemaNode = {
+    new PrimarySchemaNode(name, constraint, parent)
+  }
 }
 
 class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = null) extends SchemaNode(_name, _constraint, _parent)  {
@@ -15,6 +19,26 @@ class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaN
 
   override def addChild(child: SchemaNode): Unit = {
     children += child
+  }
+
+  def getAllAlternatives(): Seq[SchemaNode] = {
+    this :: alternatives.toList
+  }
+
+  def deepCopyPrimary(copiedParent: PrimarySchemaNode): PrimarySchemaNode = {
+    val copiedName = name + ""
+    val copiedConstrained = constraint.deepCopy()
+    val copiedNode = PrimarySchemaNode(copiedName, copiedConstrained, copiedParent)
+    copiedParent.addChild(copiedNode)
+    for ((alternative, parent) <- alternatives zip copiedParent.alternatives){
+      val copy = alternative.deepCopy(parent)
+      copiedNode.addAlternative(copy)
+      parent.addChild(copy)
+    }
+    for (child <- getChildren){
+      val childCopy = child.deepCopyPrimary(copiedNode)
+    }
+    copiedNode
   }
 
   def getChildren: mutable.Set[PrimarySchemaNode] = {
@@ -30,5 +54,18 @@ class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaN
 
   def addAlternative(alternativeNode: SchemaNode) = {
     alternatives += alternativeNode
+  }
+
+  def getPrimaryChild(name: String): Option[PrimarySchemaNode] = {
+    val finding = children.find(child => child.name == name)
+    finding match {
+
+      case Some(child : PrimarySchemaNode) => {
+        Some(child)
+      }
+      case _ => None
+    }
+
+
   }
 }

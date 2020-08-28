@@ -54,11 +54,11 @@ trait TransformationRewrite {
 
 
   def getDataFetcherExpression(child: LogicalPlan, schemaAlternative: SchemaSubsetTree = whyNotQuestion) = {
-    val udf = ProvenanceContext.getUDF
+    val udf = ProvenanceContext.getDataFetcherUDF
     val children = ArrayBuffer[Expression](getNamedStructExpression(child.output), schemaAlternative.getSchemaSubsetTreeExpression)
     val inputIsNullSafe = true :: true :: Nil
     val inputTypes = udf.inputTypes.getOrElse(Seq.empty[DataType])
-    val udfName = Some(Constants.getUDFName)
+    val udfName = Some(Constants.getDataFetcherUDFName())
     ScalaUDF(udf.f, udf.dataType, children, inputIsNullSafe, inputTypes, udfName)
   }
 

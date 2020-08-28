@@ -8,10 +8,15 @@ object PrimarySchemaSubsetTree {
     primaryTree
   }
 
+  def apply(id: Int): PrimarySchemaSubsetTree = {
+    val schemaSubsetTree = SchemaSubsetTree(true, id)
+    apply(schemaSubsetTree)
+  }
+
   def toPrimarySchemaNode(node: SchemaNode, parent: PrimarySchemaNode): PrimarySchemaNode = {
     val newNode = PrimarySchemaNode(node, parent)
     for (child <- node.children){
-      newNode.addChild(toPrimarySchemaNode(child, parent))
+      newNode.addChild(toPrimarySchemaNode(child, newNode))
     }
     newNode
   }

@@ -3,9 +3,8 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaNode, SchemaSubsetTree}
-import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, Join, Project}
@@ -19,6 +18,7 @@ object ProjectRewrite {
 
 class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewrite(project, oid){
 
+  @deprecated
   //when none is returned, the attribute referenced is not part of the schemasubset, we look at ;)
   def outputNode(ex: Expression, currentSchemaNodeOption: Option[SchemaNode]): Option[SchemaNode] = {
     if (!currentSchemaNodeOption.isDefined) return None
@@ -50,6 +50,7 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
     returnNode
   }
 
+  @deprecated
   def inputNode(ex: Expression, currentSchemaNode: SchemaNode, nodeToBeAdded:SchemaNode): Unit = {
     ex match {
       case a: Alias => {
@@ -80,5 +81,23 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
     SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
   }
 
-  override def rewriteWithAlternatives(): Rewrite = rewrite()
+  override def rewriteWithAlternatives(): Rewrite = {
+    val childRewrite = child.rewriteWithAlternatives()
+    val rewrittenChild = childRewrite.plan
+    val provenanceContext = childRewrite.provenanceContext
+    val alternativeExpressions = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, rewrittenChild, project.projectList).forwardTraceNamedExpressions()
+
+    //val addressAttributes = rewrittenChild.output.find(attr => attr.name == "address").toSeq
+    //val projectList = addressAttributes ++ alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
+
+    //TODO: create alternative renames --> should be done now
+    val projectList = alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
+    //val projectList = addressAttributes ++ alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
+    val rewrittenProjection = Project(projectList, rewrittenChild)
+    //TODO: update alternative schema trees --> should be done now, too
+    val outputTrees = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenChild, project.projectList).forwardTraceExpressions().getOutputWhyNotQuestion()
+    provenanceContext.primarySchemaAlternative = outputTrees
+    Rewrite(rewrittenProjection, provenanceContext)
+
+  }
 }

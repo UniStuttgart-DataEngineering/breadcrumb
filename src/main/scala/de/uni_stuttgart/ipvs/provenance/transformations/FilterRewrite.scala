@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTraceNew
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, Expression, NamedExpression, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
@@ -42,10 +42,17 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
     val provenanceContext = childRewrite.provenanceContext
     val rewrittenChild = childRewrite.plan
 
+    /*
     val projectList = filter.output ++
       provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output) ++
       compatibleColumns(childRewrite) ++
       survivorColumns(childRewrite)
+     */
+
+    val projectList = childRewrite.plan.output ++
+      compatibleColumns(childRewrite) ++
+      survivorColumns(childRewrite)
+
 
     val rewrittenFilter = Project(
       projectList,
@@ -74,13 +81,14 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
     val provenanceContext = rewrite.provenanceContext
     val mostRecentSurvivorAttributes = mutable.ListBuffer.empty[ProvenanceAttribute]
     val namedExpressions = mutable.ListBuffer.empty[NamedExpression]
-    val attributeName = Constants.getSurvivorFieldName(oid, provenanceContext.primarySchemaAlternative.id)
-    val provenanceAttribute = ProvenanceAttribute(oid, attributeName, BooleanType)
-    mostRecentSurvivorAttributes += provenanceAttribute
-    namedExpressions += Alias(filter.condition, attributeName)()
-    val alternativeExpressions = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrite.plan, Seq(filter.condition)).forwardTraceExpression(filter.condition)
+    //compute original expressions just like the others, since the expression may have changed.
+    //val attributeName = Constants.getSurvivorFieldName(oid, provenanceContext.primarySchemaAlternative.id)
+    //val provenanceAttribute = ProvenanceAttribute(oid, attributeName, BooleanType)
+    //mostRecentSurvivorAttributes += provenanceAttribute
+    //namedExpressions += Alias(filter.condition, attributeName)()
+    val alternativeExpressions = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, rewrite.plan, Seq(filter.condition)).forwardTraceExpression(filter.condition)
 
-    for ((alternative, expression) <- provenanceContext.primarySchemaAlternative.alternatives zip alternativeExpressions){
+    for ((alternative, expression) <- provenanceContext.primarySchemaAlternative.getAllAlternatives() zip alternativeExpressions){
       val attributeName = Constants.getSurvivorFieldName(oid, alternative.id)
       val provenanceAttribute = ProvenanceAttribute(oid, attributeName, BooleanType)
       mostRecentSurvivorAttributes += provenanceAttribute

@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.PrimarySchemaSubsetTree
-import de.uni_stuttgart.ipvs.provenance.why_not_question.DataFetcherUDF
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{FlattenIndexUDF, PrimarySchemaSubsetTree}
+import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcher, DataFetcherUDF}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
 import org.apache.spark.sql.expressions.UserDefinedFunction
@@ -30,13 +30,16 @@ object ProvenanceContext {
     provenanceContext
   }
 
-  protected var udf : UserDefinedFunction = null
+  protected var dataFetcherUdf : UserDefinedFunction = null
+  protected var flattenUdf : UserDefinedFunction = null
 
   protected[provenance] def initializeUDF(dataFrame: DataFrame) = {
-    udf = dataFrame.sparkSession.udf.register(Constants.getUDFName, new DataFetcherUDF().call _)
+    dataFetcherUdf = dataFrame.sparkSession.udf.register(Constants.getDataFetcherUDFName(), new DataFetcherUDF().call _)
+    flattenUdf = dataFrame.sparkSession.udf.register(Constants.getFlattenUDFName(), new FlattenIndexUDF().call _)
   }
 
-  def getUDF = udf
+  def getDataFetcherUDF = dataFetcherUdf
+  def getFlattenUDF = flattenUdf
 
 }
 
@@ -71,7 +74,7 @@ class ProvenanceContext {
   }
 
   protected def addProvenanceAttributes(provenanceAttributes: Seq[ProvenanceAttribute]): Unit = {
-    provenanceAttributes ++ provenanceAttributes
+    this.provenanceAttributes ++= provenanceAttributes
   }
 
   protected[provenance] def addCompatibilityAttribute(compatibilityAttribute: ProvenanceAttribute): Unit = {

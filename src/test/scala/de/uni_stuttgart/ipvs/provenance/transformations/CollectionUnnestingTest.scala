@@ -2,12 +2,14 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import com.github.mrpowers.spark.fast.tests.{ColumnComparer, DataFrameComparer}
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter, WhyNotProvenance}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceContext, Rewrite, WhyNotPlanRewriter, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, SchemaBackTrace, Twig}
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, Project}
-import org.apache.spark.sql.functions.explode
+import org.apache.spark.sql.functions.{element_at, explode, greatest, posexplode_outer, size, typedLit, udf, when}
+import org.apache.spark.sql.types.ArrayType
 import org.scalatest.FunSuite
 
 class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer{
@@ -225,6 +227,132 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
     assert(city2.name == "city")
     assert(year2.name == "year")
   }
+
+  test("[Exploration] Get size of nested array") {
+    val df = getDataFrame(pathToExampleDataFlatten)
+    var otherDf = df.withColumn("size_address1", size($"address1"))
+    otherDf = otherDf.withColumn("size_address2", size($"address2"))
+    otherDf = otherDf.select(otherDf.col("*"), posexplode_outer($"address2").as(Seq("p2", "a2")))
+    otherDf = otherDf.select(otherDf.col("*"), posexplode_outer($"address1").as(Seq("p1", "a1")))
+    otherDf = otherDf.withColumn("_p2", when($"p2".isNull, -1).otherwise($"p2")).drop("p2").withColumnRenamed("_p2", "p2")
+    otherDf = otherDf.withColumn("valid1", $"p2"=== $"p1" || ($"p1" >= $"size_address2" && $"p2" <= 0) || ($"p1" < 0 && $"p2" <= 0 ))
+    otherDf = otherDf.withColumn("valid2", $"p2"=== $"p1" || ($"p2" >= $"size_address1" && $"p1" <= 0) || ($"p2" < 0 && $"p1" <= 0 ))
+    otherDf = otherDf.filter($"valid1" === true || $"valid2" === true)
+    otherDf.show()
+    otherDf.explain(true)
+  }
+
+  test("[Exploration] Incremental blowup") {
+    val df = getDataFrame(pathToExampleDataFlatten)
+    //first column
+    var otherDf = df.withColumn("size_address1", size($"address1"))
+    otherDf = otherDf.select(otherDf.col("*"), posexplode_outer($"address1").as(Seq("_p1", "a1")))
+    otherDf = otherDf.withColumn("p1", when($"_p1".isNull, -1).otherwise($"_p1")).drop("_p1")
+    //otherDf = otherDf.withColumn("_valid1", typedLit(Literal.TrueLiteral))
+    //second column
+    otherDf = otherDf.withColumn("size_address2", size($"address2"))
+    otherDf = otherDf.select(otherDf.col("*"), posexplode_outer($"address2").as(Seq("_p2", "a2")))
+    otherDf = otherDf.withColumn("p2", when($"_p2".isNull, -1).otherwise($"_p2")).drop("_p2")
+    //compute valid fields, filter based on valid fields
+    //                                                      zipping               address2 is larger than address1           address2 is empty (outer explode)
+    otherDf = otherDf.withColumn("valid2", $"p2" === $"p1" || ($"p2" >= $"size_address1" && $"p1" <= 0 ) || ($"p1" <= 0 && $"p2" < 0))
+    otherDf = otherDf.withColumn("valid1", $"p1" === $"p2" || ($"p1" >= $"size_address2" && $"p2" <= 0 ) || ($"p2" <= 0 && $"p1" < 0))
+    otherDf = otherDf.filter($"valid2" === true || $"valid1" === true)
+    //third column
+    otherDf = otherDf.withColumn("size_address3", size($"address2"))
+    otherDf = otherDf.select(otherDf.col("*"), posexplode_outer($"address2").as(Seq("_p3", "a3")))
+    otherDf = otherDf.withColumn("p3", when($"_p3".isNull, -1).otherwise($"_p3")).drop("_p3")
+    otherDf = otherDf.withColumn("valid1a", ($"p1" === $"p2" || ($"p1" >= $"size_address2" && $"p2" <= 0 ) || ($"p2" <= 0 && $"p1" < 0)) && ($"p1" === $"p3" || ($"p1" >= $"size_address3" && $"p3" <= 0 ) || ($"p3" <= 0 && $"p1" < 0)))
+    otherDf = otherDf.withColumn("valid2a", ($"p2" === $"p1" || ($"p2" >= $"size_address1" && $"p1" <= 0 ) || ($"p1" <= 0 && $"p2" < 0)) && ($"p2" === $"p3" || ($"p2" >= $"size_address3" && $"p3" <= 0 ) || ($"p3" <= 0 && $"p2" < 0)))
+    otherDf = otherDf.withColumn("valid3a", ($"p3" === $"p1" || ($"p3" >= $"size_address1" && $"p1" <= 0 ) || ($"p1" <= 0 && $"p3" < 0)) && ($"p3" === $"p1" || ($"p3" >= $"size_address3" && $"p2" <= 0 ) || ($"p2" <= 0 && $"p3" < 0)))
+    otherDf = otherDf.drop("valid1").drop("valid2")
+    otherDf = otherDf.filter($"valid1a" === true || $"valid2a" === true || "valid3a" === true)
+
+
+
+
+
+
+
+    otherDf.show()
+    otherDf.explain(true)
+
+    //otherDf = otherDf.withColumn("size_address2", size($"address2"))
+  }
+
+  def createArrayFromColValue(colValue: Int): Seq[Int] = {
+    (0 until colValue).toArray
+  }
+
+  def createArrayFromCol = (colValue: Int) => {
+    (1 to colValue).toArray
+  }
+
+
+
+  //val temp = normalize_run.withColumn("dummy",createArrayFromColValueUDF($"REP"))
+
+
+
+  test("[Exploration] Smart MultiFlatten") {
+    val df = getDataFrame(pathToExampleDataFlatten)
+    var otherDf = df.withColumn("size_address1", size($"address1"))
+    otherDf = otherDf.withColumn("size_address2", size($"address2"))
+    otherDf = otherDf.withColumn("max_size", greatest($"size_address1", $"size_address2", typedLit(Literal(1))))
+    //val maxValUDF = udf(createArrayFromCol)
+    ProvenanceContext.initializeUDF(otherDf)
+    val maxValUDF = ProvenanceContext.getFlattenUDF
+    otherDf = otherDf.withColumn("indexArray",maxValUDF($"max_size"))
+    otherDf = otherDf.withColumn("idx", explode($"indexArray"))
+    otherDf = otherDf.select(otherDf.col("*"),
+      when($"idx" <= $"size_address1", element_at($"address1", $"idx")).otherwise(null).alias("address_alt1"),
+      when($"idx" <= $"size_address2", element_at($"address2", $"idx")).otherwise(null).alias("address_alt2"))
+    otherDf = otherDf.withColumn("valid1",
+      when($"idx" <= $"size_address1" || ($"idx" === 1 && $"size_address1" === 0), true).otherwise(false))
+    otherDf = otherDf.withColumn("valid2",
+      when($"idx" <= $"size_address2" || ($"idx" === 1 && $"size_address2" === 0), true).otherwise(false))
+    otherDf.show()
+    otherDf.explain(true)
+  }
+
+
+
+
+
+
+
+  test("[Exploration] Get pos of nested array") {
+    val df = getDataFrame(pathToExampleData)
+    var otherDf = df.select(df.col("*"), posexplode_outer($"address2").as(Seq("p2", "a2")))
+    otherDf.show()
+    otherDf.explain(true)
+
+
+  }
+
+  def whyNotTupleUnnestedAddress(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val struct1 = twig.createNode("address", 1, 1, "")
+    val element1 = twig.createNode("city", 1, 1, "LA")
+    val element2 = twig.createNode("year", 1, 1, "")
+    twig = twig.createEdge(root, struct1, false)
+    twig = twig.createEdge(struct1, element1, false)
+    twig = twig.createEdge(struct1, element2, false)
+    twig.validate().get
+  }
+
+  test("[Exploration] Check multi-schema rewrite") {
+    val df = getDataFrame(pathToExampleData)
+    //val otherDf = df.select(df.col("*"), explode($"address2").alias("address"))
+    val otherDf = df.select(explode($"address2").alias("address"))
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleUnnestedAddress())
+    res.show()
+    res.explain(true)
+  }
+
+
+
 
 
 //  test("[Unrestructure] Explode multiple collections simultaneously") {

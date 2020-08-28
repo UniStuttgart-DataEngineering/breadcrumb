@@ -1,9 +1,11 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
+
+import scala.collection.mutable
 
 object SchemaSubsetTreeBackTracing {
   def apply(outputWhyNotQuestion: SchemaSubsetTree, inputAttributes: Seq[Attribute], outputAttributes: Seq[Attribute], modificationExpressions: Seq[Expression]) = {
@@ -250,7 +252,35 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     valid
   }
 
+  def backtraceGetStructFieldInternal(field: GetStructField): Boolean = {
+    field.child match {
+      case gs: GetStructField => {
+        backtraceGetStructFieldInternal(gs)
+      }
+      case ar: AttributeReference => {
+        currentInputNode = inputWhyNotQuestion.rootNode.children.find(node => node.name == ar.name).getOrElse(SchemaNode(ar.name, Constraint(""), inputWhyNotQuestion.rootNode))
+        currentInputNode.parent.addChild(currentInputNode)
+      }
+    }
+    currentInputNode = currentInputNode.children.find(node => node.name == field.name.get).getOrElse(SchemaNode(field.name.get, Constraint(""), currentInputNode))
+    currentInputNode.parent.addChild(currentInputNode)
+    true
+  }
+
   def backtraceGetStructField(field: GetStructField): Boolean = {
+    val currentInputNode = this.currentInputNode
+    val res = backtraceGetStructFieldInternal(field)
+    if (!directChildOfAlias){
+      currentOutputNode = currentOutputNode.getChild(currentInputNode.name).getOrElse(return false)
+    }
+    directChildOfAlias = false
+    this.currentInputNode.constraint = currentOutputNode.constraint.deepCopy()
+    this.currentInputNode = currentInputNode
+    currentOutputNode = currentOutputNode.parent
+    res
+  }
+
+  def backtraceGetStructField2(field: GetStructField): Boolean = {
     val name = field.name.getOrElse(return false)
     var valid = true
 

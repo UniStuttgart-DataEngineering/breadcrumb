@@ -10,9 +10,30 @@ case object Constants {
   protected[provenance] val PROVENANCE_TUPLE = "__PROVENANCE_TUPLE"
   protected[provenance] val UDF_NAME = "__UDF"
   protected[provenance] val PROVENANCE_ID = "__ID"
+  protected[provenance] val MAX_COL_FLATTEN = "__FLATTEN_MAX"
 
-  protected[provenance] def getUDFName = {
-    UDF_NAME
+  protected def getUDFName(purpose: String) = {
+    f"${UDF_NAME}_${purpose}"
+  }
+
+  protected[provenance] def getDataFetcherUDFName() = {
+    getUDFName("data_fetcher")
+  }
+
+  protected[provenance] def getFlattenMaxColName(oid: Int) = {
+    f"${MAX_COL_FLATTEN}_MAX_${oid}"
+  }
+
+  protected[provenance] def getFlattenArrayColName(oid: Int) = {
+    f"${MAX_COL_FLATTEN}_ARRAY_${oid}"
+  }
+
+  protected[provenance] def getFlattenIdxColName(oid: Int) = {
+    f"${MAX_COL_FLATTEN}_IDX_${oid}"
+  }
+
+  protected[provenance] def getFlattenUDFName() = {
+    getUDFName("flatten_index")
   }
 
   private def getFieldName(fieldName: String, oid: Int): String = {
@@ -65,6 +86,10 @@ case object Constants {
 
   protected[provenance] def isIDField(name: String): Boolean = {
     name.contains(PROVENANCE_ID)
+  }
+
+  protected[provenance] def getAlternativeFieldName(name: String, oid: Int, alternativeIdx: Int): String = {
+    getFieldName(name, oid, alternativeIdx)
   }
 
 

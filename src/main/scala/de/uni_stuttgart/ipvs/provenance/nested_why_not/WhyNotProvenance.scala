@@ -64,6 +64,7 @@ object WhyNotProvenance {
   }
 
   def rewriteWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
+    dataFrame.explain()
     dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)._1
   }
 

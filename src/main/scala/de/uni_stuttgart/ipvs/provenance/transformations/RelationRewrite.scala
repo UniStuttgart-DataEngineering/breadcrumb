@@ -17,7 +17,8 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     val primarySchemaSubsetTree = PrimarySchemaSubsetTree(whyNotQuestion)
     val alternative1 = whyNotQuestion.deepCopy()
     replaceAddress(alternative1.rootNode)
-    replaceValue(alternative1.rootNode)
+    //replaceValue(alternative1.rootNode)
+    //replaceNestedObj(alternative1.rootNode)
     associateNode(primarySchemaSubsetTree.getRootNode, alternative1.rootNode)
     primarySchemaSubsetTree.alternatives += alternative1
     primarySchemaSubsetTree
@@ -50,6 +51,17 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     }
     for (child <- node.children){
       replaceValue(child)
+    }
+  }
+
+  def replaceNestedObj(node: SchemaNode): Unit ={
+    if (node.name == "nested_obj") {
+      node.name = "nested_obj_alt"
+    } else if (node.name == "nested_obj_1") {
+      node.name = "nested_obj_alt_1"
+    }
+    for (child <- node.children){
+      replaceNestedObj(child)
     }
   }
 

@@ -438,7 +438,80 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     (rewrittenSchemaSubset, schemaSubset)
 
     assert(schemaSubset.rootNode.children.head.constraint.attributeValue == "1_2_flat_val")
-    assert(schemaSubset.rootNode.children.head.constraint.attributeValue == rewrittenSchemaSubset.rootNode.children.head.constraint.attributeValue)
+
+  }
+
+  test("[Unrestructure] Multinested attribute is renamed"){
+    val newName = "renamed"
+    val df = getDataFrame(pathToNestedDataWithSchemaAlternatives)
+    val res = df.select($"nested_obj.nested_obj_1.nested_key".alias(newName))
+    val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
+    //    val (rewrittenSchemaSubset, schemaSubset) = getWhyNotTupleOverInput(df, res, whyNotTupleProjectionNewName(newName))
+    assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
+    val nested_obj = rewrittenSchemaSubset.rootNode.children.headOption.getOrElse(fail("Did not find nested_obj under root"))
+    val nested_obj_1 = nested_obj.children.headOption.getOrElse(fail("Did not find nested_obj_1 under nested_obj"))
+    val nested_key = nested_obj_1.children.headOption.getOrElse(fail("Did not find nested_key under nested_obj_1"))
+    assert(nested_obj.name == "nested_obj")
+    assert(nested_obj_1.name == "nested_obj_1")
+    assert(nested_key.name == "nested_key")
+  }
+
+  def whyNotTupleProjectionNewName2(newName: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val renamed = twig.createNode(newName, 1, 1, "")
+    //val flat_key = twig.createNode("flat_key", 1, 1, "")
+    //twig = twig.createEdge(root, flat_key, false)
+    twig = twig.createEdge(root, renamed, false)
+    twig.validate().get
+  }
+
+  def whyNotTupleProjectionNewName3(newName: String): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val renamed = twig.createNode(newName, 1, 1, "")
+    val el1 = twig.createNode("nested_obj_1", 1, 1, "")
+    val el2 = twig.createNode("nested_key", 1, 1, "")
+
+    twig = twig.createEdge(root, renamed, false)
+    twig = twig.createEdge(renamed, el1, false)
+    twig = twig.createEdge(renamed, el2, false)
+    twig.validate().get
+  }
+
+
+  test("[ProvenanceWithSchemaAlternatives] Nested attribute is renamed"){
+    val newName = "renamed"
+    val df = getDataFrame(pathToNestedDataWithSchemaAlternatives)
+    df.printSchema()
+    val res = df.select($"nested_obj.nested_obj_1.nested_key".alias(newName))//, $"flat_key")
+    val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleProjectionNewName2(newName))
+    provDf.show()
+    provDf.explain()
+
+
+    //val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
+    //    val (rewrittenSchemaSubset, schemaSubset) = getWhyNotTupleOverInput(df, res, whyNotTupleProjectionNewName(newName))
+
+    //assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
+    //assert(rewrittenSchemaSubset.rootNode.children.head.name == "nested_obj")
+  }
+
+  test("[ProvenanceWithSchemaAlternatives] Nested attribute with struct renamed"){
+    val newName = "renamed"
+    val df = getDataFrame(pathToNestedDataWithSchemaAlternatives)
+    df.printSchema()
+    val res = df.select(struct($"nested_obj.nested_obj_1.nested_key", $"nested_obj.nested_obj_1").alias(newName))
+    val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleProjectionNewName3(newName))
+    provDf.show()
+    provDf.explain()
+
+
+    //val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))
+    //    val (rewrittenSchemaSubset, schemaSubset) = getWhyNotTupleOverInput(df, res, whyNotTupleProjectionNewName(newName))
+
+    //assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
+    //assert(rewrittenSchemaSubset.rootNode.children.head.name == "nested_obj")
   }
 
 }

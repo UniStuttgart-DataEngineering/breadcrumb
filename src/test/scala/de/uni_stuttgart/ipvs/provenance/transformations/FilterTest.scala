@@ -180,6 +180,58 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     res.show()
   }
 
+  def whyNotTupleAlternativeAddress(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("address2", 1, 1, "")
+    val value = twig.createNode("city", 1, 1, "NY")
+    val name = twig.createNode("name", 1, 1, "")
+
+    twig = twig.createEdge(root, name, false)
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(key, value, true)
+    twig.validate().get
+  }
+
+  test("[ProvenanceWithSchemaAlternatives]  Initial alternatives test with nested attribute in collection") {
+    val df = getDataFrame(pathToExampleData)
+    val otherDf = df.filter($"name" === "NY")
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleAlternativeAddress())
+    res.show()
+  }
+
+  def whyNotTupleAlternativeAddress2(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("address2", 1, 1, "")
+    val value = twig.createNode("details", 1, 1, "")
+    val details = twig.createNode("name", 1, 1, "New York")
+
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(key, value, false)
+    twig = twig.createEdge(value, details, false)
+    twig.validate().get
+  }
+
+  test("[ProvenanceWithSchemaAlternatives]  Initial alternatives test with nested attribute") {
+    val df = getDataFrame(pathToExampleDataSimple)
+    df.printSchema()
+    val otherDf = df.filter($"address2.details.name" === "New York")
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleAlternativeAddress2())
+    res.show()
+    res.explain(true)
+  }
+
+  // $"address1.details.name"
+  // GetStructField(GetStructField(attributeReference[address1])[details])[name]
+
+
+
+
+
+
+
+
 
 
 }

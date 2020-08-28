@@ -1,0 +1,2 @@
+{"name": "Peter", "address1": {"city": "NY", "year": 2010, "details": {"name": "New York"}}, "address2":  {"city": "SF", "year": 2018, "details": {"name": "San Francisco"}}},
+{"name": "Sue", "address1": {"city": "LA", "year": 2019, "details": {"name": "Los Angeles"}}, "address2":  {"city": "NY", "year": 2018, "details": {"name": "New York"}}}
