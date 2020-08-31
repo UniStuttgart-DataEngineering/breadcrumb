@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Or}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
@@ -53,6 +53,15 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       outputAlternatives += AttributeReference(alternativeName, outputAttribute.dataType)()
     }
     (inputAlternatives, outputAlternatives.toList)
+  }
+
+  def forwardTraceJoinExpression(expression: Expression): (Expression, Seq[Expression]) = {
+    val alternativeExpressions = forwardTraceExpression(expression)
+    var aggregatedExpression = alternativeExpressions(0)
+    for (alternativeExpression <- alternativeExpressions.tail){
+      aggregatedExpression = Or(aggregatedExpression, alternativeExpression)
+    }
+    (aggregatedExpression, alternativeExpressions)
   }
 
   def forwardTraceExpression(expression: Expression): Seq[Expression] = {

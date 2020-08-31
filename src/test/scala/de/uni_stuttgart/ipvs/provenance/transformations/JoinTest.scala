@@ -130,6 +130,27 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     df.explain(true)
   }
 
+  def whyNotTupleWithConditionAlternatives(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("key", 1, 1, "3")
+    val jkey = twig.createNode("jkey", 1, 1, "3")
+    val value = twig.createNode("value", 1, 1, "6")
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, jkey, false)
+    twig = twig.createEdge(root, value, false)
+    twig.validate().get
+  }
+
+  test("[RewriteWithAlternatives] Join") {
+    val dfLeft = getDataFrame(pathToSchemaAlternative)
+    val dfRight = getDataFrame(pathToJoinDocWithAlternative).withColumnRenamed("key", "key2")
+    val res = dfLeft.join(dfRight, $"key" === $"jkey")
+    val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleWithConditionAlternatives())
+    provDf.show(50)
+  }
+
+
 
   // Schema of left branch of join: JOIN - RELATION
   def getInputAndOutputWhyNotTupleLeft(outputDataFrame: DataFrame, outputWhyNotTuple: Twig): (SchemaSubsetTree, SchemaSubsetTree, SchemaSubsetTree) = {

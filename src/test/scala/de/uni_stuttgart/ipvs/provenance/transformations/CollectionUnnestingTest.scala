@@ -343,7 +343,7 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
   }
 
   test("[Exploration] Check multi-schema rewrite") {
-    val df = getDataFrame(pathToExampleData)
+    val df = getDataFrame(pathToExampleDataFlatten)
     //val otherDf = df.select(df.col("*"), explode($"address2").alias("address"))
     val otherDf = df.select(explode($"address2").alias("address"))
     val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleUnnestedAddress())

@@ -2,12 +2,12 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import org.apache.spark.sql.catalyst.expressions.{Alias, CreateStruct, Expression, NamedExpression, ScalaUDF}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, CreateStruct, Expression, NamedExpression, ScalaUDF}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.{BooleanType, DataType}
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 trait TransformationRewrite {
 
@@ -100,6 +100,14 @@ trait TransformationRewrite {
     val compatibleAttribute = rewrittenPlan.output.find(ex => ex.name == attribute.attributeName)
       .getOrElse(throw new MatchError("Unable to find previous compatible structure in output of previous operator"))
     compatibleAttribute
+  }
+
+  def getAttributesByName(attributes: Seq[Attribute], names: Seq[String]): Seq[Attribute] ={
+    names.foldLeft(ListBuffer.empty[Attribute])((list, name) => list ++= getAttributeByName(attributes, name))
+  }
+
+  def getAttributeByName(attributes: Seq[Attribute], name: String): Option[Attribute] ={
+    attributes.find(attribute => attribute.name == name)
   }
 
 

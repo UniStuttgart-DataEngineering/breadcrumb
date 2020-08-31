@@ -1,8 +1,10 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceContext, Rewrite}
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaNode, PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Project}
+import org.apache.spark.sql.types.BooleanType
 
 
 object RelationRewrite {
@@ -15,13 +17,24 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
   //TODO: Stub, works only for the running example
   def findSchemaAlternatives(): PrimarySchemaSubsetTree = {
     val primarySchemaSubsetTree = PrimarySchemaSubsetTree(whyNotQuestion)
-    val alternative1 = whyNotQuestion.deepCopy()
+    val alternative1 = createAlternative(primarySchemaSubsetTree)
     replaceAddress(alternative1.rootNode)
-    //replaceValue(alternative1.rootNode)
-    //replaceNestedObj(alternative1.rootNode)
-    associateNode(primarySchemaSubsetTree.getRootNode, alternative1.rootNode)
-    primarySchemaSubsetTree.alternatives += alternative1
+    replaceValue(alternative1.rootNode)
+    replaceJKey(alternative1.rootNode)
+    replaceNestedObj(alternative1.rootNode)
+    //associateNode(primarySchemaSubsetTree.getRootNode, alternative1.rootNode)
+    //primarySchemaSubsetTree.alternatives += alternative1
     primarySchemaSubsetTree
+  }
+
+  def createAlternative(primarySchemaSubsetTree: PrimarySchemaSubsetTree): SchemaSubsetTree = {
+    val alternative = SchemaSubsetTree()
+    primarySchemaSubsetTree.addAlternative(alternative)
+    primarySchemaSubsetTree.getRootNode.addAlternative(alternative.rootNode)
+    for (child <- primarySchemaSubsetTree.getRootNode.getChildren) {
+      child.createDuplicates(2, primarySchemaSubsetTree.getRootNode, false, false)
+    }
+    alternative
   }
 
   //TODO: Stub, works only for the running example
@@ -54,6 +67,17 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     }
   }
 
+  //TODO: Stub, works only for the test
+  def replaceJKey(node: SchemaNode): Unit ={
+    if (node.name == "jkey") {
+      node.name = "okey"
+      return
+    }
+    for (child <- node.children){
+      replaceJKey(child)
+    }
+  }
+
   def replaceNestedObj(node: SchemaNode): Unit ={
     if (node.name == "nested_obj") {
       node.name = "nested_obj_alt"
@@ -81,11 +105,21 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
 //    SchemaSubsetTreeModifications(schemaSubsetTree, Nil, relation.output, relation.expressions).getInputTree()
   }
 
+  def validColumn(alternativeId: Int): NamedExpression = {
+    Alias(Literal(true, BooleanType), Constants.getValidFieldName(alternativeId))()
+  }
+
+  def validColumns(provenanceContext: ProvenanceContext): Seq[NamedExpression] ={
+    val columns = provenanceContext.primarySchemaAlternative.getAllAlternatives().map(alternative => validColumn(alternative.id))
+    provenanceContext.replaceValidAttributes(columns.map(col => ProvenanceAttribute(oid, col.name, BooleanType)))
+    columns
+  }
+
   override def rewriteWithAlternatives(): Rewrite = {
     val provenanceContext = new ProvenanceContext()
     val alternatives = findSchemaAlternatives()
     provenanceContext.primarySchemaAlternative = alternatives
-    val projectList = relation.output ++ compatibleColumns(relation, provenanceContext)
+    val projectList = relation.output ++ compatibleColumns(relation, provenanceContext) ++ validColumns(provenanceContext)
     val rewrittenLocalRelation = Project(
       projectList,
       relation

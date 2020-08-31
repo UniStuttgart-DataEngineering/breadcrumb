@@ -13,7 +13,8 @@ abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfigur
   def referenceScenario() : DataFrame
 
   def extendedScenario() : DataFrame = {
-    WhyNotProvenance.computeMSRs(referenceScenario, whyNotQuestion)
+    //WhyNotProvenance.computeMSRs(referenceScenario, whyNotQuestion)
+    WhyNotProvenance.rewriteWithAlternatives(referenceScenario, whyNotQuestion)
   }
 
   def toCSV(iteration: Int, exeutionTime: Long): String = {

@@ -11,6 +11,17 @@ case object Constants {
   protected[provenance] val UDF_NAME = "__UDF"
   protected[provenance] val PROVENANCE_ID = "__ID"
   protected[provenance] val MAX_COL_FLATTEN = "__FLATTEN_MAX"
+  protected[provenance] val OLD_VALID_EXTENSION = "__OLD"
+
+  protected[provenance] def getValidFieldWithOldExtension(currentName: String): String = {
+    f"${currentName}__${OLD_VALID_EXTENSION}"
+  }
+
+
+  protected[provenance] def getValidFieldWithBinaryOperatorExtension(currentName: String, left: Boolean): String = {
+    val extension = if (left) "LEFT" else "RIGHT"
+    f"${getValidFieldWithOldExtension(currentName)}__${extension}"
+  }
 
   protected def getUDFName(purpose: String) = {
     f"${UDF_NAME}_${purpose}"

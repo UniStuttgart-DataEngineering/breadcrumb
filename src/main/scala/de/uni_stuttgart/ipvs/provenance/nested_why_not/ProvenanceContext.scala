@@ -19,7 +19,19 @@ object ProvenanceContext {
     provenanceContext.nestedProvenanceContexts ++= rightContext.nestedProvenanceContexts
     provenanceContext.provenanceAttributes ++= leftContext.provenanceAttributes
     provenanceContext.provenanceAttributes ++= rightContext.provenanceAttributes
+    provenanceContext.primarySchemaAlternative = mergeSchemaAlternatives(leftContext, rightContext)
     provenanceContext
+  }
+
+  protected[provenance] def mergeSchemaAlternatives(leftContext: ProvenanceContext, rightContext: ProvenanceContext): PrimarySchemaSubsetTree = {
+    (leftContext.primarySchemaAlternative, rightContext.primarySchemaAlternative) match {
+      case (null, null) => {
+        null : PrimarySchemaSubsetTree
+      }
+      case (left, right) => {
+        PrimarySchemaSubsetTree.merge(left, right)
+      }
+    }
   }
 
   def apply() = new ProvenanceContext()
@@ -75,6 +87,10 @@ class ProvenanceContext {
 
   protected def addProvenanceAttributes(provenanceAttributes: Seq[ProvenanceAttribute]): Unit = {
     this.provenanceAttributes ++= provenanceAttributes
+  }
+
+  protected def removeProvenanceAttributes(provenanceAttributes: Seq[ProvenanceAttribute]): Unit = {
+    this.provenanceAttributes --= provenanceAttributes
   }
 
   protected[provenance] def addCompatibilityAttribute(compatibilityAttribute: ProvenanceAttribute): Unit = {
@@ -140,7 +156,8 @@ class ProvenanceContext {
     provenanceAttributes.find(a => a.attributeName.contains(Constants.VALID_FIELD))
   }
 
-  protected[provenance] def addValidAttributes(validAttributes: Seq[ProvenanceAttribute]): Unit = {
+  protected[provenance] def replaceValidAttributes(validAttributes: Seq[ProvenanceAttribute]): Unit = {
+    removeProvenanceAttributes(this.validAttributes)
     addProvenanceAttributes(validAttributes)
     this.validAttributes = validAttributes
   }
@@ -156,7 +173,7 @@ class ProvenanceContext {
   protected[provenance] def getExpressionsFromProvenanceAttributes(attributes: Seq[ProvenanceAttribute], expressions: Seq[NamedExpression]): Seq[NamedExpression] = {
     val attributeExpressions = mutable.ListBuffer.empty[NamedExpression]
     for (attribute <- attributes) {
-      attributeExpressions ++ getExpressionFromProvenanceAttribute(attribute, expressions)
+      attributeExpressions ++= getExpressionFromProvenanceAttribute(attribute, expressions)
     }
     attributeExpressions.toList
   }

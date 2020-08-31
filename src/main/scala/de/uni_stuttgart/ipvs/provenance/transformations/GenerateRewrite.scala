@@ -126,9 +126,9 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     getAttribute(attributes, Constants.getFlattenIdxColName(oid))
   }
 
-  def getValidColumn(alternativeId: Int, input: Expression, index: Attribute): NamedExpression ={
+  def getValidColumn(alternativeId: Int, input: Expression, index: Attribute, oldValidColumn: Attribute): NamedExpression ={
     val condition: Expression = Or(LessThanOrEqual(index, Size(input)), And(EqualTo(index, Literal(1, IntegerType)), EqualTo(Size(input), Literal(0, IntegerType))))
-    val trueCase: Expression = Literal(true, BooleanType)
+    val trueCase: Expression = oldValidColumn
     val falseCase: Expression = Literal(false, BooleanType)
     val caseExpression = CaseWhen(Seq((condition, trueCase)), falseCase)
     caseExpression.resolved
@@ -144,17 +144,27 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     Alias(caseExpression, Constants.getSurvivorFieldName(oid, alternativeId))()
   }
 
-  def getValidColumns(logicalPlan: LogicalPlan, provenanceContext: ProvenanceContext, alternativeInputExpressions: Seq[Expression]): Seq[NamedExpression] = {
+  def planWithRenamedValidColumns(plan: LogicalPlan, provenanceContext: ProvenanceContext): (LogicalPlan, Seq[String]) = {
+    val provenanceAttributes = provenanceContext.getValidAttributes()
+    val oldValidColumns = getAttributesByName(plan.output, provenanceAttributes.map(attr => attr.attributeName))
+    val remainingAttributes = plan.output.filterNot(attribute => oldValidColumns.contains(attribute))
+    val renamedAttributes = renameValidColumns(oldValidColumns)
+    val projectList = remainingAttributes ++ renamedAttributes
+    val newPlan = Project(projectList, plan)
+    (newPlan, renamedAttributes.map(attr => attr.name))
+  }
+
+  def getValidColumns(logicalPlan: LogicalPlan, provenanceContext: ProvenanceContext, alternativeInputExpressions: Seq[Expression], oldValidColumns: Seq[Attribute]): Seq[NamedExpression] = {
     //TODO consider previous valid columns
     val alternativeIds = getAllAlternativeIds(provenanceContext.primarySchemaAlternative)
     val index = getIndexAttribute(logicalPlan.output)
-    val validColumns = (alternativeInputExpressions zip alternativeIds) map {
-      case (alternativeInputExpression, alternativeId) => {
-        getValidColumn(alternativeId, alternativeInputExpression, index)
+    val validColumns = ((alternativeInputExpressions zip alternativeIds) zip oldValidColumns) map {
+      case ((alternativeInputExpression, alternativeId), oldValidColumn) => {
+        getValidColumn(alternativeId, alternativeInputExpression, index, oldValidColumn)
       }
     }
     val provenanceAttributes = validColumns.map(validColumn => ProvenanceAttribute(oid, validColumn.name, validColumn.dataType))
-    provenanceContext.addValidAttributes(provenanceAttributes)
+    provenanceContext.replaceValidAttributes(provenanceAttributes)
     validColumns
   }
 
@@ -171,10 +181,10 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     survivorColumns
   }
 
-  def planWithProvenanceColumns(logicalPlan: LogicalPlan, provenanceContext: ProvenanceContext, alternativeInputExpressions: Seq[Expression]): Project = {
+  def planWithProvenanceColumns(logicalPlan: LogicalPlan, provenanceContext: ProvenanceContext, alternativeInputExpressions: Seq[Expression], oldValidColumns: Seq[Attribute]): Project = {
     val compatibles = compatibleColumns(logicalPlan, provenanceContext)
     val survivors = getSurvivorColumns(logicalPlan, provenanceContext, alternativeInputExpressions)
-    val valids = getValidColumns(logicalPlan, provenanceContext, alternativeInputExpressions)
+    val valids = getValidColumns(logicalPlan, provenanceContext, alternativeInputExpressions, oldValidColumns)
     Project(logicalPlan.output ++ compatibles ++ survivors ++ valids, logicalPlan)
   }
 
@@ -192,11 +202,10 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     val withNestedIndex = planWithNestedIndexColumn(withMaxCol)
     val withFlattenedIndex = planWithFlattenedIndexColumn(withNestedIndex)
     val withFlattenedColumns = planWithFlattenedColumns(withFlattenedIndex, alternativeInputs, alternativeOutputs)
-    val withProvenanceColumns = planWithProvenanceColumns(withFlattenedColumns, provenanceContext, alternativeInputs)
+    val (withOldValidColumns, oldValidColumnNames) = planWithRenamedValidColumns(withFlattenedColumns, provenanceContext)
+    val oldValidColumns = getAttributesByName(withOldValidColumns.output, oldValidColumnNames)
+    val withProvenanceColumns = planWithProvenanceColumns(withOldValidColumns, provenanceContext, alternativeInputs, oldValidColumns)
 
-    //TODO add compatible columns (call udf)
-    //TODO add survivor columns
-    //TODO add valid columns
 
     Rewrite(withProvenanceColumns, provenanceContext)
   }

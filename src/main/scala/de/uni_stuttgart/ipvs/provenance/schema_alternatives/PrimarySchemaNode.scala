@@ -36,9 +36,26 @@ class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaN
       parent.addChild(copy)
     }
     for (child <- getChildren){
-      val childCopy = child.deepCopyPrimary(copiedNode)
+      child.deepCopyPrimary(copiedNode)
     }
     copiedNode
+  }
+
+  def createDuplicates(alternatingFactor: Int, parent: PrimarySchemaNode, alternating: Boolean, copyPrimary: Boolean = true): Unit ={
+    val copiedName = name + ""
+    val copiedConstrained = constraint.deepCopy()
+    val copiedNode = if(copyPrimary) PrimarySchemaNode(copiedName, copiedConstrained, parent) else this
+    parent.addChild(copiedNode)
+    val inputAlternatives = getAllAlternatives()
+    for ((alternative, idx) <- parent.alternatives.zipWithIndex){
+      val inputIdx: Int = if (alternating) (idx + 1) % alternatingFactor else (idx + 1) / alternatingFactor
+      val copy = inputAlternatives(inputIdx).deepCopy(alternative)
+      copiedNode.addAlternative(copy)
+      alternative.addChild(copy)
+    }
+    for (child <- getChildren){
+      child.createDuplicates(alternatingFactor, copiedNode,alternating)
+    }
   }
 
   def getChildren: mutable.Set[PrimarySchemaNode] = {
