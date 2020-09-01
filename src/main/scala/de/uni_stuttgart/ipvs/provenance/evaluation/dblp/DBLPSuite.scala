@@ -16,11 +16,11 @@ class DBLPSuite(spark: SparkSession, testConfiguration: TestConfiguration) exten
 
   lazy override val  logger = LoggerFactory.getLogger(getClass)
 
-  addScenario(new DBLPScenario1(spark, testConfiguration))
-  addScenario(new DBLPScenario2i(spark, testConfiguration))
-  addScenario(new DBLPScenario2p(spark, testConfiguration))
-  addScenario(new DBLPScenario2wn(spark, testConfiguration))
   addScenario(new DBLPScenario2(spark, testConfiguration))
+  addScenario(new DBLPScenario5i(spark, testConfiguration))
+  addScenario(new DBLPScenario5p(spark, testConfiguration))
+  addScenario(new DBLPScenario5wn(spark, testConfiguration))
+  addScenario(new DBLPScenario1(spark, testConfiguration))
 
   override def getName(): String = "DBLP"
 }

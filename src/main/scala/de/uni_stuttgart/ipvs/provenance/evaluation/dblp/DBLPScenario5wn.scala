@@ -5,7 +5,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.functions.{collect_list, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class DBLPScenario2wn(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
+class DBLPScenario5wn(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
   override def getName: String = "D2wn"
 
   import spark.implicits._
