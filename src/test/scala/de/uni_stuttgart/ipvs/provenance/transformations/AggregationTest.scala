@@ -6,7 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, WhyNotProvena
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Generate}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, Generate}
 import org.scalatest.FunSuite
 import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum}
 import org.apache.spark.sql.types.{ArrayType, StructType}
@@ -360,6 +360,33 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
 
     assert(key.name == "key")
     assert(value.name == "value")
+  }
+
+  test("[Exploration] Aggregate with grouping sets") {
+    val df = getDataFrame(pathToJoinDocWithAlternative)
+    df.createOrReplaceTempView("df")
+    val res = spark.sql("SELECT okey, jkey, SUM(JValue) from df GROUP BY okey, jkey GROUPING SETS ((okey, jkey), (okey), (jkey))" )
+    res.explain(true)
+    val plan = res.queryExecution.analyzed
+    res.show()
+  }
+
+  def alternativeWhyNotQuestion(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("jkey", 1, 1, "")
+    val sum = twig.createNode("sum", 1, 1, "")
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, sum, false)
+    twig.validate().get
+  }
+
+  test("[RewriteWithAlternatives] Aggregate with grouping sets") {
+    val df = getDataFrame(pathToJoinDocWithAlternative)
+    val otherDf = df.groupBy($"jkey").agg(sum("JValue").alias("sum"))
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, alternativeWhyNotQuestion())
+    res.explain(true)
+    res.show()
   }
 
 

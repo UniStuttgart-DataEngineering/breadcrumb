@@ -23,6 +23,7 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   var directChildOfAlias = false
   var generateAccess = false
   var inside_aggregation_function = false
+  var forGroupingSets = false
 
   def forwardTraceExpressions(): Seq[Expression] = {
     val alternativeExpressions = mutable.ListBuffer.empty[Expression]
@@ -91,11 +92,9 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       case nn: IsNotNull => {
         forwardTraceIsNotNull(nn)
       }
-
-      /*
       case ag: AggregateExpression => {
-        //forwardTraceAggregateExpression(ag)
-      }*/
+        forwardTraceAggregateExpression(ag)
+      }
     }
 
   }
@@ -109,8 +108,12 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
         case _ => Constants.getAlternativeFieldName(a.name, 0, tree.id)
       }
       //val alternativeName = Constants.getAlternativeFieldName(a.name, 0, tree.id)
-      val newAlias = Alias(child, alternativeName)()
-      alternativeExpressions += newAlias
+      if(!forGroupingSets){
+        val newAlias = Alias(child, alternativeName)()
+        alternativeExpressions += newAlias
+      } else {
+        alternativeExpressions += child
+      }
     }
     alternativeExpressions.toList
   }
@@ -163,6 +166,23 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     val expressions = forwardTraceStructFieldInternal(field)
     currentInputNode = initialInputNode
     expressions
+  }
+
+  def isForGroupingSets() : this.type = {
+    forGroupingSets = true
+    this
+  }
+
+  def forwardTraceAggregateExpression(expression: AggregateExpression): Seq[Expression] = {
+    val alternativeChildExpressions = forwardTraceExpression(expression.aggregateFunction.children.head)
+    if (forGroupingSets) return alternativeChildExpressions
+    alternativeChildExpressions.map {
+      child => {
+        val aggFunction = expression.aggregateFunction.withNewChildren(Seq(child))
+        val aggExpression = expression.withNewChildren(Seq(aggFunction))
+        aggExpression
+      }
+    }
   }
 
   def forwardTraceLiteral(literal: Literal): Seq[Expression] = {

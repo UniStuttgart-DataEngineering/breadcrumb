@@ -155,7 +155,6 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
   }
 
   def getValidColumns(logicalPlan: LogicalPlan, provenanceContext: ProvenanceContext, alternativeInputExpressions: Seq[Expression], oldValidColumns: Seq[Attribute]): Seq[NamedExpression] = {
-    //TODO consider previous valid columns
     val alternativeIds = getAllAlternativeIds(provenanceContext.primarySchemaAlternative)
     val index = getIndexAttribute(logicalPlan.output)
     val validColumns = ((alternativeInputExpressions zip alternativeIds) zip oldValidColumns) map {

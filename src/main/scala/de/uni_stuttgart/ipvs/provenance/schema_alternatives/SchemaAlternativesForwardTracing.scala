@@ -1,6 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, Expression, GetStructField, IsNotNull, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
@@ -17,6 +18,8 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
 
   var outputTree = PrimarySchemaSubsetTree(inputWhyNotQuestion.id)
   var currentInputNode = inputWhyNotQuestion.getRootNode
+  var currentBacktracedNode: SchemaNode = null
+
 
   var currentOutputNode = outputTree.getRootNode
   var deepestNode = inputWhyNotQuestion.getRootNode
@@ -47,6 +50,52 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     this
   }
 
+
+  def isAggregateExpression(expression: Expression): Boolean = {
+    var isAggregate = false
+    for (child <- expression.children) {
+      isAggregate |= isAggregateExpression(child)
+    }
+    isAggregate
+  }
+
+  def forwardTraceConstraintsOnAggregatedValues(outputWhyNotQuestion: SchemaSubsetTree): this.type = {
+    for (expression <- modificationExpressions){
+      currentOutputNode = outputTree.getRootNode
+      currentBacktracedNode = outputWhyNotQuestion.rootNode
+      forwardTraceConstraints(expression)
+    }
+    this
+  }
+
+  def forwardTraceConstraints(expression: Expression) = {
+    expression match {
+      case a: Alias => {
+        currentOutputNode = currentOutputNode.getPrimaryChild(a.name).get
+        currentBacktracedNode = currentBacktracedNode.getChild(a.name).get
+        currentOutputNode.constraint = currentBacktracedNode.constraint
+        copyConstraints()
+      }
+      case _ => {}
+    }
+  }
+
+
+
+  def forwardTraceAggregateExpression(ag: AggregateExpression): Unit = {
+    ag.aggregateFunction match {
+      case nesting @ ( _:CollectList | _:CollectSet) => {
+          currentOutputNode = createOutputNodes("element")
+          forwardTraceExpression(ag.aggregateFunction.children.head)
+          currentOutputNode = currentOutputNode.getParent()
+        }
+      case _ => {
+        forwardTraceExpression(ag.aggregateFunction.children.head)
+      }
+    }
+
+  }
+
   def forwardTraceExpression(expression: Expression): Unit = {
     expression match {
 
@@ -65,10 +114,10 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       case l: Literal => {
         forwardTraceLiteral(l)
       }
-      /*
+
       case ag: AggregateExpression => {
-        //forwardTraceAggregateExpression(ag)
-      }*/
+        forwardTraceAggregateExpression(ag)
+      }
     }
   }
 
@@ -84,8 +133,21 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     val outputNode = PrimarySchemaNode(name, Constraint(""), currentOutputNode)
     currentOutputNode.addChild(outputNode)
     for ((alternative, id) <- currentOutputNode.alternatives zip outputTree.alternatives.map(alternative => alternative.id)) {
-      val alternativeNode = SchemaNode(Constants.getAlternativeFieldName(name, 0, id), Constraint(""), alternative)
+      val alternativeNodeName = if(name == "element") "element" else Constants.getAlternativeFieldName(name, 0, id)
+      val alternativeNode = SchemaNode(alternativeNodeName, Constraint(""), alternative)
       alternative.addChild(alternativeNode)
+      outputNode.addAlternative(alternativeNode)
+    }
+    outputNode
+  }
+
+  def createOutputNodes(inputNode: PrimarySchemaNode): PrimarySchemaNode = {
+    val outputNode = PrimarySchemaNode(inputNode.name, Constraint(""), currentOutputNode)
+    currentOutputNode.addChild(outputNode)
+    for ((inputAlternative, outputAlternativeParent) <- currentInputNode.alternatives zip currentOutputNode.alternatives) {
+      val alternativeNodeName = inputAlternative.name
+      val alternativeNode = SchemaNode(alternativeNodeName, Constraint(""), outputAlternativeParent)
+      outputAlternativeParent.addChild(alternativeNode)
       outputNode.addAlternative(alternativeNode)
     }
     outputNode
@@ -106,7 +168,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
   def forwardTraceAttribute(reference: AttributeReference): Unit = {
     currentInputNode = currentInputNode.getPrimaryChild(reference.name).get
     if(!isDescendantOfAlias){
-      currentOutputNode = createOutputNodes(reference.name)
+      currentOutputNode = createOutputNodes(currentInputNode)
     }
     if(isGeneratorExpression){
       //move on to the nested element node
@@ -128,7 +190,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     val inputNode = currentInputNode
     forwardTraceStructFieldInternal(field)
     if(!isDescendantOfAlias){
-      currentOutputNode = createOutputNodes(currentInputNode.name)
+      currentOutputNode = createOutputNodes(currentInputNode)
     }
     if(isGeneratorExpression){
       //move on to the nested element node
@@ -171,10 +233,6 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       isDescendantOfAlias = true
       forwardTraceExpression(expression)
       currentOutputNode = currentOutputNode.getParent()
-    }
-    if(!alias){
-      //This case should not happen
-      currentOutputNode = createOutputNodes(struct.nodeName)
     }
   }
 
