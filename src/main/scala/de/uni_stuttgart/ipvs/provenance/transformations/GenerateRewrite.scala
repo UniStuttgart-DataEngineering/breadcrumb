@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, CaseWhen, ElementAt, EqualTo, Explode, Expression, GreaterThan, Greatest, IsNotNull, LessThanOrEqual, Literal, NamedExpression, Or, PosExplode, ScalaUDF, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
 import org.apache.spark.sql.types.{BooleanType, DataType, IntegerType}
@@ -48,7 +48,10 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     assert(generate.generator.children.size == 1)
     assert(generate.generatorOutput.size == 1)
 
-    SchemaSubsetTreeBackTracing(schemaSubsetTree, generate.child.output, generate.generatorOutput, generate.generator.children).backtraceGenerator()
+    var inputTree = SchemaSubsetTreeBackTracing(schemaSubsetTree, generate.child.output, generate.generatorOutput, generate.generator.children).backtraceGenerator()
+    inputTree = SchemaSubsetTreeAccessAdder(inputTree, generate.generator.children).traceAttributeAccess()
+    inputTree
+
 
 //    val modifications = SchemaSubsetTreeModifications(schemaSubsetTree, generate.child.output, generate.generatorOutput, generate.generator.children)
 //    if (whyNotQuestion.rootNode.children.size != schemaSubsetTree.rootNode.children.size)

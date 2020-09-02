@@ -49,12 +49,13 @@ class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaN
     val inputAlternatives = getAllAlternatives()
     for ((alternative, idx) <- parent.alternatives.zipWithIndex){
       val inputIdx: Int = if (alternating) (idx + 1) % alternatingFactor else (idx + 1) / alternatingFactor
-      val copy = inputAlternatives(inputIdx).deepCopy(alternative)
+      //val copy = inputAlternatives(inputIdx).deepCopy(alternative)
+      val copy = inputAlternatives(inputIdx).deepCopyWithoutChildren(alternative)
       copiedNode.addAlternative(copy)
       alternative.addChild(copy)
     }
     for (child <- getChildren){
-      child.createDuplicates(alternatingFactor, copiedNode,alternating)
+      child.createDuplicates(alternatingFactor, copiedNode,alternating, copyPrimary)
     }
   }
 

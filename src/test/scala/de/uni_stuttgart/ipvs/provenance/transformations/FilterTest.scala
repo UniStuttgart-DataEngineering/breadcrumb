@@ -129,10 +129,11 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     assert(rewrittenSchemaSubsetRelation.rootNode.children.head.name == "user")
 
     val id = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "id_str").getOrElse(fail("id_str not where it is supposed to be"))
-    assert(id.name == "id_str")
+    val name = rewrittenSchemaSubsetRelation.rootNode.children.head.children.find(node => node.name == "name").getOrElse(fail("name not where it is supposed to be"))
+
 
     val size = rewrittenSchemaSubsetRelation.rootNode.children.head.children.size
-    assert(size == 1)
+    assert(size == 2)
   }
 
 

@@ -32,7 +32,7 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     primarySchemaSubsetTree.addAlternative(alternative)
     primarySchemaSubsetTree.getRootNode.addAlternative(alternative.rootNode)
     for (child <- primarySchemaSubsetTree.getRootNode.getChildren) {
-      child.createDuplicates(2, primarySchemaSubsetTree.getRootNode, false, false)
+      child.createDuplicates(100, primarySchemaSubsetTree.getRootNode, false, false)
     }
     alternative
   }

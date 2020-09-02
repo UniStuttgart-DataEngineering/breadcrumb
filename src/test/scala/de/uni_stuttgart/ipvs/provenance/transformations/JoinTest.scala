@@ -161,6 +161,7 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val rewrite1 = JoinRewrite(plan.asInstanceOf[Join], -1).undoLeftSchemaModifications(schemaSubset)
     val rewrite2 = RelationRewrite(child.asInstanceOf[LeafNode], 0).undoSchemaModifications(rewrite1)
 
+
     (rewrite1, rewrite2, schemaSubset)
   }
 
@@ -397,16 +398,18 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     var key2 = rewrittenSchemaSubsetRight.rootNode.children.find(node => node.name == "key2").getOrElse(fail("key2 (right) not where it is supposed to be"))
     assert(key2.name == "key2")
 
-    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 1)
+    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 2)
     key2 = rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
-    assert(key2.name == "key")
+    rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue (right) not where it is supposed to be"))
 
-    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 1)
+
+    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 2)
     key2 = rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
-    assert(key2.name == "key")
+    rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue (right) not where it is supposed to be"))
 
 
-//
+
+    //
 //    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef())
 //    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
 //
@@ -441,13 +444,13 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
 
     assert(schemaSubsetLeft.rootNode.name == rewrittenSchemaSubsetLeft.rootNode.name)
 
-    assert(rewrittenSchemaSubsetLeft.rootNode.children.size == 1)
-    var value = rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
-    assert(value.name == "value")
+    assert(rewrittenSchemaSubsetLeft.rootNode.children.size == 2)
+    rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    rewrittenSchemaSubsetLeft.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
 
-    assert(rewrittenSchemaSubsetLeftRelation.rootNode.children.size == 1)
-    value = rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
-    assert(value.name == "value")
+    assert(rewrittenSchemaSubsetLeftRelation.rootNode.children.size == 2)
+    rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "value").getOrElse(fail("value not where it is supposed to be"))
+    rewrittenSchemaSubsetLeftRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
 
 
     // Evaluate right branch
@@ -455,11 +458,18 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
       getInputAndOutputWhyNotTupleRight(res, whyNotTupleBasicJoinSingleRef2())
 
     assert(schemaSubsetRight.rootNode.name == rewrittenSchemaSubsetRight.rootNode.name)
-    assert(rewrittenSchemaSubsetRight.rootNode.children.size == 0)
-    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 0)
-    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 0)
+    assert(rewrittenSchemaSubsetRight.rootNode.children.size == 1)
+    rewrittenSchemaSubsetRight.rootNode.children.find(node => node.name == "key2").getOrElse(fail("key2 (right) not where it is supposed to be"))
+    assert(rewrittenSchemaSubsetRightProject.rootNode.children.size == 2)
+    rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
+    rewrittenSchemaSubsetRightProject.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue (right) not where it is supposed to be"))
+    assert(rewrittenSchemaSubsetRightRelation.rootNode.children.size == 2)
+    rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "key").getOrElse(fail("key (right) not where it is supposed to be"))
+    rewrittenSchemaSubsetRightRelation.rootNode.children.find(node => node.name == "otherValue").getOrElse(fail("otherValue (right) not where it is supposed to be"))
 
-//
+
+
+    //
 //    val schemaMatch = getSchemaMatch(res, whyNotTupleBasicJoinSingleRef2())
 //    val schemaSubset = SchemaSubsetTree(schemaMatch, new Schema(res))
 //

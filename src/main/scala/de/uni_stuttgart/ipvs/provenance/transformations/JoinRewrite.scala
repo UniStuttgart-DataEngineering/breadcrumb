@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{SchemaBackTrace, SchemaBackTraceNew}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, CaseWhen, EqualTo, Expression, GreaterThan, IsNotNull, IsNull, LessThanOrEqual, Literal, NamedExpression, Not, Or, Rand, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, Project}
@@ -174,11 +174,13 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
   }
 
   override protected[provenance] def undoLeftSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeBackTracing(schemaSubsetTree, leftChild.plan.output, join.left.output, leftChild.plan.output).getInputTree()
+    val inputTree = SchemaSubsetTreeAccessAdder(schemaSubsetTree, join.condition.toSeq).traceAttributeAccess()
+    SchemaSubsetTreeBackTracing(inputTree, leftChild.plan.output, join.output, leftChild.plan.output).getInputTree()
   }
 
   override protected[provenance] def undoRightSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeBackTracing(schemaSubsetTree, rightChild.plan.output, join.right.output, rightChild.plan.output).getInputTree()
+    val inputTree = SchemaSubsetTreeAccessAdder(schemaSubsetTree, join.condition.toSeq).traceAttributeAccess()
+    SchemaSubsetTreeBackTracing(inputTree, rightChild.plan.output, join.output, rightChild.plan.output).getInputTree()
   }
 
   def renameValidColumns(validColumns: Seq[NamedExpression], left: Boolean): Seq[NamedExpression] = {

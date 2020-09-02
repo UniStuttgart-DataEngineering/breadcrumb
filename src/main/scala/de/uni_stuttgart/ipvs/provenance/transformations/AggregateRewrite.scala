@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, CreateNamedStruct, CreateStruct, EqualTo, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, Max, Min}
@@ -83,7 +83,10 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
     outputWhyNotQuestion = schemaSubsetTree
-    SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, aggregate.output, aggregate.aggregateExpressions).getInputTree()
+    var inputTree = SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, aggregate.output, aggregate.aggregateExpressions).getInputTree()
+    inputTree = SchemaSubsetTreeAccessAdder(inputTree, aggregate.aggregateExpressions).traceAttributeAccess()
+    inputTree
+
   }
 
   def getExpandAttributeName: String = {

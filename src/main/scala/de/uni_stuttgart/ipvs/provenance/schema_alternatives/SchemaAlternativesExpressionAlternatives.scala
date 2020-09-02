@@ -5,6 +5,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Or}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.types.StringType
 
 import scala.collection.mutable
 
@@ -191,13 +192,23 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
 
   def forwardTraceNamedStruct(cns: CreateNamedStruct): Seq[Expression] = {
     val alternativeExpressions = mutable.ListBuffer.empty[Expression]
+    val childNames = mutable.ListBuffer.empty[String]
     val alternativeChildExpressions = mutable.ListBuffer.empty[Seq[Expression]]
-    for (child <- cns.children) {
-      alternativeChildExpressions += forwardTraceExpression(child)
+    for (List(name, expression) <- cns.children.grouped(2)) {
+      childNames += name.asInstanceOf[Literal].value.toString
+      val forwardedExpressions = forwardTraceExpression(expression)
+      alternativeChildExpressions += forwardedExpressions
+
     }
-    for (idx <- 0 until inputWhyNotQuestion.getAllAlternatives().size){
+    for ((alternative, idx) <- inputWhyNotQuestion.getAllAlternatives().zipWithIndex){
       val newChildExpressions = mutable.ListBuffer.empty[Expression]
-      for (expressionList <- alternativeChildExpressions){
+      for ((name, expressionList) <- childNames zip alternativeChildExpressions){
+        val alternativeNodeName = alternative match {
+          case _: PrimarySchemaSubsetTree => name
+          case _ => Constants.getAlternativeFieldName(name, 0, alternative.id)
+        }
+        val namedExpression = Literal(alternativeNodeName, StringType)
+        newChildExpressions += namedExpression
         newChildExpressions += expressionList(idx)
       }
       alternativeExpressions += CreateNamedStruct(newChildExpressions)

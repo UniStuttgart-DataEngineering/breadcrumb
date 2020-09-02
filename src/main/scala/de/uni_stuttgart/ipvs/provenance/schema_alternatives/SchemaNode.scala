@@ -113,6 +113,13 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
     copiedNode
   }
 
+  def deepCopyWithoutChildren(copiedParent: SchemaNode) = {
+    val copiedName = name + ""
+    val copiedConstrained = constraint.deepCopy()
+    val copiedNode = SchemaNode(copiedName, copiedConstrained, copiedParent)
+    copiedNode
+  }
+
   def serialize(id: Short, parentId: Short):(Short, Short, Byte, Int, Int, String, String) = {
     (id, parentId, constraint.operatorId, constraint.min, constraint.max, name, constraint.attributeValue)
   }

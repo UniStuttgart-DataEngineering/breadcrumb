@@ -251,7 +251,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val size = rewrittenSchemaSubset.rootNode.children.size
 
     assert(flat_key.name == "flat_key")
-    assert(size == 1)
+    assert(size == 2)
   }
 
   def whyNotQuestionWithNesting3(newName1: String, newName2: String): Twig = {
@@ -365,7 +365,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
 
 
     val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
 
   }
 
@@ -392,13 +392,12 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val nested_obj1 = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "nested_obj").getOrElse(fail("nested_obj not where it is supposed to be"))
     val nested_obj2 = nested_obj1.children.find(node => node.name == "nested_obj").getOrElse(fail("nested_obj not where it is supposed to be"))
     val size1 = rewrittenSchemaSubset.rootNode.children.size
-    val size2 = rewrittenSchemaSubset.rootNode.children.size
+
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     assert(nested_obj1.name == "nested_obj")
     assert(nested_obj2.name == "nested_obj")
-    assert(size1 == 1)
-    assert(size2 == 1)
+    assert(size1 == 2)
   }
 
   test("[Unrestructure] Create multiple attributes in multiple structures but only one attribute 2"){
@@ -410,12 +409,12 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotQuestionWithNesting(newName1))
 
     val flat_key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "flat_key").getOrElse(fail("flat_key not where it is supposed to be"))
-//    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "nested_obj").getOrElse(fail("nested_obj not where it is supposed to be"))
+    val nested_obj1 = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "nested_obj").getOrElse(fail("nested_obj not where it is supposed to be"))
     val size = rewrittenSchemaSubset.rootNode.children.size
 
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
     assert(flat_key.name == "flat_key")
-    assert(size == 1)
+    assert(size == 2)
 
   }
 
@@ -505,6 +504,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleProjectionNewName3(newName))
     provDf.show()
     provDf.explain()
+    provDf.printSchema()
 
 
     //val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(res, whyNotTupleProjectionNewName(newName))

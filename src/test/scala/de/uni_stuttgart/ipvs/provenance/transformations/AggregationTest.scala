@@ -75,8 +75,9 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val aggregatedDf = df.groupBy($"key").agg(sum($"value").alias("sum"))
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(aggregatedDf, keyWhyNotTuple())
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "key")
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "key").getOrElse(fail("key attribute not child of root"))
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "value").getOrElse(fail("value attribute not child of root"))
   }
 
   test("[Unrestructure] Retain condition in grouping attribute") {
@@ -120,9 +121,9 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val aggregatedDf = df.groupBy($"key").agg(sum($"value").alias("sum"))
     val (rewrittenSchemaSubset, schemaSubset) = getInputAndOutputWhyNotTuple(aggregatedDf, sumWhyNotTuple())
     assert(schemaSubset.rootNode.name == rewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
-
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "key").getOrElse(fail("key attribute not child of root"))
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "value").getOrElse(fail("value attribute not child of root"))
   }
 
   def nestedValTwig(): Twig = {
@@ -183,8 +184,10 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val df = getDataFrame(pathToAggregationDoc0)
     val aggregatedDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
     val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig())
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "key").getOrElse(fail("key attribute not child of root"))
+    rewrittenSchemaSubset.rootNode.children.find(child => child.name == "value").getOrElse(fail("value attribute not child of root"))
+
   }
 
   test("[Unrestructure] Unrestructure aggregated collection element removes cardinality constraint") {
@@ -195,10 +198,10 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
 
     assert(rewrittenSchemaSubset.rootNode.constraint.max == -1)
     assert(rewrittenSchemaSubset.rootNode.constraint.min == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
-    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.min == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.max == -1)
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
+    val valueNode = rewrittenSchemaSubset.rootNode.children.find(child => child.name == "value").getOrElse(fail("value attribute not child of root"))
+    assert(valueNode.constraint.min == 1)
+    assert(valueNode.constraint.max == -1)
   }
 
   test("[Unrestructure] Unrestructure aggregated collection element retains value constraint") {
@@ -207,9 +210,10 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig())
 //    val (rewrittenSchemaSubset, _) = getInputAndOutputWhyNotTuple(aggregatedDf, nestedColTwig2())
 
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
-    assert(rewrittenSchemaSubset.rootNode.children.head.name == "value")
-    assert(rewrittenSchemaSubset.rootNode.children.head.constraint.constraintString == "1")
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
+    val valueNode = rewrittenSchemaSubset.rootNode.children.find(child => child.name == "value").getOrElse(fail("value attribute not child of root"))
+
+    assert(valueNode.constraint.constraintString == "1")
   }
 
   test("[Rewrite] Aggregation") {
@@ -316,7 +320,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val rewrittenSchemaSubset = getInputAndOutputWhyNotTupleFlex(plan, schemaSubset, "")
 
     assert(schemaSubset.rootNode.name === rewrittenSchemaSubset.rootNode.name)
-    assert(rewrittenSchemaSubset.rootNode.children.size == 1)
+    assert(rewrittenSchemaSubset.rootNode.children.size == 2)
     val key = rewrittenSchemaSubset.rootNode.children.find(node => node.name == "key").getOrElse(fail("key not where it is supposed to be"))
     assert(key.name == "key")
   }

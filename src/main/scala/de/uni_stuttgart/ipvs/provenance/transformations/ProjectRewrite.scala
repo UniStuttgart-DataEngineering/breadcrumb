@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
@@ -78,7 +78,9 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
+    var inputTree = SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
+    inputTree = SchemaSubsetTreeAccessAdder(inputTree, project.projectList).traceAttributeAccess()
+    inputTree
   }
 
   override def rewriteWithAlternatives(): Rewrite = {

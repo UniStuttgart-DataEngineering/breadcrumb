@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants._
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTraceNew
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, Expression, NamedExpression, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
@@ -119,7 +119,9 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
   }
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
-    schemaSubsetTree.deepCopy()
+    var inputTree = schemaSubsetTree.deepCopy()
+    inputTree = SchemaSubsetTreeAccessAdder(inputTree, Seq(filter.condition)).traceAttributeAccess()
+    inputTree
   }
 
 
