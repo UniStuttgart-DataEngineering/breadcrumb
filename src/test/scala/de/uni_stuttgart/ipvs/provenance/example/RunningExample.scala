@@ -124,4 +124,24 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     rewrittenData.printSchema()
   }
 
+  test("Running example with schema Alternative") {
+    val exampleData = runningExample()
+    val wnTuple = exampleWhyNotTuple()
+    val rewrittenData = WhyNotProvenance.rewriteWithAlternatives(exampleData, wnTuple)
+    exampleData.show()
+    rewrittenData.show()
+    rewrittenData.explain(true)
+    rewrittenData.printSchema()
+  }
+
+  test("Running example with schema Alternative Simple") {
+    val exampleData = runningExampleShortened()
+    val wnTuple = exampleWhyNotTupleShortened()
+    val rewrittenData = WhyNotProvenance.rewriteWithAlternatives(exampleData, wnTuple)
+    exampleData.show()
+    rewrittenData.show()
+    rewrittenData.explain(true)
+    rewrittenData.printSchema()
+  }
+
 }

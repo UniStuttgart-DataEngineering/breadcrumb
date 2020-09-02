@@ -20,8 +20,8 @@ object PrimarySchemaSubsetTree {
     outputTree
   }
 
-  def apply(schemaSubsetTree: SchemaSubsetTree): PrimarySchemaSubsetTree = {
-    val primaryTree = new PrimarySchemaSubsetTree()
+  def apply(schemaSubsetTree: SchemaSubsetTree, id: Int = -1): PrimarySchemaSubsetTree = {
+    val primaryTree = new PrimarySchemaSubsetTree(id)
     primaryTree.rootNode = toPrimarySchemaNode(schemaSubsetTree.rootNode, null)
     primaryTree
   }
@@ -34,7 +34,7 @@ object PrimarySchemaSubsetTree {
 
   def apply(id: Int): PrimarySchemaSubsetTree = {
     val schemaSubsetTree = SchemaSubsetTree(true, id)
-    apply(schemaSubsetTree)
+    apply(schemaSubsetTree, id)
   }
 
   def toPrimarySchemaNode(node: SchemaNode, parent: PrimarySchemaNode): PrimarySchemaNode = {
@@ -46,7 +46,7 @@ object PrimarySchemaSubsetTree {
   }
 }
 
-class PrimarySchemaSubsetTree extends SchemaSubsetTree {
+class PrimarySchemaSubsetTree(id: Int = -1) extends SchemaSubsetTree(id) {
   var alternatives = scala.collection.mutable.ListBuffer.empty[SchemaSubsetTree]
 
   def getAllAlternatives(): Seq[SchemaSubsetTree] = {

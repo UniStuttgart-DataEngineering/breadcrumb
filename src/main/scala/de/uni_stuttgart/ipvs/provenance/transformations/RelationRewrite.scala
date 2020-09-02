@@ -18,7 +18,9 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
   def findSchemaAlternatives(): PrimarySchemaSubsetTree = {
     val primarySchemaSubsetTree = PrimarySchemaSubsetTree(whyNotQuestion)
     val alternative1 = createAlternative(primarySchemaSubsetTree)
-    replaceAddress(alternative1.rootNode)
+    replaceAddress1(alternative1.rootNode)
+    replaceAddress2(alternative1.rootNode)
+    replaceTempAddress(alternative1.rootNode)
     replaceValue(alternative1.rootNode)
     replaceJKey(alternative1.rootNode)
     replaceNestedObj(alternative1.rootNode)
@@ -46,15 +48,37 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
   }
 
   //TODO: Stub, works only for the running example
-  def replaceAddress(node: SchemaNode): Unit ={
+  def replaceAddress2(node: SchemaNode): Unit ={
     if (node.name == "address2") {
       node.name = "address1"
       return
     }
     for (child <- node.children){
-      replaceAddress(child)
+      replaceAddress2(child)
     }
   }
+
+  def replaceAddress1(node: SchemaNode): Unit ={
+    if (node.name == "address1") {
+      node.name = "temp_address"
+      return
+    }
+    for (child <- node.children){
+      replaceAddress1(child)
+    }
+  }
+
+  def replaceTempAddress(node: SchemaNode): Unit ={
+    if (node.name == "temp_address") {
+      node.name = "address2"
+      return
+    }
+    for (child <- node.children){
+      replaceTempAddress(child)
+    }
+  }
+
+
 
   //TODO: Stub, works only for the test
   def replaceValue(node: SchemaNode): Unit ={

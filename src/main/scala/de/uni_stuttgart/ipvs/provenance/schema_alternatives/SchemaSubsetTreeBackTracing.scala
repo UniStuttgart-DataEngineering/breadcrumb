@@ -65,6 +65,10 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     directChildOfAlias = true
     generateAccess = true
 
+    inputWhyNotQuestion = outputWhyNotQuestion.deepCopy()
+    inputWhyNotQuestion.rootNode.children = inputWhyNotQuestion.rootNode.children.filterNot(node => node.name == outputAttributes.head.name)
+    currentInputNode = inputWhyNotQuestion.rootNode
+
     val flattenedAttrName = outputAttributes.head.name
     currentOutputNode = currentOutputNode.getChild(flattenedAttrName)
       .getOrElse(SchemaNode(flattenedAttrName, currentOutputNode.constraint, currentOutputNode))
@@ -72,6 +76,7 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     val flattenedExpr = modificationExpressions.head
     backtraceExpression(flattenedExpr)
 
+    /*
     // Keep the inputWhyNotQuestion has same structure as outputWhyNotQuestion
     if (currentInputNode.children.size != outputWhyNotQuestion.rootNode.children) {
       val tempOrigWhyNotQuestion = outputWhyNotQuestion.deepCopy()
@@ -84,6 +89,7 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
           currentInputNode.addChild(child)
       }
     }
+    */
 
     generateAccess = false
     inputWhyNotQuestion

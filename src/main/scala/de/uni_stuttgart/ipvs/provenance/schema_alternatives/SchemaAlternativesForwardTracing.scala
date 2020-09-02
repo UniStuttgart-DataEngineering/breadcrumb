@@ -68,11 +68,11 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     this
   }
 
-  def forwardTraceConstraints(expression: Expression) = {
+  def forwardTraceConstraints(expression: Expression): Unit = {
     expression match {
       case a: Alias => {
         currentOutputNode = currentOutputNode.getPrimaryChild(a.name).get
-        currentBacktracedNode = currentBacktracedNode.getChild(a.name).get
+        currentBacktracedNode = currentBacktracedNode.getChild(a.name).getOrElse(return)
         currentOutputNode.constraint = currentBacktracedNode.constraint
         copyConstraints()
       }
@@ -174,6 +174,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       //move on to the nested element node
       currentInputNode = currentInputNode.getPrimaryChild("element").get
     }
+    currentOutputNode.constraint = currentInputNode.constraint
     copyConstraints()
     copyChildren()
     if(isGeneratorExpression){
@@ -196,6 +197,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       //move on to the nested element node
       currentInputNode = currentInputNode.getPrimaryChild("element").get
     }
+    currentOutputNode.constraint = currentInputNode.constraint
     copyConstraints()
     copyChildren()
     if(isGeneratorExpression){
