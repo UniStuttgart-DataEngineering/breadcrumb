@@ -80,6 +80,13 @@ class ProvenanceContext {
     addProvenanceAttribute(provenanceAttribute)
   }
 
+  protected[provenance] def replaceSingleNestedProvenanceContextWithSchemaAlternativeContexts(oldAttribute: ProvenanceAttribute, newAttributes: Seq[ProvenanceAttribute]) = {
+    provenanceAttributes -= oldAttribute
+    val nestedContext = nestedProvenanceContexts.get(oldAttribute).get
+    newAttributes.map (attr => nestedProvenanceContexts.put(attr, nestedContext))
+    addProvenanceAttributes(newAttributes)
+  }
+
 
   protected def addProvenanceAttribute(provenanceAttribute: ProvenanceAttribute): Unit = {
     provenanceAttributes += provenanceAttribute

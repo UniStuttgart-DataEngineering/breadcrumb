@@ -8,7 +8,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, Generate}
 import org.scalatest.FunSuite
-import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum}
+import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 
 class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer {
@@ -378,7 +378,7 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
   def alternativeWhyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
-    val key = twig.createNode("jkey", 1, 1, "")
+    val key = twig.createNode("jkey", 1, 1, "3")
     val sum = twig.createNode("sum", 1, 1, "")
     twig = twig.createEdge(root, key, false)
     twig = twig.createEdge(root, sum, false)
@@ -391,6 +391,21 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, alternativeWhyNotQuestion())
     res.explain(true)
     res.show()
+  }
+
+  test("[Exploration] First Aggregation works with null values") {
+    val tuples: Seq[(Integer, Option[String], Option[Long])] = Seq(
+      (1, Some("test"), None),
+      (1, None, Some(1L))
+    )
+
+    val df = tuples.toDF("a", "b", "c")
+    val res = df.groupBy("a").agg(first($"b", true), first($"c", true))
+    df.show()
+    res.show()
+
+
+
   }
 
 

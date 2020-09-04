@@ -13,11 +13,16 @@ case object Constants {
   protected[provenance] val MAX_COL_FLATTEN = "__FLATTEN_MAX"
   protected[provenance] val OLD_EXTENSION = "__OLD"
   protected[provenance] val ORIGINAL = "__ORIGINAL"
-
+  protected[provenance] val AGGREGATE_POSTFIX = "__AGGREGATE_POSTFIX_42"
 
   protected[provenance] def getValidFieldWithOldExtension(currentName: String): String = {
+    f"${currentName}__${AGGREGATE_POSTFIX}"
+  }
+
+  protected[provenance] def getGroupingFieldNameWithAggregatePostfix(currentName: String): String = {
     f"${currentName}__${OLD_EXTENSION}"
   }
+
 
   protected[provenance] def getOriginalFieldWithOldExtension(currentName: String): String = {
     f"${currentName}__${OLD_EXTENSION}"
@@ -87,6 +92,10 @@ case object Constants {
 
   protected[provenance] def getProvenanceCollectionFieldName(oid: Int): String = {
     getFieldName(PROVENANCE_COLLECTION, oid)
+  }
+
+  protected[provenance] def getProvenanceCollectionFieldName(oid: Int, alternativeIdx: Int): String = {
+    getFieldName(PROVENANCE_COLLECTION, oid, alternativeIdx)
   }
 
   protected[provenance] def getProvenanceTupleFieldName(oid: Int): String = {
