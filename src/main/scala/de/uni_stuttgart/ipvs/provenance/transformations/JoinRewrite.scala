@@ -61,23 +61,18 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     Alias(conditionForNullHandling, survivorAttribute.attributeName)()
   }
 
-  def survivorColumnWithAlternatives(lastLeftSurvivorColumn: NamedExpression, lastRightSurvivorColumn: NamedExpression, joinCondition: Expression, altId: Int): (ProvenanceAttribute, NamedExpression) = {
+  def survivorColumnWithAlternatives(joinCondition: Expression, altId: Int): (ProvenanceAttribute, NamedExpression) = {
     val survivorAttribute = ProvenanceAttribute(oid, Constants.getSurvivorFieldName(oid, altId), BooleanType)
-    val conditionForNullHandling = caseHandlingForNullValuesValid(lastLeftSurvivorColumn, lastRightSurvivorColumn)
-    val survivorExpression = Alias(conditionForNullHandling, survivorAttribute.attributeName)()
+    val survivorExpression = Alias(caseHandlingForNullValues(joinCondition), survivorAttribute.attributeName)()
     (survivorAttribute, survivorExpression)
   }
 
-  def survivorColumns(currentProvenanceContext: ProvenanceContext, lastLeftSurvivorColumns: Seq[NamedExpression], lastRightSurvivorColumns: Seq[NamedExpression], joinConditions: Seq[Expression]): Seq[NamedExpression] = {
+  def survivorColumns(currentProvenanceContext: ProvenanceContext, joinConditions: Seq[Expression]): Seq[NamedExpression] = {
     val alternativeIds = currentProvenanceContext.primarySchemaAlternative.getAllAlternatives().map(alt => alt.id)
-    val alternatingFactor = lastRightSurvivorColumns.size
     val survivorColumns = mutable.ListBuffer.empty[NamedExpression]
     val provenanceAttributes = mutable.ListBuffer.empty[ProvenanceAttribute]
-    for (((altId, joinCondition), idx) <- (alternativeIds zip joinConditions).zipWithIndex ) {
-
-      val lastLeftSurvivor = lastLeftSurvivorColumns(idx/alternatingFactor)
-      val lastRightSurvivor = lastRightSurvivorColumns(idx%alternatingFactor)
-      val (provenanceAttribute, survivorExpression) = survivorColumnWithAlternatives(lastLeftSurvivor, lastRightSurvivor, joinCondition, altId)
+    for ((altId, joinCondition) <- alternativeIds zip joinConditions) {
+      val (provenanceAttribute, survivorExpression) = survivorColumnWithAlternatives(joinCondition, altId)
       provenanceAttributes += provenanceAttribute
       survivorColumns += survivorExpression
     }
@@ -91,6 +86,32 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     val namedCompatibleExpression = Alias(compatibleExpression, provenanceAttribute.attributeName)()
     (provenanceAttribute, namedCompatibleExpression)
   }
+
+  def originalColumnWithAlternatives(lastLeftOriginalColumn: NamedExpression, lastRightOriginalColumn: NamedExpression, survivorColumn: NamedExpression, altId: Int): (ProvenanceAttribute, NamedExpression) = {
+    val originalExpression = caseHandlingForNullValues(And(And(lastLeftOriginalColumn, lastRightOriginalColumn), survivorColumn))
+    val provenanceAttribute = ProvenanceAttribute(oid, Constants.getOriginalFieldName(altId), BooleanType)
+    val namedOriginalExpression = Alias(originalExpression, provenanceAttribute.attributeName)()
+    (provenanceAttribute, namedOriginalExpression)
+  }
+
+  def originalColumns(currentProvenanceContext: ProvenanceContext, lastLeftOriginalColumns: Seq[NamedExpression], lastRightOriginalColumns: Seq[NamedExpression], survivorColumns: Seq[NamedExpression]): Seq[NamedExpression] = {
+    val alternativeIds = currentProvenanceContext.primarySchemaAlternative.getAllAlternatives().map(alt => alt.id)
+    val alternatingFactor = lastRightOriginalColumns.size
+    val originalColumns = mutable.ListBuffer.empty[NamedExpression]
+    val provenanceAttributes = mutable.ListBuffer.empty[ProvenanceAttribute]
+    for ((altId, idx) <- alternativeIds.zipWithIndex){
+      val lastLeftCompatible = lastLeftOriginalColumns(idx/alternatingFactor)
+      val lastRightCompatible = lastRightOriginalColumns(idx%alternatingFactor)
+      val survivorColumn = survivorColumns(idx)
+      val (provenanceAttribute, compatibleExpression) = originalColumnWithAlternatives(lastLeftCompatible, lastRightCompatible, survivorColumn, altId)
+      provenanceAttributes += provenanceAttribute
+      originalColumns += compatibleExpression
+    }
+    currentProvenanceContext.addCompatibilityAttributes(provenanceAttributes)
+    originalColumns
+  }
+
+
 
 
   def compatibleColumns(currentProvenanceContext: ProvenanceContext, lastLeftCompatibleColumns: Seq[NamedExpression], lastRightCompatibleColumns: Seq[NamedExpression]): Seq[NamedExpression] = {
@@ -222,9 +243,7 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     val compatibles = compatibleColumns(provenanceContext, leftCompatibleColumns, rightCompatibleColumns)
 
     //survivors
-    val leftSurvivorColumns = provenanceContext.getExpressionsFromProvenanceAttributes(leftRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
-    val rightSurvivorColumns = provenanceContext.getExpressionsFromProvenanceAttributes(rightRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
-    val survivors = survivorColumns(provenanceContext, leftSurvivorColumns, rightSurvivorColumns, alternativeExpressions)
+    val survivors = survivorColumns(provenanceContext, alternativeExpressions)
 
     //valids
     val lastLeftValidColumns = getAttributesByName(rewrittenJoin.output, oldLeftValidAttributeNames)
@@ -239,7 +258,18 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
 
 
     val rewrittenPlan = Project(projectList.toList, rewrittenJoin)
-    Rewrite(rewrittenPlan, provenanceContext)
+
+    //originals
+    val lastLeftOriginalColumns = provenanceContext.getExpressionsFromProvenanceAttributes(leftRewrite.provenanceContext.getOriginalAttributes(), rewrittenPlan.output)
+    val lastRightOriginalColumns = provenanceContext.getExpressionsFromProvenanceAttributes(rightRewrite.provenanceContext.getOriginalAttributes(), rewrittenPlan.output)
+    val newSurvivorColumns = provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getMostRecentSurvivedAttributes(), rewrittenPlan.output)
+    val projectListWithOriginals = mutable.ListBuffer[NamedExpression](rewrittenPlan.output: _*)
+    projectListWithOriginals --= lastLeftOriginalColumns
+    projectListWithOriginals --= lastRightOriginalColumns
+    projectListWithOriginals ++= originalColumns(provenanceContext, lastLeftOriginalColumns, lastRightOriginalColumns, newSurvivorColumns)
+
+    val rewrittenPlanWithOriginals = Project(projectListWithOriginals.toList, rewrittenPlan)
+    Rewrite(rewrittenPlanWithOriginals, provenanceContext)
 
   }
 

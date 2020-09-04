@@ -11,14 +11,24 @@ case object Constants {
   protected[provenance] val UDF_NAME = "__UDF"
   protected[provenance] val PROVENANCE_ID = "__ID"
   protected[provenance] val MAX_COL_FLATTEN = "__FLATTEN_MAX"
-  protected[provenance] val OLD_VALID_EXTENSION = "__OLD"
+  protected[provenance] val OLD_EXTENSION = "__OLD"
+  protected[provenance] val ORIGINAL = "__ORIGINAL"
+
 
   protected[provenance] def getValidFieldWithOldExtension(currentName: String): String = {
-    f"${currentName}__${OLD_VALID_EXTENSION}"
+    f"${currentName}__${OLD_EXTENSION}"
   }
 
+  protected[provenance] def getOriginalFieldWithOldExtension(currentName: String): String = {
+    f"${currentName}__${OLD_EXTENSION}"
+  }
 
   protected[provenance] def getValidFieldWithBinaryOperatorExtension(currentName: String, left: Boolean): String = {
+    val extension = if (left) "LEFT" else "RIGHT"
+    f"${getValidFieldWithOldExtension(currentName)}__${extension}"
+  }
+
+  protected[provenance] def getOriginalFieldWithBinaryOperatorExtension(currentName: String, left: Boolean): String = {
     val extension = if (left) "LEFT" else "RIGHT"
     f"${getValidFieldWithOldExtension(currentName)}__${extension}"
   }
@@ -87,6 +97,10 @@ case object Constants {
     getFieldName(VALID_FIELD,0, alternativeIdx)
   }
 
+  protected[provenance] def getOriginalFieldName(alternativeIdx: Int): String = {
+    getFieldName(ORIGINAL,0, alternativeIdx)
+  }
+
   protected[provenance] def isNestedProvenanceCollection(name: String): Boolean = {
     name.contains(PROVENANCE_COLLECTION)
   }
@@ -114,6 +128,7 @@ case object Constants {
     contains |= name.contains(SURVIVED_FIELD)
     contains |= name.contains(PROVENANCE_COLLECTION)
     contains |= name.contains(PROVENANCE_TUPLE)
+    contains |= name.contains(ORIGINAL)
 
     contains
   }

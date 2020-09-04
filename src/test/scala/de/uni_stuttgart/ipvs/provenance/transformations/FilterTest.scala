@@ -179,6 +179,7 @@ class FilterTest extends FunSuite with SharedSparkTestDataFrames with DataFrameC
     val otherDf = df.filter($"value" < 101)
     val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, whyNotTupleAlternatives())
     res.show()
+    res.collect()
   }
 
   def whyNotTupleAlternativeAddress(): Twig = {

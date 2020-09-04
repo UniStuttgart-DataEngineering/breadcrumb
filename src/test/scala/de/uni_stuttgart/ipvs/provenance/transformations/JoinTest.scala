@@ -146,6 +146,7 @@ class JoinTest extends FunSuite with SharedSparkTestDataFrames with DataFrameCom
     val dfLeft = getDataFrame(pathToSchemaAlternative)
     val dfRight = getDataFrame(pathToJoinDocWithAlternative).withColumnRenamed("key", "key2")
     val res = dfLeft.join(dfRight, $"key" === $"jkey")
+    res.show()
     val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleWithConditionAlternatives())
     provDf.show(50)
   }

@@ -139,11 +139,21 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
     columns
   }
 
+  def originalColumn(alternativeId: Int): NamedExpression = {
+    Alias(Literal(true, BooleanType), Constants.getOriginalFieldName(alternativeId))()
+  }
+
+  def originalColumns(provenanceContext: ProvenanceContext): Seq[NamedExpression] ={
+    val columns = provenanceContext.primarySchemaAlternative.getAllAlternatives().map(alternative => originalColumn(alternative.id))
+    provenanceContext.replaceOriginalAttributes(columns.map(col => ProvenanceAttribute(oid, col.name, BooleanType)))
+    columns
+  }
+
   override def rewriteWithAlternatives(): Rewrite = {
     val provenanceContext = new ProvenanceContext()
     val alternatives = findSchemaAlternatives()
     provenanceContext.primarySchemaAlternative = alternatives
-    val projectList = relation.output ++ compatibleColumns(relation, provenanceContext) ++ validColumns(provenanceContext)
+    val projectList = relation.output ++ compatibleColumns(relation, provenanceContext) ++ validColumns(provenanceContext) ++ originalColumns(provenanceContext)
     val rewrittenLocalRelation = Project(
       projectList,
       relation

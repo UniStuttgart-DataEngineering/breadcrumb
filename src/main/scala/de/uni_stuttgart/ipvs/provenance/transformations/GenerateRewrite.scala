@@ -208,8 +208,10 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     val oldValidColumns = getAttributesByName(withOldValidColumns.output, oldValidColumnNames)
     val withProvenanceColumns = planWithProvenanceColumns(withOldValidColumns, provenanceContext, alternativeInputs, oldValidColumns)
 
+    val rewrittenFilterWithOriginals = getPlanWithNewOriginalColumns(withProvenanceColumns, provenanceContext)
 
-    Rewrite(withProvenanceColumns, provenanceContext)
+
+    Rewrite(rewrittenFilterWithOriginals, provenanceContext)
   }
 
 }

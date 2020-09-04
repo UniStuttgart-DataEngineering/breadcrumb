@@ -49,16 +49,19 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
       survivorColumns(childRewrite)
      */
 
-    val projectList = childRewrite.plan.output ++
+    val projectList = rewrittenChild.output ++
       compatibleColumns(childRewrite) ++
       survivorColumns(childRewrite)
 
 
     val rewrittenFilter = Project(
       projectList,
-      childRewrite.plan
+      rewrittenChild
     )
-    Rewrite(rewrittenFilter, childRewrite.provenanceContext)
+
+    val rewrittenFilterWithOriginals = getPlanWithNewOriginalColumns(rewrittenFilter, provenanceContext)
+
+    Rewrite(rewrittenFilterWithOriginals, provenanceContext)
 
   }
 

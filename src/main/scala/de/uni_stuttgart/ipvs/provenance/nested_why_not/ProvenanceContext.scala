@@ -67,11 +67,11 @@ class ProvenanceContext {
 
   protected[provenance] var mostRecentCompatibleAttribute: ProvenanceAttribute = null
   protected[provenance] var mostRecentSurvivorAttribute: ProvenanceAttribute = null
-  protected[provenance] var validAttribute: ProvenanceAttribute = null
 
   protected[provenance] var mostRecentCompatibleAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
   protected[provenance] var mostRecentSurvivorAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
   protected[provenance] var validAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
+  protected[provenance] var originalAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
 
 
 
@@ -152,18 +152,24 @@ class ProvenanceContext {
     mostRecentSurvivorAttributes
   }
 
-  protected[provenance] def getValidAttribute(): Option[ProvenanceAttribute] = {
-    provenanceAttributes.find(a => a.attributeName.contains(Constants.VALID_FIELD))
-  }
-
   protected[provenance] def replaceValidAttributes(validAttributes: Seq[ProvenanceAttribute]): Unit = {
     removeProvenanceAttributes(this.validAttributes)
     addProvenanceAttributes(validAttributes)
     this.validAttributes = validAttributes
   }
 
+  protected[provenance] def replaceOriginalAttributes(originalAttributes: Seq[ProvenanceAttribute]): Unit = {
+    removeProvenanceAttributes(this.originalAttributes)
+    addProvenanceAttributes(originalAttributes)
+    this.originalAttributes = originalAttributes
+  }
+
   protected[provenance] def getValidAttributes(): Seq[ProvenanceAttribute] = {
     validAttributes
+  }
+
+  protected[provenance] def getOriginalAttributes(): Seq[ProvenanceAttribute] = {
+    originalAttributes
   }
 
   protected[provenance] def getExpressionFromProvenanceAttribute(attribute: ProvenanceAttribute, expressions: Seq[NamedExpression]): Option[NamedExpression] = {

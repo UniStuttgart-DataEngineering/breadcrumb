@@ -2,8 +2,8 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, CreateStruct, Expression, NamedExpression, ScalaUDF}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, CreateStruct, Expression, NamedExpression, ScalaUDF}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.types.{BooleanType, DataType}
 
 import scala.collection.mutable
@@ -48,6 +48,29 @@ trait TransformationRewrite {
     provenanceContext.addCompatibilityAttributes(compatibleAttributes.toList)
     compatibleExpressions.toList
   }
+
+  def getOldAndNewOriginalAttributes(child: LogicalPlan, provenanceContext: ProvenanceContext): (Seq[NamedExpression], Seq[NamedExpression]) = {
+    val previousOriginalAttributes = provenanceContext.getOriginalAttributes()
+    val previousOriginalColumns = provenanceContext.getExpressionsFromProvenanceAttributes(previousOriginalAttributes, child.output)
+    val previousSurvivorAttributes = provenanceContext.getMostRecentSurvivedAttributes()
+    val previousSurvivorColumns = provenanceContext.getExpressionsFromProvenanceAttributes(previousSurvivorAttributes, child.output)
+    val newOriginalColumns = (previousOriginalColumns zip previousSurvivorColumns) map {
+      case (original, survivor) => {
+        Alias(And(survivor, original), original.name)()
+      }
+    }
+    (previousOriginalColumns, newOriginalColumns)
+  }
+
+  def getPlanWithNewOriginalColumns(child: LogicalPlan, provenanceContext: ProvenanceContext): LogicalPlan = {
+    val (previousOriginalColumns, newOriginalColumns) = getOldAndNewOriginalAttributes(child, provenanceContext)
+    val projectList = mutable.ListBuffer[NamedExpression](child.output: _*)
+    projectList --= previousOriginalColumns
+    projectList ++= newOriginalColumns
+    Project(projectList, child)
+  }
+
+
 
 
 

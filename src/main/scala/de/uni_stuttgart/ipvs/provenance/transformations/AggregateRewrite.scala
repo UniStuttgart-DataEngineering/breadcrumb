@@ -105,14 +105,33 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     (aggregateExpressions.toList, validNames.toList)
   }
 
+  def getOriginalAggregations(plan: LogicalPlan, provenanceContext: ProvenanceContext): Seq[NamedExpression] = {
+    val originalColumns = provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getOriginalAttributes(), plan.output)
+    val aggregateExpressions = mutable.ListBuffer.empty[NamedExpression]
+    for (validColumn <- originalColumns){
+      val expression = getOriginalAggregation(validColumn)
+      aggregateExpressions += expression
+    }
+    aggregateExpressions.toList
+  }
+
   def getValidAggregation(attribute: NamedExpression): (NamedExpression, String) = {
     val oldName = Constants.getValidFieldWithOldExtension(attribute.name)
+    getProvenanceAggregation(attribute, oldName)
+  }
+
+  def getProvenanceAggregation(attribute: NamedExpression, name: String) : (NamedExpression, String) = {
     val expression = Alias(
-    AggregateExpression(
-      Max(attribute),
-      Complete, false),
-      oldName)()
-    (expression, oldName)
+      AggregateExpression(
+        Max(attribute),
+        Complete, false),
+      name)()
+    (expression, name)
+  }
+
+  def getOriginalAggregation(attribute: NamedExpression): (NamedExpression) = {
+    val oldName = attribute.name
+    getProvenanceAggregation(attribute, oldName)._1
   }
 
   def getValidColumn(oldValidColumn: NamedExpression, groupingIDColumn: NamedExpression, alternativeId: Int): NamedExpression = {
@@ -160,14 +179,15 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
 
-    //TODO: provenance context
 
     val provenanceTuple = getProvenanceTuple(childRewrite)
     val provenanceProjection = Project(rewrittenChild.output :+ provenanceTuple , rewrittenChild)
     val provenanceLegacy = getAttributeByName(provenanceProjection.output, provenanceTuple.name)
 
     val validColumns = provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getValidAttributes(), provenanceProjection.output)
-    val provenanceColumns = validColumns ++ provenanceLegacy
+    val originalColumns = provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getOriginalAttributes(), provenanceProjection.output)
+
+    val provenanceColumns = validColumns ++ originalColumns ++ provenanceLegacy
 
     //val aggregateExpressions = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, rewrittenChild, aggregate.aggregateExpressions).forwardTraceNamedExpressions()
     var aggregateExpressionWithoutAggregate = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, provenanceProjection, aggregate.aggregateExpressions).isForGroupingSets().forwardTraceNamedExpressions()
@@ -183,8 +203,10 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val provenanceCollection = getNestedProvenanceCollection(expand)
     val aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressions()
     val (validColumnsAfterRewrite, validNames) = getValidAggregations(expand, provenanceContext)
+    val originalColumnsAfterRewrite = getOriginalAggregations(expand, provenanceContext)
+
     val groupingColumn = getAttributeByName(expand.output, getExpandAttributeName)
-    val extendedAggregateExpressionAfterExpand = aggregateExpressionAfterExpand ++ groupingColumn ++ validColumnsAfterRewrite :+ provenanceCollection
+    val extendedAggregateExpressionAfterExpand = aggregateExpressionAfterExpand ++ groupingColumn ++ validColumnsAfterRewrite ++ originalColumnsAfterRewrite :+ provenanceCollection
     var groupingExpressionsAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.groupingExpressions).forwardTraceNamedExpressions()
     groupingExpressionsAfterExpand = groupingExpressionsAfterExpand ++ groupingColumn
     val rewrittenAggregate = Aggregate(groupingExpressionsAfterExpand, extendedAggregateExpressionAfterExpand, expand)
