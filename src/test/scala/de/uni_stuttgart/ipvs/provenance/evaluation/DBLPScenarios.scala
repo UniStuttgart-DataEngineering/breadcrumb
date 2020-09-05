@@ -24,45 +24,45 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
 
   test("[Reference] Scenario 2"){
-    val scenario = new DBLPScenario1(spark, testConfiguration1)
+    val scenario = new DBLPScenario2(spark, testConfiguration1)
     scenario.referenceScenario.show(10)
   }
 
   test("[MSR] Scenario 2"){
-    val scenario = new DBLPScenario1(spark, testConfiguration1)
+    val scenario = new DBLPScenario2(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
   }
 
 
   test("[Reference] Scenario 3"){
-    val scenario = new DBLPScenario2(spark, testConfiguration1)
+    val scenario = new DBLPScenario3(spark, testConfiguration1)
     scenario.referenceScenario.show(10)
   }
 
   test("[MSR] Scenario 3") {
-    val scenario = new DBLPScenario2(spark, testConfiguration1)
+    val scenario = new DBLPScenario3(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
   }
 
   
   test("[Reference] Scenario 4"){
-    val scenario = new DBLPScenario7(spark, testConfiguration1)
+    val scenario = new DBLPScenario4(spark, testConfiguration1)
     scenario.referenceScenario.show(10)
   }
 
   test("[MSR] Scenario 4") {
-    val scenario = new DBLPScenario7(spark, testConfiguration1)
+    val scenario = new DBLPScenario4(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
   }
 
 
   test("[Reference] Scenario 5"){
-    val scenario = new DBLPScenario4(spark, testConfiguration1)
+    val scenario = new DBLPScenario5(spark, testConfiguration1)
     scenario.referenceScenario.show(10)
   }
 
   test("[MSR] Scenario 5"){
-    val scenario = new DBLPScenario4(spark, testConfiguration1)
+    val scenario = new DBLPScenario5(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
   }
 
