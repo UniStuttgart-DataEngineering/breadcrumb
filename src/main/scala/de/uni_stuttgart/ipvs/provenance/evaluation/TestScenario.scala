@@ -16,7 +16,7 @@ abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfigur
 
     WhyNotProvenance.computeMSRs(referenceScenario, whyNotQuestion)
 //    WhyNotProvenance.rewrite(referenceScenario, whyNotQuestion)
-    //WhyNotProvenance.rewriteWithAlternatives(referenceScenario, whyNotQuestion)
+//    WhyNotProvenance.rewriteWithAlternatives(referenceScenario, whyNotQuestion)
   }
 
   def toCSV(iteration: Int, exeutionTime: Long): String = {

@@ -2,7 +2,8 @@ package de.uni_stuttgart.ipvs.provenance.evaluation.dblp
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
-import org.apache.spark.sql.functions.{collect_list, explode}
+import org.apache.spark.sql.functions.explode
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
@@ -11,19 +12,22 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
-    val inproceedings = loadInproceedings()
-    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_filter1 = inproceedings_flattened.filter($"iauthor._VALUE".contains("Adriane Chapman"))
-    val inproceedings_filter2 = inproceedings_filter1.filter($"booktitle".contains("VLDB"))
-    val res = inproceedings_filter2.select($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("title"), $"booktitle")
+    val article = loadArticle()
+    val article_flattened = article.withColumn("aauthor", explode($"author"))
+    val article_select = article_flattened.select($"aauthor._VALUE".alias("author"), $"title._bibtex".alias("title")) // SchemaAlternative: "title._VALUE"
+//    val article_notnull = article_select.filter($"title".isNotNull || $"title" != "null" || $"title" != "")
+    val article_filter = article_select.filter(!$"author".contains("Dey"))
+    val res = article_filter.groupBy($"author").agg(count($"title").alias("cnt"))
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("title", 1, 1, "containsWhy not?")
-    twig = twig.createEdge(root, text, false)
+    val author = twig.createNode("author", 1, 1, "containsSudeepa Roy")
+    val count = twig.createNode("cnt", 1, 1, "gtgtgtgt3")
+    twig = twig.createEdge(root, author, false)
+    twig = twig.createEdge(root, count, false)
     twig.validate.get
   }
 }

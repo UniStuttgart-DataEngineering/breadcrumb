@@ -5,8 +5,8 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.functions.{collect_list, explode, count}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class DBLPScenario5prime(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
-  override def getName: String = "D5prime"
+class DBLPScenario8(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
+  override def getName: String = "D8"
 
   import spark.implicits._
 

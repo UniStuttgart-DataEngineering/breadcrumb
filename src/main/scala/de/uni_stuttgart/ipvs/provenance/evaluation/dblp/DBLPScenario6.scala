@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.evaluation.dblp
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
-import org.apache.spark.sql.functions.{collect_list, explode}
+import org.apache.spark.sql.functions.{explode, _}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class DBLPScenario6(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
@@ -11,25 +11,22 @@ class DBLPScenario6(spark: SparkSession, testConfiguration: TestConfiguration) e
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
-    val proceedings = loadProceedings()
-    val inproceedings = loadInproceedings()
-    val articles = loadArticle()
-
-    val inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
-    val inproceedings_select = inproceedings_flattened.select($"author", $"title", $"crf")
-    val proceedings_select = proceedings.select($"_key", $"series".alias("series_title"))
-    val all_proceedings = inproceedings_select.join(proceedings_select, proceedings_select("_key") === inproceedings_select("crf"))
-    val all_proceedings_select = all_proceedings.select($"author", $"title", $"series_title")
-    val articles_select = articles.select($"author", $"title", $"journal".alias("series_title"))
-    val res = all_proceedings_select.union(articles_select)
+    val article = loadArticle()
+    val article_flattened = article.withColumn("aauthor", explode($"author"))
+    val article_select = article_flattened.select($"aauthor._VALUE".alias("author"), $"title._bibtex".alias("title"))
+    val article_agg = article_select.groupBy($"author").agg(count($"title").alias("cnt"))
+    val article_filter = article_agg.filter($"cnt" > 10)
+    val res = article_filter.select($"author")
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("series_title", 1, 1, "31st IEEE International Conference on Data Engineering, ICDE 2015, Seoul, South Korea, April 13-17, 2015")
-    twig = twig.createEdge(root, text, false)
+    val author = twig.createNode("author", 1, 1, "containsSudeepa Roy Dey")
+//    val count = twig.createNode("cnt", 1, 1, "4")
+    twig = twig.createEdge(root, author, false)
+//    twig = twig.createEdge(root, count, false)
     twig.validate.get
   }
 }

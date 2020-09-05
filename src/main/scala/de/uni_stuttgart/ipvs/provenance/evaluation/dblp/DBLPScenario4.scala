@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.evaluation.dblp
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
-import org.apache.spark.sql.functions.explode
+import org.apache.spark.sql.functions.{collect_list, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
@@ -11,31 +11,31 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
-    val inproceedings = loadInproceedings()
     val proceedings = loadProceedings()
-    val article = loadArticle()
+    val inproceedings = loadInproceedings()
 
-    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_filter = inproceedings_flattened.filter($"iauthor._VALUE".contains("Oliver Kennedy"))
-//    val inproceedings_flattened2 = inproceedings_filter.withColumn("crf", explode($"crossref"))
-//    val inproceedings_select = inproceedings_flattened2.select($"crf".alias("ikey"), $"title._VALUE".alias("title"))
-    val inproceedings_select = inproceedings_filter.select($"_key".alias("ikey"), $"title._VALUE".alias("title"))
-    val proceedings_select = proceedings.select($"_key".alias("pkey"), $"series._VALUE".alias("series_title"))
-    val inproceedings_proceedings = inproceedings_select.join(proceedings_select, $"ikey" === $"pkey")
-    val inproceedings_proceedings_select = inproceedings_proceedings.select($"title", $"series_title")
-    val article_select = article.select($"title._VALUE".alias("title"), $"journal".alias("series_title"))
-    val res = inproceedings_proceedings_select.union(article_select)
+    var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
+    inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
+    val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("ipauthor"), $"title._VALUE".alias("ititle"))
+    val proceedings_springer = proceedings.filter($"series._VALUE" === "Springer") // publisher._VALUE
+    val proceedings_fiveyears = proceedings_springer.filter($"year" > 2014)
+    val proceedings_selected = proceedings_fiveyears.select($"_key", $"publisher._VALUE".alias("ppublisher"), $"year")
+    val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
+    val res = proceedings_with_inproceedings.groupBy($"ipauthor").agg(collect_list($"ititle").alias("ititleList"))
+//    res.printSchema()
+//    res.explain(true)
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val title = twig.createNode("title", 1, 1, "containsDBToaster: Agile Views for a Dynamic Data Management System.")
-//    val series = twig.createNode("series_title", 1, 1, "containsCIDR 2011, Fifth Biennial Conference on Innovative Data Systems Research")
-//    val series = twig.createNode("series_title", 1, 1, "CIDR 2011, Fifth Biennial Conference on Innovative Data Systems Research, Asilomar, CA, USA, January 9-12, 2011, Online Proceedings")
-    twig = twig.createEdge(root, title, false)
-//    twig = twig.createEdge(root, series, false)
+    val text = twig.createNode("ipauthor", 1, 1, "containsThomas Neumann")
+//    val title = twig.createNode("ititleList", 1, 1, "")
+//    val child1 = twig.createNode("element", 1, 1, "Metrics for Measuring the Performance of the Mixed Workload CH-benCHmark.")
+    twig = twig.createEdge(root, text, false)
+//    twig = twig.createEdge(root, title, false)
+//    twig = twig.createEdge(title, child1, false)
     twig.validate.get
   }
 }
