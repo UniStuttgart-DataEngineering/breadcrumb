@@ -39,7 +39,6 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     exampleData
   }
 
-
   def exampleWhyNotTuple() = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
@@ -85,6 +84,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
   test("Running example without rewrite") {
     val exampleData = runningExample()
     exampleData.show()
+    exampleData.explain(true)
   }
 
   test("Running example with rewrite") {
@@ -92,7 +92,8 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val wnTuple = exampleWhyNotTupleRefined()
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
     exampleData.show()
-    rewrittenData.show()
+    rewrittenData.show(false)
+    rewrittenData.explain(true)
     rewrittenData.printSchema()
   }
 
@@ -102,6 +103,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
     exampleData.show(false)
     rewrittenData.show(false)
+    rewrittenData.explain(true)
     rewrittenData.printSchema()
   }
 
@@ -111,6 +113,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val rewrittenData = WhyNotProvenance.rewrite(exampleData, wnTuple)
     exampleData.show(false)
     rewrittenData.show(false)
+    rewrittenData.explain(true)
     rewrittenData.printSchema()
   }
 
@@ -129,7 +132,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val wnTuple = exampleWhyNotTuple()
     val rewrittenData = WhyNotProvenance.rewriteWithAlternatives(exampleData, wnTuple)
     exampleData.show()
-    rewrittenData.show()
+    rewrittenData.show(false)
     rewrittenData.explain(true)
     rewrittenData.printSchema()
     rewrittenData.filter($"__ORIGINAL_0000_0015" === true && $"__VALID_0000_0015" === true).show()
@@ -138,6 +141,16 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
   test("Running example with schema Alternative Simple") {
     val exampleData = runningExampleShortened()
     val wnTuple = exampleWhyNotTupleShortened()
+    val rewrittenData = WhyNotProvenance.rewriteWithAlternatives(exampleData, wnTuple)
+    exampleData.show()
+    rewrittenData.show()
+    rewrittenData.explain(true)
+    rewrittenData.printSchema()
+  }
+
+  test("Running example with schema Alternative Simple 2") {
+    val exampleData = runningExampleShortened2()
+    val wnTuple = exampleWhyNotTupleShortened2()
     val rewrittenData = WhyNotProvenance.rewriteWithAlternatives(exampleData, wnTuple)
     exampleData.show()
     rewrittenData.show()
