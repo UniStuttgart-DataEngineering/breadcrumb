@@ -5,7 +5,7 @@ twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 warmup="false"
 
-for testSuite in "dblp"; do
+for testSuite in "dblp" "twitter"; do
     if [ $testSuite = "twitter" ]; then
         dataPath=$twitterPath
     else
