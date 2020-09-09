@@ -11,18 +11,25 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
+    val proceedings = loadProceedings()
     val inproceedings = loadInproceedings()
-    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_adriane = inproceedings_flattened.filter($"iauthor._VALUE".contains("Adriane Chapman"))
-    val inproceedings_sigmod = inproceedings_adriane.filter($"booktitle".contains("sigmod") || $"booktitle".contains("TaPP")) // SchemaAlternative: _key
-    val res = inproceedings_sigmod.select($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("title"), $"booktitle")
+    var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
+    inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
+    val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("author"), $"title._VALUE".alias("title"))
+    val proceedings_selected = proceedings.select($"_key", $"title".alias("proceeding"))
+    val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
+    val sigmod = proceedings_with_inproceedings.filter($"proceeding".contains("SIGMOD")) // SchemaAlternative: booktitle
+    val res = sigmod.select($"author", $"title", $"proceeding")
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("title", 1, 1, "containsWhy not?")
+//    val name = twig.createNode("author", 1, 1, "containsSridhar Ramaswamy")
+//    val text = twig.createNode("title", 1, 1, "containsSelectivity Estimation in Spatial Databases")
+    val text = twig.createNode("title", 1, 1, "containsScalable algorithms for scholarly figure mining and semantics")
+//    twig = twig.createEdge(root, name, false)
     twig = twig.createEdge(root, text, false)
     twig.validate.get
   }

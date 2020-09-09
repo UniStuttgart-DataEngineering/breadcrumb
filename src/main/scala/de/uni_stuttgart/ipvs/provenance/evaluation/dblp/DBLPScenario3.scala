@@ -12,19 +12,35 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def referenceScenario: DataFrame = {
     val inproceedings = loadInproceedings()
-    val inproceedings_flattened = inproceedings.withColumn("cref", explode($"crossref")) // Schema Alternative: author
-    val inproceedings_nineties = inproceedings_flattened.filter($"year" > 1990 && $"year" < 2001)
-    val res = inproceedings_nineties.groupBy($"year").agg(countDistinct($"title._VALUE").alias("cnt"))
+    val inproceedings_select = inproceedings.select($"booktitle", $"year",
+          struct($"author", $"title._VALUE".alias("ititle")).alias("authorPaperPair")) // SA: editor
+    val res = inproceedings_select.groupBy($"booktitle", $"year").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
+//    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author")) // SA: editor
+//    val inproceedings_select = inproceedings_flattened.select($"booktitle", $"year",
+//          struct($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("ititle")).alias("authorPaperPair"))
+//    val res = inproceedings_select.groupBy($"booktitle", $"year").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("year", 1, 1, "1992")
-    val count = twig.createNode("cnt", 1, 1, "ltltltlt12474")
-    twig = twig.createEdge(root, text, false)
-    twig = twig.createEdge(root, count, false)
+    val booktitle = twig.createNode("booktitle", 1, 1, "HICSS")
+    val year = twig.createNode("year", 1, 1, "2006")
+    val list = twig.createNode("listOfAuthorPapers", 1, 1, "")
+    val element = twig.createNode("element", 1, 1, "")
+    val author = twig.createNode("author", 1, 1, "")
+    val element2 = twig.createNode("element", 1, 1, "")
+    val name = twig.createNode("_VALUE", 1, 1, "containsGail Corbitt")
+    val title = twig.createNode("ititle", 1,1, "containsMinitrack Introduction")
+    twig = twig.createEdge(root, booktitle, false)
+    twig = twig.createEdge(root, year, false)
+    twig = twig.createEdge(root, list, false)
+    twig = twig.createEdge(list, element, false)
+    twig = twig.createEdge(element, author, false)
+    twig = twig.createEdge(author, element2, false)
+    twig = twig.createEdge(element2, name, false)
+    twig = twig.createEdge(element, title, false)
     twig.validate.get
   }
 }
