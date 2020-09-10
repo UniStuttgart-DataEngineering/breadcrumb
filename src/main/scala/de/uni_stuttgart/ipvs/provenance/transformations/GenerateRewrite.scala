@@ -4,7 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAtt
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, CaseWhen, ElementAt, EqualTo, Explode, Expression, GreaterThan, Greatest, IsNotNull, LessThanOrEqual, Literal, NamedExpression, Or, PosExplode, ScalaUDF, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
-import org.apache.spark.sql.types.{BooleanType, DataType, IntegerType}
+import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -98,7 +98,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
   def getFlattenedColumns(input: Expression, output: NamedExpression, index: Expression): NamedExpression ={
     val condition: Expression = LessThanOrEqual(index, Size(input))
     val trueCase: Expression = ElementAt(input, index)
-    val falseCase: Expression = Literal(null, output.dataType)
+    val falseCase: Expression = Literal(null, input.dataType.asInstanceOf[ArrayType].elementType)
     val caseExpression = CaseWhen(Seq((condition, trueCase)), falseCase)
     caseExpression.resolved
     Alias(caseExpression, output.name)()
@@ -116,6 +116,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
       case (input, output) => getFlattenedColumns(input, output, indexColumn)
       //case (input, output) => Alias(ElementAt(input, indexColumn), output.name)()
     }
+    arrayAccessExpressions.map{expr => expr.resolved}
 
     val projectList = logicalPlan.output ++ arrayAccessExpressions
     Project(projectList, logicalPlan)

@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.evaluation.dblp
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.{TestConfiguration, TestScenario}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfiguration) extends TestScenario(spark, testConfiguration) {
 
@@ -27,7 +27,10 @@ abstract class DBLPScenario(spark: SparkSession, testConfiguration: TestConfigur
 
   def getInproceedingsSchema() : StructType = {
     val i = spark.read.json(pathToGeniueDBLP + "inproceedings.json")
-    i.schema
+    val year = i.schema.fields.find(year => year.name == "year").get
+    val oldSchemaFields = i.schema.fields.filterNot(attr => attr == year)
+    val newSchemaFields = oldSchemaFields :+ StructField(year.name, StringType)
+    StructType(newSchemaFields)
   }
 
   def getProceedingsSchema() : StructType = {
