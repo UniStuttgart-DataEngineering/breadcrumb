@@ -14,30 +14,29 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
     val inproceedings = loadInproceedings()
     val www = loadWWW()
 
-    val www_flattened = www.withColumn("u_author", explode($"author"))
-    val www_selected = www_flattened.select($"_key".alias("wkey"), $"u_author".alias("wauthor"), $"u_author._VALUE".alias("wname"))
+    val www_author = www.withColumn("wauthor", explode($"author"))
+//    val www_url = www_author.withColumn("wurl", explode($"url"))
+//    val www_selected = www_author.select($"wauthor._VALUE".alias("wauthorName"), $"wurl._VALUE".alias("url"), $"title".alias("wtitle"))
+    val www_selected = www_author.select($"wauthor._VALUE".alias("wauthorName"), $"url".alias("wurl"), $"title".alias("wtitle"))
     val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_selected = inproceedings_flattened.select($"iauthor._VALUE".alias("iname"), $"_key", $"booktitle", $"title", $"iauthor", $"author")
-    var joined = www_selected.join(inproceedings_selected, $"wname" === $"iname")
-    joined = joined.withColumn("co_author", explode($"author"))
-//    val joined2 = joined.filter($"booktitle".isNull)
-//    val res1 = joined.groupBy($"wauthor").agg(count($"_key").alias("cnt"))
-//    val res2 = joined2.groupBy($"wauthor").agg(count($"_key").alias("cntNull"))
-//    var res = res1.join(res2, Seq("wauthor"))
-//    res = res.filter($"cntNull" === $"cnt" && $"cnt" > 10)
-    val res = joined.groupBy($"wauthor").agg(collect_list($"co_author").alias("co_authors"), collect_list($"booktitle").alias("venue"), collect_list($"title").alias("titles"))
+    val inproceedings_selected = inproceedings_flattened.select($"iauthor._VALUE".alias("iauthorName"), $"title._VALUE".alias("ititle"), $"ee")
+    var joined = www_selected.join(inproceedings_selected, $"wauthorName" === $"iauthorName")
+    joined = joined.withColumn("url", explode($"wurl"))
+    val res = joined.groupBy($"iauthorName").agg(collect_list($"url").alias("listOfUrl"))
+//      agg(collect_list($"ititle").alias("listOfIn"), collect_list($"wtitle").alias("listOfW"), collect_list($"url").alias("listOfUrl"))
+//    val res = joined.filter($"iauthorName".contains("A. Allam"))
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("wauthor", 1, 1, "containsNicolas Nagel")
-    val venue = twig.createNode("venue", 1, 1, "")
-    val element = twig.createNode("element", 1, 1, "isscc")
+    val text = twig.createNode("iauthorName", 1, 1, "containsA. Allam")
+//    val url = twig.createNode("listOfUrl", 1, 1, "")
+//    val element = twig.createNode("element", 1, 1, "")
     twig = twig.createEdge(root, text, false)
-    twig = twig.createEdge(root, venue, false)
-    twig = twig.createEdge(venue, element, false)
+//    twig = twig.createEdge(root, url, false)
+//    twig = twig.createEdge(url, element, false)
     twig.validate.get
   }
 }

@@ -18,7 +18,7 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
     val article_flattened = article.withColumn("aauthor", explode($"author"))
     val article_select = article_flattened.select($"aauthor._VALUE".alias("author"), $"title._bibtex".alias("title")) // SchemaAlternative: "title._VALUE"
 //    val article_notnull = article_select.filter($"title".isNotNull || $"title" != "null" || $"title" != "")
-    val article_filter = article_select.filter(!$"author".contains("Dey"))
+    val article_filter = article_select.filter(!$"author".contains("Dey")) // SchemaAlternative: "ee._VALUE"
     val res = article_filter.groupBy($"author").agg(count($"title").alias("cnt"))
     article_filter
     res
@@ -28,7 +28,7 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
     var twig = new Twig()
     val root = twig.createNode("root")
     val author = twig.createNode("author", 1, 1, "containsSudeepa Roy")
-    val count = twig.createNode("cnt", 1, 1, "gtgtgtgt3")
+    val count = twig.createNode("cnt", 1, 1, "gtgtgtgt5")
     twig = twig.createEdge(root, author, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get

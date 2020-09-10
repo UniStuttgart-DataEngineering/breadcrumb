@@ -17,20 +17,18 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
     inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
     val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("ipauthor"), $"title._VALUE".alias("ititle"))
-    val proceedings_springer = proceedings.filter($"series._VALUE" === "Springer") // publisher._VALUE
-    val proceedings_fiveyears = proceedings_springer.filter($"year" > 2014)
-    val proceedings_selected = proceedings_fiveyears.select($"_key", $"publisher._VALUE".alias("ppublisher"), $"year")
+    val proceedings_springer = proceedings.filter($"publisher._VALUE".contains("ACM")) // SA: series._VALUE
+    val proceedings_tenyears = proceedings_springer.filter($"year" > 2010) // SA: _mdate
+    val proceedings_selected = proceedings_tenyears.select($"_key", $"year")
     val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
     val res = proceedings_with_inproceedings.groupBy($"ipauthor").agg(collect_list($"ititle").alias("ititleList"))
-//    res.printSchema()
-//    res.explain(true)
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("ipauthor", 1, 1, "containsThomas Neumann")
+    val text = twig.createNode("ipauthor", 1, 1, "containsGeorge V. Tsoulos")
 //    val title = twig.createNode("ititleList", 1, 1, "")
 //    val child1 = twig.createNode("element", 1, 1, "Metrics for Measuring the Performance of the Mixed Workload CH-benCHmark.")
     twig = twig.createEdge(root, text, false)
