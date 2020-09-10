@@ -12,9 +12,9 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def referenceScenario: DataFrame = {
     val inproceedings = loadInproceedings()
-    val inproceedings_select = inproceedings.select($"booktitle", $"year",
+    val inproceedings_select = inproceedings.select($"booktitle".alias("btitle"), $"year".alias("year"),
           struct($"author", $"title._VALUE".alias("ititle")).alias("authorPaperPair")) // SA: editor
-    val res = inproceedings_select.groupBy($"booktitle", $"year").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
+    val res = inproceedings_select.groupBy($"btitle", $"year").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
 //    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author")) // SA: editor
 //    val inproceedings_select = inproceedings_flattened.select($"booktitle", $"year",
 //          struct($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("ititle")).alias("authorPaperPair"))
@@ -25,7 +25,7 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val booktitle = twig.createNode("booktitle", 1, 1, "HICSS")
+    val booktitle = twig.createNode("btitle", 1, 1, "HICSS")
     val year = twig.createNode("year", 1, 1, "2006")
     val list = twig.createNode("listOfAuthorPapers", 1, 1, "")
     val element = twig.createNode("element", 1, 1, "")

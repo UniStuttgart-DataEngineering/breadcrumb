@@ -21,14 +21,15 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     val proceedings_tenyears = proceedings_springer.filter($"year" > 2010) // SA: _mdate
     val proceedings_selected = proceedings_tenyears.select($"_key", $"year")
     val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
-    val res = proceedings_with_inproceedings.groupBy($"ipauthor").agg(collect_list($"ititle").alias("ititleList"))
+    val proceedings_with_inproceedingsRenamed = proceedings_with_inproceedings.withColumnRenamed("ipauthor", "author")
+    val res = proceedings_with_inproceedingsRenamed.groupBy($"author").agg(collect_list($"ititle").alias("ititleList"))
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("ipauthor", 1, 1, "containsGeorge V. Tsoulos")
+    val text = twig.createNode("author", 1, 1, "containsGeorge V. Tsoulos")
 //    val title = twig.createNode("ititleList", 1, 1, "")
 //    val child1 = twig.createNode("element", 1, 1, "Metrics for Measuring the Performance of the Mixed Workload CH-benCHmark.")
     twig = twig.createEdge(root, text, false)

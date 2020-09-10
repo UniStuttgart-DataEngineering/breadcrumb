@@ -63,9 +63,10 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   def forwardTraceJoinExpression(expression: Expression): (Expression, Seq[Expression]) = {
     val alternativeExpressions = forwardTraceExpression(expression)
     var aggregatedExpression = alternativeExpressions(0)
+    /*
     for (alternativeExpression <- alternativeExpressions.tail){
       aggregatedExpression = Or(aggregatedExpression, alternativeExpression)
-    }
+    }*/
     (aggregatedExpression, alternativeExpressions)
   }
 

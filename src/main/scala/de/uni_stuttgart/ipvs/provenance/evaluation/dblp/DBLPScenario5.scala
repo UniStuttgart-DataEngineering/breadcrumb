@@ -21,8 +21,8 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
     val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
     val inproceedings_selected = inproceedings_flattened.select($"iauthor._VALUE".alias("iauthorName"), $"title._VALUE".alias("ititle"), $"ee")
     var joined = www_selected.join(inproceedings_selected, $"wauthorName" === $"iauthorName")
-    joined = joined.withColumn("url", explode($"wurl"))
-    val res = joined.groupBy($"iauthorName").agg(collect_list($"url").alias("listOfUrl"))
+    joined = joined.withColumn("url", explode($"wurl")).withColumnRenamed("iauthorName", "name")
+    val res = joined.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
 //      agg(collect_list($"ititle").alias("listOfIn"), collect_list($"wtitle").alias("listOfW"), collect_list($"url").alias("listOfUrl"))
 //    val res = joined.filter($"iauthorName".contains("A. Allam"))
     res
@@ -31,7 +31,7 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("iauthorName", 1, 1, "containsA. Allam")
+    val text = twig.createNode("name", 1, 1, "containsA. Allam")
 //    val url = twig.createNode("listOfUrl", 1, 1, "")
 //    val element = twig.createNode("element", 1, 1, "")
     twig = twig.createEdge(root, text, false)

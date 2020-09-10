@@ -268,7 +268,7 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     projectListWithOriginals --= lastRightOriginalColumns
     projectListWithOriginals ++= originalColumns(provenanceContext, lastLeftOriginalColumns, lastRightOriginalColumns, newSurvivorColumns)
 
-    val rewrittenPlanWithOriginals = Project(projectListWithOriginals.toList, rewrittenPlan)
+    val rewrittenPlanWithOriginals = Project(projectListWithOriginals.distinct.toList, rewrittenPlan)
     Rewrite(rewrittenPlanWithOriginals, provenanceContext)
 
   }

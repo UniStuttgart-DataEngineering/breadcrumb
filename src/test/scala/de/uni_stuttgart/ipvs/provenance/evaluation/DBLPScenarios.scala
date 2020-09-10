@@ -24,6 +24,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[MSR] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
+    scenario.extendedScenario.explain(true)
     scenario.extendedScenario.show(10)
     scenario.extendedScenario.filter($"author".contains("Chapman")).show(20)
   }
@@ -31,7 +32,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[Reference] Scenario 2"){
     val scenario = new DBLPScenario2(spark, testConfiguration1)
-//    scenario.referenceScenario.show(10)
+    scenario.referenceScenario.show(10)
     scenario.referenceScenario.filter($"author".contains("Sudeepa Roy")).show(10)
   }
 
@@ -39,9 +40,9 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario2(spark, testConfiguration1)
     //scenario.extendedScenario.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    //val toBeDebugged = scenario.extendedScenario.filter($"author".contains("Sudeepa Roy"))
-    //toBeDebugged.explain()
-    //toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    val toBeDebugged = scenario.extendedScenario//.filter($"author".contains("Sudeepa Roy"))
+    toBeDebugged.explain()
+    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -75,6 +76,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[MSR] Scenario 4") {
     val scenario = new DBLPScenario4(spark, testConfiguration1)
+    scenario.extendedScenario.explain(true)
     scenario.extendedScenario.show(10)
   }
 
@@ -86,6 +88,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[MSR] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
+    scenario.extendedScenario.explain(true)
     scenario.extendedScenario.show(10)
 //    scenario.extendedScenario.explain(true)
   }
