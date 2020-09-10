@@ -135,7 +135,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     rewrittenData.show(false)
     rewrittenData.explain(true)
     rewrittenData.printSchema()
-    rewrittenData.filter($"__ORIGINAL_0000_0015" === true && $"__VALID_0000_0015" === true).show()
+    //rewrittenData.filter($"__ORIGINAL_0000_0015" === true && $"__VALID_0000_0015" === true).show()
   }
 
   test("Running example with schema Alternative Simple") {

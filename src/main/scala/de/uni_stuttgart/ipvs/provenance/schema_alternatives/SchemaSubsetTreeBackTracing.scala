@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 

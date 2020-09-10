@@ -483,7 +483,7 @@ class ProjectTest extends FunSuite with SharedSparkTestDataFrames with DataFrame
     val newName = "renamed"
     val df = getDataFrame(pathToNestedDataWithSchemaAlternatives)
     df.printSchema()
-    val res = df.select($"nested_obj.nested_obj_1.nested_key".alias(newName))//, $"flat_key")
+    val res = df.select($"nested_obj.nested_obj_1.nested_key".alias(newName), $"flat_key")
     val provDf = WhyNotProvenance.rewriteWithAlternatives(res, whyNotTupleProjectionNewName2(newName))
     provDf.show()
     provDf.explain()

@@ -2,8 +2,8 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Or}
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.StringType
 
@@ -26,9 +26,12 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   var inside_aggregation_function = false
   var forGroupingSets = false
 
+  var withAlternatives = true
+
   def forwardTraceExpressions(): Seq[Expression] = {
     val alternativeExpressions = mutable.ListBuffer.empty[Expression]
     for (expression <- modificationExpressions){
+      withAlternatives = true
       alternativeExpressions ++= forwardTraceExpression(expression)
       assert(currentInputNode == inputWhyNotQuestion.rootNode)
     }
@@ -96,6 +99,9 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       case ag: AggregateExpression => {
         forwardTraceAggregateExpression(ag)
       }
+      case not: Not => {
+        forwardTraceNot(not)
+      }
     }
 
   }
@@ -103,24 +109,34 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   def forwardTraceAlias(a: Alias): Seq[Expression] = {
     val alternativeExpressions = mutable.ListBuffer.empty[Expression]
     val childExpressions = forwardTraceExpression(a.child)
-    for ((child, tree) <- childExpressions zip inputWhyNotQuestion.getAllAlternatives()){
-      val alternativeName = tree match {
-        case tree: PrimarySchemaSubsetTree => a.name
-        case _ => Constants.getAlternativeFieldName(a.name, 0, tree.id)
+    if(withAlternatives){
+      for ((child, tree) <- childExpressions zip inputWhyNotQuestion.getAllAlternatives()){
+        val alternativeName = tree match {
+          case tree: PrimarySchemaSubsetTree => a.name
+          case _ => Constants.getAlternativeFieldName(a.name, 0, tree.id)
+        }
+        //val alternativeName = Constants.getAlternativeFieldName(a.name, 0, tree.id)
+        if(!forGroupingSets){
+          val newAlias = Alias(child, alternativeName)()
+          alternativeExpressions += newAlias
+        } else {
+          alternativeExpressions += child
+        }
       }
-      //val alternativeName = Constants.getAlternativeFieldName(a.name, 0, tree.id)
-      if(!forGroupingSets){
-        val newAlias = Alias(child, alternativeName)()
-        alternativeExpressions += newAlias
-      } else {
-        alternativeExpressions += child
-      }
+      alternativeExpressions.toList
+    } else {
+      val newAlias = Alias(childExpressions.head, a.name)()
+      List(newAlias)
     }
-    alternativeExpressions.toList
+
+
   }
 
   def forwardTraceAttribute(attribute: AttributeReference): Seq[Expression] = {
-    currentInputNode = currentInputNode.getChildren.find(node => node.name == attribute.name).get
+    currentInputNode = currentInputNode.getChildren.find(node => node.name == attribute.name).getOrElse(handleMissingNode())
+    if (!withAlternatives) {
+      return inputPlan.resolve(Seq(attribute.name), org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution).toSeq
+    }
     val alternativeExpressions = mutable.ListBuffer.empty[Expression]
     for (alternative <- currentInputNode.getAllAlternatives()){
 
@@ -137,6 +153,11 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     alternativeExpressions.toList
   }
 
+  def handleMissingNode(): PrimarySchemaNode = {
+    withAlternatives = false
+    currentInputNode
+  }
+
   def forwardTraceStructFieldInternal(field: GetStructField): Seq[Expression] = {
 
     val childExpressions = field.child match {
@@ -145,20 +166,28 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       }
       case ar: AttributeReference => {
         val expressions = forwardTraceAttribute(ar)
-        currentInputNode = currentInputNode.getChildren.find(node => node.name == ar.name).get
+        if(withAlternatives){
+          currentInputNode = currentInputNode.getChildren.find(node => node.name == ar.name).get
+        }
         expressions
       }
     }
-    currentInputNode = currentInputNode.getChildren.find(node => node.name == field.name.get).get
-    val alternativeExpressions = mutable.ListBuffer.empty[Expression]
-    for ((alternative, expression) <- currentInputNode.getAllAlternatives() zip childExpressions)
-    {
+    currentInputNode = currentInputNode.getChildren.find(node => node.name == field.name.get).getOrElse(handleMissingNode())
+    if(withAlternatives){
+      val alternativeExpressions = mutable.ListBuffer.empty[Expression]
+      for ((alternative, expression) <- currentInputNode.getAllAlternatives() zip childExpressions)
+      {
 
-      //val exp1 = GetStructField(expression, field.ordinal, Some(alternative.name))
-      val alternativeExpression = ExtractValue(expression, Literal(alternative.name), org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution)
-      alternativeExpressions += alternativeExpression
+        //val exp1 = GetStructField(expression, field.ordinal, Some(alternative.name))
+        val alternativeExpression = ExtractValue(expression, Literal(alternative.name), org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution)
+        alternativeExpressions += alternativeExpression
+      }
+      alternativeExpressions.toList
+    } else {
+      val alternativeExpression = ExtractValue(childExpressions.head, Literal(field.name.get), org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution)
+      List(alternativeExpression)
     }
-    alternativeExpressions.toList
+
 
   }
 
@@ -178,12 +207,26 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     val alternativeChildExpressions = forwardTraceExpression(expression.aggregateFunction.children.head)
     if (forGroupingSets) return alternativeChildExpressions
     alternativeChildExpressions.map {
-      child => {
+      child => getAggregateFunction(expression, child)
+        /*
+      {
         val aggFunction = expression.aggregateFunction.withNewChildren(Seq(child))
         val aggExpression = expression.withNewChildren(Seq(aggFunction))
         aggExpression
-      }
+      } */
     }
+  }
+
+  def getAggregateFunction(expression: AggregateExpression, alternative: Expression): AggregateExpression = {
+    val function = expression.aggregateFunction match {
+      case _: Sum => Sum(alternative)
+      case _: Max => Max(alternative)
+      case _: Min => Min(alternative)
+      case _: Count => Count(alternative)
+      case _: CollectList => CollectList(alternative)
+    }
+    val expr = AggregateExpression(function, expression.mode, expression.isDistinct)
+    expr
   }
 
   def forwardTraceLiteral(literal: Literal): Seq[Expression] = {
@@ -252,6 +295,11 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
           case (left, right) => GreaterThanOrEqual(left, right)
         }
       }
+      case _: Contains => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Contains(left, right)
+        }
+      }
     }
     assert(currentNode == currentInputNode)
     outputExpressions
@@ -261,6 +309,13 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     val alternativeExpressions = forwardTraceExpression(cast.child)
     alternativeExpressions.map {
       expression => Cast(expression, cast.dataType)
+    }
+  }
+
+  def forwardTraceNot(not: Not): Seq[Expression] = {
+    val alternativeExpressions = forwardTraceExpression(not.child)
+    alternativeExpressions.map {
+      expression => Not(expression)
     }
   }
 

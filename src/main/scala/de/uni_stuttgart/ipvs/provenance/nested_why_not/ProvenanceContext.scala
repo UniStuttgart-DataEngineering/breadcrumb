@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.nested_why_not
 
+import de.uni_stuttgart.ipvs.provenance.evaluation.TestScenario
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{FlattenIndexUDF, PrimarySchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcher, DataFetcherUDF}
 import org.apache.spark.sql.DataFrame
@@ -52,6 +53,13 @@ object ProvenanceContext {
 
   def getDataFetcherUDF = dataFetcherUdf
   def getFlattenUDF = flattenUdf
+
+
+  var testScenario: TestScenario = null
+
+  def setTestScenario(testScenario: TestScenario) = {
+    this.testScenario = testScenario
+  }
 
 }
 

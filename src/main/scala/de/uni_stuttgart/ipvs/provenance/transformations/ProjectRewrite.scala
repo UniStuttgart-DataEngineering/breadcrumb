@@ -79,7 +79,7 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
 
   override protected[provenance] def undoSchemaModifications(schemaSubsetTree: SchemaSubsetTree): SchemaSubsetTree = {
     var inputTree = SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, project.output, project.projectList).getInputTree()
-    inputTree = SchemaSubsetTreeAccessAdder(inputTree, project.projectList).traceAttributeAccess()
+    inputTree = SchemaSubsetTreeAccessAdder(inputTree, project.projectList.filterNot(expr => expr.isInstanceOf[Attribute])).traceAttributeAccess()
     inputTree
   }
 

@@ -16,6 +16,9 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
 
   //TODO: Stub, works only for the running example
   def findSchemaAlternatives(): PrimarySchemaSubsetTree = {
+    if (ProvenanceContext.testScenario != null){
+      return ProvenanceContext.testScenario.computeAlternatives(whyNotQuestion, this.plan)
+    }
     val primarySchemaSubsetTree = PrimarySchemaSubsetTree(whyNotQuestion)
     val alternative1 = createAlternative(primarySchemaSubsetTree)
     replaceAddress1(alternative1.rootNode)

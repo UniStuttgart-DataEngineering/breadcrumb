@@ -8,7 +8,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, Generate}
 import org.scalatest.FunSuite
-import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first}
+import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first, count}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 
 class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer {
@@ -393,6 +393,26 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     res.show()
   }
 
+  def alternativeWhyNotQuestion2(): Twig = {
+    var twig = new Twig()
+    val root = twig.createNode("root", 1, 1, "")
+    val key = twig.createNode("nkey", 1, 1, "")
+    val sum = twig.createNode("sum", 1, 1, "")
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, sum, false)
+    twig.validate().get
+  }
+
+  test("[RewriteWithAlternatives] Aggregate with grouping sets 2") {
+    var df = getDataFrame(pathToSchemaAlternative)
+    df = df.withColumnRenamed("key", "nkey")
+    val otherDf = df.groupBy($"nkey").agg(sum("value").alias("sum"), max("value").alias("cnt"))
+    var res = WhyNotProvenance.rewriteWithAlternatives(otherDf, alternativeWhyNotQuestion2())
+    //res = res.groupBy($"nkey", $"nkey_0000_0009", $"spark_grouping_id").agg(sum($"value"), sum($"otherValue"))
+    res.explain(true)
+    res.show()
+  }
+
   test("[Exploration] First Aggregation works with null values") {
     val tuples: Seq[(Integer, Option[String], Option[Long])] = Seq(
       (1, Some("test"), None),
@@ -406,6 +426,16 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
 
 
 
+  }
+
+  test("[Exploration] Aggregate with grouping sets 2") {
+    val df = getDataFrame(pathToSchemaAlternative)
+    val newDf = df.withColumn("nkey", $"key")
+    newDf.createOrReplaceTempView("df")
+    val res = spark.sql("SELECT key, nkey, SUM(value), SUM(otherValue) from df GROUP BY key, nkey GROUPING SETS ((key),(nkey))" )
+    res.explain(true)
+    val plan = res.queryExecution.analyzed
+    res.show()
   }
 
 

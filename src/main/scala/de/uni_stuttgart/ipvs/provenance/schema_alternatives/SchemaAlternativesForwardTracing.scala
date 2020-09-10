@@ -27,6 +27,8 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
   var isDescendantOfAlias = false
   var isGeneratorExpression = false
 
+  var withAlternatives = true
+
   initialize()
 
   def initialize(): Unit = {
@@ -43,6 +45,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
 
   def forwardTraceExpressions(): this.type = {
     for (expression <- modificationExpressions){
+      withAlternatives = true
       forwardTraceExpression(expression)
       assert(currentInputNode == inputWhyNotQuestion.rootNode)
       assert(currentOutputNode == outputTree.rootNode)
@@ -78,6 +81,11 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       }
       case _ => {}
     }
+  }
+
+  def handleMissingAlternative(): PrimarySchemaNode = {
+    withAlternatives = false
+    currentInputNode
   }
 
 
@@ -121,12 +129,24 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     }
   }
 
+
+
   def forwardTraceAlias(a: Alias) : Unit = {
     val outputNode = createOutputNodes(a.name)
     currentOutputNode = outputNode
     isDescendantOfAlias = true
     forwardTraceExpression(a.child)
     currentOutputNode = currentOutputNode.getParent()
+    if (!withAlternatives){
+      removeOutputNodes(outputNode)
+    }
+  }
+
+  def removeOutputNodes(outputNode: PrimarySchemaNode) = {
+    outputNode.getParent().removeChild(outputNode)
+    for(alternative <- outputNode.alternatives) {
+      alternative.parent.removeChild(alternative)
+    }
   }
 
   def createOutputNodes(name: String): PrimarySchemaNode = {
@@ -166,7 +186,11 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
   }
 
   def forwardTraceAttribute(reference: AttributeReference): Unit = {
-    currentInputNode = currentInputNode.getPrimaryChild(reference.name).get
+    currentInputNode = currentInputNode.getPrimaryChild(reference.name).getOrElse(handleMissingAlternative())
+    if (!withAlternatives){
+      isDescendantOfAlias = false
+      return
+    }
     if(!isDescendantOfAlias){
       currentOutputNode = createOutputNodes(currentInputNode)
     }
@@ -216,10 +240,10 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
         forwardTraceStructFieldInternal(gs)
       }
       case ar: AttributeReference => {
-        currentInputNode = inputWhyNotQuestion.getRootNode.getPrimaryChild(ar.name).get
+        currentInputNode = inputWhyNotQuestion.getRootNode.getPrimaryChild(ar.name).getOrElse(handleMissingAlternative())
       }
     }
-    currentInputNode = currentInputNode.getPrimaryChild(field.name.get).get
+    currentInputNode = currentInputNode.getPrimaryChild(field.name.get).getOrElse(handleMissingAlternative())
   }
 
   def forwardTraceNamedStruct(struct: CreateNamedStruct): Unit = {
