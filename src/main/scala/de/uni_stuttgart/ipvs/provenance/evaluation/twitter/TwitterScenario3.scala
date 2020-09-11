@@ -12,19 +12,21 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    val media = tw.withColumn("medias", explode($"entities.media")) // Schema Alternative: media -> urls
-    val mentioned = media.withColumn("mentioned_user", explode($"entities.user_mentions"))
-//    mentioned.select($"id", $"created_at", $"mentioned_user", $"entities.media", $"entities.urls").filter($"mentioned_user.name".contains("YouTube"))
-    val extracted_mentioned_users = mentioned.select($"created_at", $"text", $"id".alias("tid"),
-      $"mentioned_user.id".alias("id"), $"mentioned_user.id_str".alias("id_str"),
-      $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
+    val mentioned = tw.withColumn("mentioned_user", explode($"entities.user_mentions"))
+    val media = mentioned.withColumn("medias", explode($"entities.media")) // Schema Alternative: media -> urls
+    val extracted_mentioned_users = media.select($"id".alias("tid"), $"created_at", $"text",
+      $"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
+//      $"entities.urls".alias("media"))
       $"medias.url".alias("murl"))
-    val restructured_users = extracted_mentioned_users.select(
-      struct($"id", $"id_str", $"name", $"screen_name").alias("user_mentioned"),
-      struct($"created_at", $"text", $"tid").alias("tweet"),
-      $"murl")
-    val res = restructured_users.groupBy($"user_mentioned").agg(count($"tweet").alias("numOfTweets"), collect_list($"murl").alias("numOfUrls"))
-//    res.filter($"user_mentioned.screen_name".contains("YouTube"))
+    val extracted_mentioned_users_with_media = extracted_mentioned_users.filter($"murl".contains("http"))
+    val restructured_users = extracted_mentioned_users_with_media.select(
+      struct($"uid", $"name", $"screen_name").alias("user_mentioned"),
+      struct($"created_at", $"text", $"tid").alias("tweet"))
+//      $"murl")
+    var res = restructured_users.groupBy($"user_mentioned").agg(count($"tweet").alias("numOfTweets"))
+////      , collect_list($"murl").alias("numOfUrls"))
+//    var res = extracted_mentioned_users.filter($"screen_name".contains("YouTube"))
+    res = res.sort(desc("numOfTweets"))
     res
   }
 

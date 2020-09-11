@@ -9,9 +9,20 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   val pathToData = "src/main/external_resources/TwitterData/"
   val testConfiguration1 = TestConfiguration.local(pathToData)
 
+//  Scenario 1
   test("[Reference] Scenario 1"){
     val scenario = new TwitterScenario1(spark, testConfiguration1)
-    scenario.referenceScenario.show(10)
+    scenario.referenceScenario.show(10, false)
+  }
+
+  test("[Rewrite] Scenario 1"){
+    val scenario = new TwitterScenario1(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSA] Scenario 1"){
+    val scenario = new TwitterScenario1(spark, testConfiguration1)
+    scenario.extendedScenarioWithSA.show(10)
   }
 
   test("[MSR] Scenario 1"){
@@ -19,9 +30,21 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+
+//  Scenario 2
   test("[Reference] Scenario 2"){
     val scenario = new TwitterScenario2(spark, testConfiguration1)
     scenario.referenceScenario.show(10)
+  }
+
+  test("[Rewrite] Scenario 2"){
+    val scenario = new TwitterScenario2(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSA] Scenario 2") {
+    val scenario = new TwitterScenario1(spark, testConfiguration1)
+    scenario.extendedScenarioWithSA.show(10)
   }
 
   test("[MSR] Scenario 2"){
@@ -29,9 +52,11 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+
+// Scenario 3
   test("[Reference] Scenario 3"){
     val scenario = new TwitterScenario3(spark, testConfiguration1)
-    scenario.referenceScenario.show(10)
+    scenario.referenceScenario.show(50, false)
   }
 
   test("[MSR] Scenario 3"){

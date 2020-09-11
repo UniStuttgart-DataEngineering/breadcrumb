@@ -13,10 +13,9 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
     var res = tw.withColumn("hashtag", explode($"entities.hashtags"))
-    res = res.select($"id", $"hashtag.text".alias("hashtagText"), $"text", $"user.id".alias("user"), $"place.country".alias("country")) // Schema Alternative: country -> location
-//                          when($"lang".equalTo("en"),"1").otherwise("2").alias("langInt"))
+    res = res.select($"hashtag.text".alias("hashtagText"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
     res = res.filter($"text".contains("War"))
-    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries")) // Schema Alternative: country -> location
+    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
     res = res.filter($"numOfCountries" > 0)
     res
   }
@@ -24,8 +23,10 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val user = twig.createNode("hashtagText", 1, 1, "Warcraft")
+    val user = twig.createNode("hashtagText", 1, 1, "containsWarcraft")
+    val cnt = twig.createNode("numOfCountries", 1, 1, "gtgtgtgt1")
     twig = twig.createEdge(root, user, false)
+    twig = twig.createEdge(root, cnt, false)
     twig.validate.get
   }
 }

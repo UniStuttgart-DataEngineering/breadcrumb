@@ -12,11 +12,9 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.select($"id", $"text", $"user.id".alias("user"), $"place.country".alias("country")) // Schema Alternative: user.location
-    res = res.filter($"country".contains("Deutschland") || $"country".contains("Germany")) // Schema Alternative: user.location
+    var res = tw.select($"id", $"place.country".alias("country")) // SA: user.location
+    res = res.filter($"country".contains("Deutschland") || $"country".contains("Germany"))
     res = res.agg(count("id").alias("numOfTweets"))
-//    res = res.agg(max($"numOfTweets").alias("maxCount"))
-//    res.sort(desc("numOfTweets"))
     res
   }
 

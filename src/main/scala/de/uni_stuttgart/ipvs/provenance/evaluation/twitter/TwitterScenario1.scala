@@ -11,20 +11,24 @@ class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguratio
   import spark.implicits._
 
   override def referenceScenario(): DataFrame = {
-    val df = loadTweets()
-//    df.filter($"text".contains("BTS"))
-    var res = df.withColumn("hashtag", explode($"entities.hashtags")) // Schema Alternative: hashtags -> media
-    res = res.select($"id", $"user.name".alias("name"), $"hashtag.text".alias("hashtagText"), $"text") // Schema Alternative: text -> description
-    res = res.filter($"text".contains("history"))
-//    res.filter($"hashtagText".contains("Lincoln"))
+    val tw = loadTweets()
+    var res = tw.withColumn("hashtag", explode($"entities.media")) // SA: hashtags -> media
+    res = res.filter($"text".contains("Lebron") || $"hashtag.description".contains("Lebron")) // SA: hashtag.text -> hashtag.description
+    res = res.select($"id_str", $"entities.media".alias("media"))
     res
   }
 
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("hashtagText", 1, 1, "Lincoln")
-    twig = twig.createEdge(root, text, false)
+    val id = twig.createNode("id_str", 1, 1, "1027605897680510976")
+    val media = twig.createNode("media", 1, 1, "")
+    val element = twig.createNode("element", 1, 1, "")
+    val url = twig.createNode("url", 1, 1, "containshttp")
+    twig = twig.createEdge(root, id, false)
+    twig = twig.createEdge(root, media, false)
+    twig = twig.createEdge(media, element, false)
+    twig = twig.createEdge(element, url, false)
     twig.validate.get
   }
 }

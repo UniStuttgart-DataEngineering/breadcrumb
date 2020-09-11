@@ -14,7 +14,7 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
     val tw = loadTweets()
     val tw_select = tw.select($"user.name".alias("name"), $"user.location".alias("loc"), $"text", $"place.country".alias("country"))
     val tw_bts = tw_select.filter($"text".contains("BTS"))
-    var res = tw_bts.filter($"country".contains("United States")) // Schema Alternatives: loc
+    var res = tw_bts.filter($"country".contains("United States")) // SA: loc
     res = res.groupBy($"loc").agg(collect_list($"name").alias("listOfNames"))
     res
   }

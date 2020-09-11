@@ -14,8 +14,11 @@ class TwitterSuite(spark: SparkSession, testConfiguration: TestConfiguration) ex
   lazy override val  logger = LoggerFactory.getLogger(getClass)
 
   addScenario(new TwitterScenario1(spark, testConfiguration))
-
-
+  addScenario(new TwitterScenario2(spark, testConfiguration))
+  addScenario(new TwitterScenario3(spark, testConfiguration))
+  addScenario(new TwitterScenario4(spark, testConfiguration))
+  addScenario(new TwitterScenario5(spark, testConfiguration))
+  
   override def getName(): String = "Twitter"
 
 }

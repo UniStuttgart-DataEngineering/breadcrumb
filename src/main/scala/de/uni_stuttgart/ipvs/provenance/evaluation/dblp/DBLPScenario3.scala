@@ -12,9 +12,9 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def referenceScenario: DataFrame = {
     val inproceedings = loadInproceedings()
-    val inproceedings_select = inproceedings.select($"booktitle".alias("btitle"), $"year".alias("year"),
+    val inproceedings_select = inproceedings.select($"booktitle".alias("btitle"), $"year".alias("iyear"),
           struct($"author", $"title._VALUE".alias("ititle")).alias("authorPaperPair")) // SA: editor
-    val res = inproceedings_select.groupBy($"btitle", $"year").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
+    val res = inproceedings_select.groupBy($"btitle", $"iyear").agg(collect_list($"authorPaperPair").alias("listOfAuthorPapers"))
 //    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author")) // SA: editor
 //    val inproceedings_select = inproceedings_flattened.select($"booktitle", $"year",
 //          struct($"iauthor._VALUE".alias("author"), $"title._VALUE".alias("ititle")).alias("authorPaperPair"))
