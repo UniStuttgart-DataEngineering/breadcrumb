@@ -36,22 +36,9 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    createAlternatives(primaryTree, 3)
+    createAlternatives(primaryTree, 1)
     replaceBibtex(primaryTree.alternatives(0).rootNode)
-    replaceAuthor(primaryTree.alternatives(1).rootNode)
-    replaceAuthor(primaryTree.alternatives(2).rootNode)
-    replaceBibtex(primaryTree.alternatives(2).rootNode)
     primaryTree
-  }
-
-  def replaceAuthor(node: SchemaNode): Unit ={
-    if (node.name == "author") {
-      node.name = "ee"
-      return
-    }
-    for (child <- node.children){
-      replaceAuthor(child)
-    }
   }
 
   def replaceBibtex(node: SchemaNode): Unit ={
@@ -63,4 +50,5 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
       replaceBibtex(child)
     }
   }
+
 }

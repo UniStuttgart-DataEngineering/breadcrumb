@@ -44,7 +44,8 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
   }
 
   def replaceTitle(node: SchemaNode): Unit ={
-    if (node.name == "proceeding") {
+    // to avoid "title._VALUE"
+    if (node.name == "title" && node.children.isEmpty) {
       node.name = "booktitle"
       return
     }

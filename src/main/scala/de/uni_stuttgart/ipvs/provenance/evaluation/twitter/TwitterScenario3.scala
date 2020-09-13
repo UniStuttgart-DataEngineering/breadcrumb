@@ -1,7 +1,9 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.twitter
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
+import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -22,11 +24,9 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
     val restructured_users = extracted_mentioned_users_with_media.select(
       struct($"uid", $"name", $"screen_name").alias("user_mentioned"),
       struct($"created_at", $"text", $"tid").alias("tweet"))
-//      $"murl")
     var res = restructured_users.groupBy($"user_mentioned").agg(count($"tweet").alias("numOfTweets"))
-////      , collect_list($"murl").alias("numOfUrls"))
 //    var res = extracted_mentioned_users.filter($"screen_name".contains("YouTube"))
-    res = res.sort(desc("numOfTweets"))
+//    res = res.sort(desc("numOfTweets"))
     res
   }
 
@@ -41,4 +41,22 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
     twig = twig.createEdge(root, count, false)
     twig.validate.get
   }
+
+  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
+    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    createAlternatives(primaryTree, 1)
+    replace1(primaryTree.alternatives(0).rootNode)
+    primaryTree
+  }
+
+  def replace1(node: SchemaNode): Unit ={
+    if (node.name == "media" && node.parent.name == "entities") {
+      node.name = "urls"
+      return
+    }
+    for (child <- node.children){
+      replace1(child)
+    }
+  }
+
 }

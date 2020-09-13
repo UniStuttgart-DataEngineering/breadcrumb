@@ -1,7 +1,9 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.dblp
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
+import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -25,8 +27,8 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val booktitle = twig.createNode("btitle", 1, 1, "HICSS")
-    val year = twig.createNode("year", 1, 1, "2006")
+    val booktitle = twig.createNode("btitle", 1, 1, "containsHICSS")
+    val year = twig.createNode("iyear", 1, 1, "contains2006")
     val list = twig.createNode("listOfAuthorPapers", 1, 1, "")
     val element = twig.createNode("element", 1, 1, "")
     val author = twig.createNode("author", 1, 1, "")
@@ -43,4 +45,22 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
     twig = twig.createEdge(element, title, false)
     twig.validate.get
   }
+
+  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
+    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    createAlternatives(primaryTree, 1)
+    replaceTitle(primaryTree.alternatives(0).rootNode)
+    primaryTree
+  }
+
+  def replaceTitle(node: SchemaNode): Unit ={
+    if (node.name == "author") {
+      node.name = "editor"
+      return
+    }
+    for (child <- node.children){
+      replaceTitle(child)
+    }
+  }
+
 }
