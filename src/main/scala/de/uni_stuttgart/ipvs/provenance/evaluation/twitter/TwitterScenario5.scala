@@ -15,7 +15,8 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
     var res = tw.select($"id", $"place.country".alias("pcountry")) // SA: user.location
-    res = res.filter($"pcountry".contains("Deutschland") || $"pcountry".contains("Germany"))
+//    res = res.filter($"pcountry".contains("Deutschland") || $"pcountry".contains("Germany"))
+    res = res.filter($"pcountry".contains("Germany"))
     res = res.agg(count("id").alias("numOfTweets"))
     res
   }
