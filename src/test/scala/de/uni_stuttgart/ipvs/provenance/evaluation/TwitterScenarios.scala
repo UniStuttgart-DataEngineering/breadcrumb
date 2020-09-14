@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
-import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5}
+import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario3a, TwitterScenario4, TwitterScenario5}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.scalatest.FunSuite
 
@@ -71,12 +71,30 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 // SCENARIO 3
   test("[Reference] Scenario 3"){
     val scenario = new TwitterScenario3(spark, testConfiguration1)
-    scenario.referenceScenario.show(50, false)
+    scenario.referenceScenario.filter($"screen_name".contains("YouTube")).show(50, false)
   }
 
   test("[RewriteWithoutSA] Scenario 3"){
     val scenario = new TwitterScenario3(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA().filter($"screen_name".contains("YouTube")).show()
     scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithoutSA] Scenario 3a"){
+    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    scenario.referenceScenario.filter($"name".contains("American Express")).show(50, false)
+  }
+
+  test("[Reference] Scenario 3a"){
+    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    scenario.referenceScenario.filter($"name".contains("American Express")).show(50, false)
+  }
+
+  test("[RewriteWithSA] Scenario 3a") {
+    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    scenario.extendedScenarioWithSA.filter($"name".contains("American Express")).show(20)
+    ProvenanceContext.setTestScenario(null)
   }
 
   test("[RewriteWithSA] Scenario 3") {
@@ -85,8 +103,8 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
     //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    //toBeDebugged.explain()
+    toBeDebugged.filter($"screen_name".contains("YouTube")).show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
