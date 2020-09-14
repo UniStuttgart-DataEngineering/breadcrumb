@@ -219,7 +219,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     }
     if(isGeneratorExpression){
       //move on to the nested element node
-      currentInputNode = currentInputNode.getPrimaryChild("element").get
+      currentInputNode = currentInputNode.getPrimaryChild("element").getOrElse(null)
     }
     currentOutputNode.constraint = currentInputNode.constraint
     copyConstraints()

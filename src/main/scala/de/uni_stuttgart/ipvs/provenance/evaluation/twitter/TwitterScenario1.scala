@@ -14,23 +14,24 @@ class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguratio
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.withColumn("hashtag", explode($"entities.hashtags")) // SA: hashtags -> media
-    res = res.filter($"text".contains("Lebron") || $"hashtag.text".contains("Lebron")) // SA: hashtag.text -> hashtag.description
-    res = res.select($"id_str", $"entities.media".alias("media"))
+    var res = tw.withColumn("medias", explode($"entities.media")) // SA: media -> urls
+//    res = res.filter($"text".contains("Lebron") || $"hashtag.text".contains("Lebron")) // SA: hashtag.text -> hashtag.description
+    res = res.filter($"text".contains("Lebron"))
+    res = res.select($"id_str", $"medias.url".alias("media_url"))
     res
   }
 
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val id = twig.createNode("id_str", 1, 1, "1027605897680510976")
-    val media = twig.createNode("media", 1, 1, "")
-    val element = twig.createNode("element", 1, 1, "")
-    val url = twig.createNode("url", 1, 1, "containshttp")
+    val id = twig.createNode("id_str", 1, 1, "1027612080084414464")
+//    val media = twig.createNode("media", 1, 1, "")
+//    val element = twig.createNode("element", 1, 1, "")
+    val url = twig.createNode("media_url", 1, 1, "containshttp")
     twig = twig.createEdge(root, id, false)
-    twig = twig.createEdge(root, media, false)
-    twig = twig.createEdge(media, element, false)
-    twig = twig.createEdge(element, url, false)
+//    twig = twig.createEdge(root, media, false)
+//    twig = twig.createEdge(media, element, false)
+    twig = twig.createEdge(root, url, false)
     twig.validate.get
   }
 
@@ -38,14 +39,14 @@ class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguratio
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
     createAlternatives(primaryTree, 1)
     replace1(primaryTree.alternatives(0).rootNode)
-//    replace2(primaryTree.alternatives(1).rootNode)
-//    replace3(primaryTree.alternatives(2).rootNode)
     primaryTree
   }
 
   def replace1(node: SchemaNode): Unit ={
-    if (node.name == "hashtags" && node.parent.name == "entities") {
-      node.name = "media"
+    if (node.name == "media" &&
+        node.parent.name == "entities" &&
+        node.parent.parent.name == "root") {
+      node.name = "urls"
       return
     }
     for (child <- node.children){
@@ -53,34 +54,34 @@ class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguratio
     }
   }
 
-  def replace2(node: SchemaNode): Unit ={
-    if (node.name == "text" && node.parent.name == "hashtags") {
-      node.name = "description"
-      return
-    }
-    for (child <- node.children){
-      replace2(child)
-    }
-  }
-
-  var node1 = ""
-  var node2 = ""
-
-  def replace3(node: SchemaNode): Unit ={
-    if (node.name == "hashtags") {
-      node.name = "media"
-      node1 = node.name
-    }
-    if (node.name == "text" && node.parent.name == node1) {
-      node.name = "description"
-      node2 = node.name
-    }
-    if (node1 == "media" && node2 == "description")
-      return
-
-    for (child <- node.children){
-      replace3(child)
-    }
-  }
+//  def replace2(node: SchemaNode): Unit ={
+//    if (node.name == "text" && node.parent.name == "hashtags") {
+//      node.name = "description"
+//      return
+//    }
+//    for (child <- node.children){
+//      replace2(child)
+//    }
+//  }
+//
+//  var node1 = ""
+//  var node2 = ""
+//
+//  def replace3(node: SchemaNode): Unit ={
+//    if (node.name == "hashtags") {
+//      node.name = "media"
+//      node1 = node.name
+//    }
+//    if (node.name == "text" && node.parent.name == node1) {
+//      node.name = "description"
+//      node2 = node.name
+//    }
+//    if (node1 == "media" && node2 == "description")
+//      return
+//
+//    for (child <- node.children){
+//      replace3(child)
+//    }
+//  }
 
 }

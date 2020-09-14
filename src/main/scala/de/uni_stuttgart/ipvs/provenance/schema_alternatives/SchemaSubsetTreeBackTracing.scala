@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
 import scala.collection.mutable
@@ -270,6 +270,32 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     }
     currentInputNode = currentInputNode.children.find(node => node.name == field.name.get).getOrElse(SchemaNode(field.name.get, Constraint(""), currentInputNode))
     currentInputNode.parent.addChild(currentInputNode)
+
+    // TODO: need an additional check if the current node has children
+    for (grandChild <- field.childSchema) {
+      if (grandChild.name.equals(currentInputNode.name)) {
+        if (!grandChild.dataType.typeName.equals("string")) {
+          if (grandChild.dataType.typeName.equals("array")) {
+            val elementNode = SchemaNode("element", Constraint(""), currentInputNode)
+            currentInputNode.addChild(elementNode)
+            currentInputNode = elementNode
+
+            for (each <- grandChild.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields) {
+              val gcNode = SchemaNode(each.name, Constraint(""), currentInputNode)
+              currentInputNode.addChild(gcNode)
+            }
+            currentInputNode = currentInputNode.parent
+          }
+
+          if (grandChild.dataType.typeName.equals("struct")) {
+            for (each <- grandChild.dataType.asInstanceOf[StructType].fields) {
+              val gcNode = SchemaNode(each.name, Constraint(""), currentInputNode)
+              currentInputNode.addChild(gcNode)
+            }
+          }
+        }
+      }
+    }
     true
   }
 

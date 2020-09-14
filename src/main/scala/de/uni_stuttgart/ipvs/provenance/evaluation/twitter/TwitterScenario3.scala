@@ -50,7 +50,9 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
   }
 
   def replace1(node: SchemaNode): Unit ={
-    if (node.name == "media" && node.parent.name == "entities") {
+    if (node.name == "media" &&
+        node.parent.name == "entities" &&
+        node.parent.parent.name == "root") {
       node.name = "urls"
       return
     }

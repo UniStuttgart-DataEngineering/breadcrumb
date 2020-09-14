@@ -27,10 +27,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario1(spark, testConfiguration1)
 //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-//    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"id_str".contains("1027612080084414464"))
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -112,10 +112,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario4(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    //    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+        scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"hashtagText".contains("Warcraft"))
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -140,10 +140,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario5(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    //    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+        scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
