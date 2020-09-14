@@ -23,8 +23,9 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
     val extracted_mentioned_users_with_media = extracted_mentioned_users.filter($"murl".contains("http"))
     val restructured_users = extracted_mentioned_users_with_media.select(
       $"uid", $"name", $"screen_name",
-      struct($"created_at", $"text", $"tid").alias("tweet"))
-    var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(count($"tweet").alias("numOfTweets"))
+      //struct($"created_at", $"text", $"tid").alias("tweet")
+      $"text".alias("tweet"))
+    var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(countDistinct($"tweet").alias("numOfTweets"))
 //    var res = extracted_mentioned_users.filter($"screen_name".contains("YouTube"))
 //    res = res.sort(desc("numOfTweets"))
     res
