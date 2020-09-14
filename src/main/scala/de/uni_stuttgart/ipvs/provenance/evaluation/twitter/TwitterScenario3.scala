@@ -15,16 +15,18 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
     val mentioned = tw.withColumn("mentioned_user", explode($"entities.user_mentions"))
-    val media = mentioned.withColumn("medias", explode_outer($"extended_entities.media")) // SA: media -> urls
+    val media = mentioned.withColumn("medias", explode_outer($"entities.media")) // SA: media -> urls
     val extracted_mentioned_users = media.select($"id".alias("tid"), $"created_at", $"text",
       $"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
 //      $"entities.urls".alias("media"))
       $"medias.url".alias("murl"))
-    val extracted_mentioned_users_with_media = extracted_mentioned_users.filter($"murl".contains("http"))
-    val restructured_users = extracted_mentioned_users_with_media.select(
-      $"uid", $"name", $"screen_name",
+//    val extracted_mentioned_users_with_media = extracted_mentioned_users.filter($"murl".contains("http"))
+    val restructured_users = extracted_mentioned_users.select(
+      $"uid", $"name", $"screen_name", $"murl",
       struct($"created_at", $"text", $"tid").alias("tweet"))
-    var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(count($"tweet").alias("numOfTweets"))
+    var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(count($"tweet").alias("numOfTweets"),
+        countDistinct($"murl").alias("numOfUrls"))
+    res = res.filter($"numOfTweets" > 100)
 //    var res = restructured_users.filter($"screen_name".contains("YouTube"))
 //    res = res.sort(desc("numOfTweets"))
     res
@@ -34,7 +36,7 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
     var twig = new Twig()
     val root = twig.createNode("root")
     val name = twig.createNode("screen_name", 1, 1, "YouTube")
-    val count = twig.createNode("numOfTweets", 1, 1, "gtgtgtgt100")
+    val count = twig.createNode("numOfUrls", 1, 1, "gtgtgtgt100")
     twig = twig.createEdge(root, name, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get
