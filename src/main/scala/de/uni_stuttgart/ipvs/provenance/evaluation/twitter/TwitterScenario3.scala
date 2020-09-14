@@ -15,7 +15,7 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
     val mentioned = tw.withColumn("mentioned_user", explode($"entities.user_mentions"))
-    val media = mentioned.withColumn("medias", explode($"entities.media")) // Schema Alternative: media -> urls
+    val media = mentioned.withColumn("medias", explode_outer($"extended_entities.media")) // SA: media -> urls
     val extracted_mentioned_users = media.select($"id".alias("tid"), $"created_at", $"text",
       $"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
 //      $"entities.urls".alias("media"))
@@ -25,7 +25,7 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
       $"uid", $"name", $"screen_name",
       struct($"created_at", $"text", $"tid").alias("tweet"))
     var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(count($"tweet").alias("numOfTweets"))
-//    var res = extracted_mentioned_users.filter($"screen_name".contains("YouTube"))
+//    var res = restructured_users.filter($"screen_name".contains("YouTube"))
 //    res = res.sort(desc("numOfTweets"))
     res
   }

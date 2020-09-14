@@ -29,17 +29,17 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[RewriteWithSA] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
-    scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
-//    toBeDebugged.explain()
-//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    scenario.extendedScenarioWithSA
+    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
+    toBeDebugged.explain()
+    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
-  test("[MSR] Scenario 1") {
-    val scenario = new DBLPScenario1(spark, testConfiguration1)
-    scenario.extendedScenario.show(10)
-  }
+//  test("[MSR] Scenario 1") {
+//    val scenario = new DBLPScenario1(spark, testConfiguration1)
+//    scenario.extendedScenario.show(10)
+//  }
 
 
   // SCENARIO 2
@@ -59,16 +59,16 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario2(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"author".contains("Sudeepa Roy"))
+//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"author".contains("Sudeepa Roy"))
 //    toBeDebugged.explain()
 //    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
-  test("[MSR] Scenario 2"){
-    val scenario = new DBLPScenario2(spark, testConfiguration1)
-    scenario.extendedScenario.show(10)
-  }
+//  test("[MSR] Scenario 2"){
+//    val scenario = new DBLPScenario2(spark, testConfiguration1)
+//    scenario.extendedScenario.show(10)
+//  }
 
 
 
@@ -97,10 +97,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
     scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"btitle".contains("HICSS") && $"iyear" === "2006")
-    toBeDebugged.explain()
-    toBeDebugged.show()
-    //toBeDebugged.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"btitle".contains("HICSS") && $"iyear" === "2006")
+//    toBeDebugged.explain()
+//    toBeDebugged.show()
+//    //toBeDebugged.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -153,8 +153,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[RewriteWithoutSA] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
-    //    scenario.extendedScenario.explain(true)
-    scenario.extendedScenarioWithoutSA.show(10)
+    scenario.extendedScenarioWithoutSA.filter($"name".contains("Sinziana Mazilu")).show(10)
   }
 
   test("[RewriteWithSA] Scenario 5"){
@@ -162,9 +161,9 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"author".contains("A. Allam"))
+    val toBeDebugged = scenario.extendedScenarioWithSA
     toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
