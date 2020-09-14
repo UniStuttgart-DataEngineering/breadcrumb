@@ -18,9 +18,9 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
     var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
     inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
     val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("author"), $"title._VALUE".alias("ititle"))
-    val proceedings_selected = proceedings.select($"_key", $"title".alias("proceeding"))
+    val proceedings_selected = proceedings.select($"_key", $"title".alias("proceeding")) // SA: title -> booktitle
     val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
-    val sigmod = proceedings_with_inproceedings.filter($"proceeding".contains("SIGMOD")) // SchemaAlternative: booktitle
+    val sigmod = proceedings_with_inproceedings.filter($"proceeding".contains("SIGMOD"))
     val res = sigmod.select($"author", $"ititle", $"proceeding")
     res
   }

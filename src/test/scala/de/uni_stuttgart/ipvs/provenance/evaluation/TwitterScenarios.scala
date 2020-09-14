@@ -71,13 +71,12 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 // SCENARIO 3
   test("[Reference] Scenario 3"){
     val scenario = new TwitterScenario3(spark, testConfiguration1)
-    scenario.referenceScenario.filter($"screen_name".contains("YouTube")).show(50, false)
+    scenario.referenceScenario //.filter($"screen_name".contains("YouTube")).show(50, false)
   }
 
   test("[RewriteWithoutSA] Scenario 3"){
     val scenario = new TwitterScenario3(spark, testConfiguration1)
-    scenario.extendedScenarioWithoutSA().filter($"screen_name".contains("YouTube")).show()
-    scenario.extendedScenarioWithoutSA.show(10)
+    scenario.extendedScenarioWithoutSA //.filter($"screen_name".contains("YouTube")).show(10)
   }
 
   test("[RewriteWithoutSA] Scenario 3a"){
@@ -101,10 +100,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario3(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    //    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA
-    //toBeDebugged.explain()
-    toBeDebugged.filter($"screen_name".contains("YouTube")).show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"screen_name".contains("YouTube"))
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

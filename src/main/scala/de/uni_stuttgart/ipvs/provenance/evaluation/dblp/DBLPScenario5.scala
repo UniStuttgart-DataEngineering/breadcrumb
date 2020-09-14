@@ -13,32 +13,24 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
-    val inproceedings = loadInproceedings()
     val www = loadWWW()
-
     val www_author = www.withColumn("wauthor", explode($"author"))
-//    val www_url = www_author.withColumn("wurl", explode($"url"))
-//    val www_selected = www_author.select($"wauthor._VALUE".alias("wauthorName"), $"wurl._VALUE".alias("url"), $"title".alias("wtitle"))
-    val www_selected = www_author.select($"wauthor._VALUE".alias("wauthorName"), $"url".alias("wurl"), $"title".alias("wtitle"))
-    val inproceedings_flattened = inproceedings.withColumn("iauthor", explode($"author"))
-    val inproceedings_selected = inproceedings_flattened.select($"iauthor._VALUE".alias("iauthorName"), $"title._VALUE".alias("ititle"), $"ee")
-    var joined = www_selected.join(inproceedings_selected, $"wauthorName" === $"iauthorName")
-    joined = joined.withColumn("url", explode($"wurl")).withColumnRenamed("iauthorName", "name")
-    val res = joined.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
-//      agg(collect_list($"ititle").alias("listOfIn"), collect_list($"wtitle").alias("listOfW"), collect_list($"url").alias("listOfUrl"))
-//    val res = joined.filter($"iauthorName".contains("A. Allam"))
+    val www_url = www_author.withColumn("wurl", explode($"url")) // SA: url -> note
+    val www_selected = www_url.select($"wauthor._VALUE".alias("name"), $"wurl._VALUE".alias("url"))
+    var res = www_selected.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
+//    res = res.filter($"name".contains("Sinziana Mazilu"))
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("name", 1, 1, "containsA. Allam")
-//    val url = twig.createNode("listOfUrl", 1, 1, "")
-//    val element = twig.createNode("element", 1, 1, "")
-    twig = twig.createEdge(root, text, false)
-//    twig = twig.createEdge(root, url, false)
-//    twig = twig.createEdge(url, element, false)
+    val name = twig.createNode("name", 1, 1, "containsSinziana Mazilu")
+//    val list = twig.createNode("listOfUrl", 1, 1000000, "")
+//    val elem = twig.createNode("element", 1, 1, "containshttps://orcid.org/0000-0001-8552-0934")
+    twig = twig.createEdge(root, name, false)
+//    twig = twig.createEdge(root, list, false)
+//    twig = twig.createEdge(list, elem, false)
     twig.validate.get
   }
 
@@ -50,8 +42,8 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
   }
 
   def replace1(node: SchemaNode): Unit ={
-    if (node.name == "url") {
-      node.name = "ee"
+    if (node.name == "url" && node.parent.name == "root") {
+      node.name = "note"
       return
     }
     for (child <- node.children){
