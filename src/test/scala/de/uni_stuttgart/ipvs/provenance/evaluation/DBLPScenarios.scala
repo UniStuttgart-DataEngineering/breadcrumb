@@ -97,9 +97,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
     scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"btitle".contains("HICSS") && $"iyear" === "2006")
-//    toBeDebugged.explain()
-//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"btitle".contains("HICSS") && $"iyear" === "2006")
+    toBeDebugged.explain()
+    toBeDebugged.show()
+    //toBeDebugged.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

@@ -122,6 +122,14 @@ case object Constants {
     name.contains(PROVENANCE_ID)
   }
 
+  protected[provenance] def isValidField(name: String): Boolean = {
+    name.contains(VALID_FIELD)
+  }
+
+  protected[provenance] def isValidField(name: String, alternativeIdx: Int): Boolean = {
+    name.contains(VALID_FIELD) && name.contains(getAlternativeIdxString(alternativeIdx))
+  }
+
   protected[provenance] def getAlternativeFieldName(name: String, oid: Int, alternativeIdx: Int): String = {
     getFieldName(name, oid, alternativeIdx)
   }

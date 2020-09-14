@@ -208,6 +208,17 @@ class ProvenanceContext {
     nestedProvenanceContexts.toSeq
   }
 
+  protected[provenance] def getNestedProvenanceAttributes(alternativeId: Int): Seq[(ProvenanceAttribute, ProvenanceContext)] = {
+    val alternativeIdString = Constants.getAlternativeIdxString(alternativeId)
+    nestedProvenanceContexts.filter{
+      case (provenanceAttribute, _) => provenanceAttribute.attributeName.takeRight(4) == alternativeIdString
+    }.toSeq
+
+  }
+
+
+
+
   protected[provenance] def isNestedProvenanceAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
     nestedProvenanceContexts.contains(provenanceAttribute)
   }
