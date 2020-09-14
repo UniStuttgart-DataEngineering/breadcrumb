@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, Expression, GetStructField, IsNotNull, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, Expression, GetStructField, IsNotNull, Literal, Size}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 import scala.collection.mutable
@@ -104,6 +104,10 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
 
   }
 
+  def forwardTraceCast(c: Cast): Unit = {
+    forwardTraceExpression(c.child)
+  }
+
   def forwardTraceExpression(expression: Expression): Unit = {
     expression match {
 
@@ -122,13 +126,21 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       case l: Literal => {
         forwardTraceLiteral(l)
       }
-
+      case s: Size => {
+        forwardTraceSize(s)
+      }
+      case c: Cast => {
+        forwardTraceCast(c)
+      }
       case ag: AggregateExpression => {
         forwardTraceAggregateExpression(ag)
       }
     }
   }
 
+  def forwardTraceSize(size: Size): Unit = {
+    forwardTraceExpression(size.child)
+  }
 
 
   def forwardTraceAlias(a: Alias) : Unit = {

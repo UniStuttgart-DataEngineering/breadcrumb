@@ -21,6 +21,7 @@ class DataFetcherUDF extends UDF2[Row, Seq[Row], Boolean] {
       case x : Row => validate(x, treeNode)
       case x : mutable.WrappedArray[_] => validate(x, treeNode)
       case x : Long => validate(x, treeNode)
+      case x : Double => validate(x, treeNode)
       case null => false//validateNullValue(treeNode)
       case x => throw new ClassCastException("DataFetcher does not support elements of type " + x.getClass)
     }
@@ -37,6 +38,11 @@ class DataFetcherUDF extends UDF2[Row, Seq[Row], Boolean] {
   }
 
   def validate(value: Int, treeNode: UDFTreeNode): Boolean = {
+    if (!treeNode.isLeaf()) return false //needed?
+    treeNode.compareWithValue(value)
+  }
+
+  def validate(value: Double, treeNode: UDFTreeNode): Boolean = {
     if (!treeNode.isLeaf()) return false //needed?
     treeNode.compareWithValue(value)
   }

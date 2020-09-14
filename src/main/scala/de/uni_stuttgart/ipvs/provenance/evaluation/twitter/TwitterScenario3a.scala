@@ -4,7 +4,8 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.functions.{avg, countDistinct, explode, size}
+import org.apache.spark.sql.functions.{avg, countDistinct, explode, size }
+import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TwitterScenario3a(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
@@ -14,7 +15,7 @@ class TwitterScenario3a(spark: SparkSession, testConfiguration: TestConfiguratio
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    val extended = tw.withColumn("media_size", size($"entities.media"))
+    val extended = tw.withColumn("media_size", size($"entities.media") cast(LongType))
     val filtered = extended.filter($"media_size" > 0)
     //val mentioned = filtered.withColumn("mentioned_user", explode($"entities.user_mentions"))
     //  .select($"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"media_size")
@@ -26,7 +27,7 @@ class TwitterScenario3a(spark: SparkSession, testConfiguration: TestConfiguratio
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val name = twig.createNode("name", 1, 1, "American Express")
+    val name = twig.createNode("name", 1, 1, "Vanessa Tuqueque")
     val count = twig.createNode("media_mentions", 1, 1, "gtgtgtgt1")
     twig = twig.createEdge(root, name, false)
     twig = twig.createEdge(root, count, false)

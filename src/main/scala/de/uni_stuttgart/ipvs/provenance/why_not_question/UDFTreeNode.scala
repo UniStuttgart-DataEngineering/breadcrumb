@@ -61,6 +61,18 @@ class UDFTreeNode() {
     }
   }
 
+  def compareWithValue(value: Double): Boolean = {
+    if (comparisonOp == 0 && attributeValue == "") return true
+    val attributeVal: Double = Try(attributeValue.toDouble).getOrElse(return false)
+    comparisonOp match {
+      case 0 => true
+      case 1 => attributeVal == value
+      case 3 => attributeVal > value
+      case 4 => attributeVal < value
+      case _ => false
+    }
+  }
+
   def compareWithValue(value: Long): Boolean = {
     if (comparisonOp == 0 && attributeValue == "") return true
     val attributeVal: Long = Try(attributeValue.toLong).getOrElse(return false)

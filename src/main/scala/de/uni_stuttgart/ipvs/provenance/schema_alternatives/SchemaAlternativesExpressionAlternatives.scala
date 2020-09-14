@@ -2,8 +2,8 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or}
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Count, Max, Min, Sum}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, Size}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.StringType
 
@@ -93,6 +93,9 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       }
       case c: Cast => {
         forwardTraceCast(c)
+      }
+      case s: Size => {
+        forwardTraceSize(s)
       }
       case nn: IsNotNull => {
         forwardTraceIsNotNull(nn)
@@ -225,6 +228,7 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       case _: Min => Min(alternative)
       case _: Count => Count(alternative)
       case _: CollectList => CollectList(alternative)
+      case _: Average => Average(alternative)
     }
     val expr = AggregateExpression(function, expression.mode, expression.isDistinct)
     expr
@@ -310,6 +314,13 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     val alternativeExpressions = forwardTraceExpression(cast.child)
     alternativeExpressions.map {
       expression => Cast(expression, cast.dataType)
+    }
+  }
+
+  def forwardTraceSize(size: Size): Seq[Expression] = {
+    val alternativeExpressions = forwardTraceExpression(size.child)
+    alternativeExpressions.map {
+      expression => Size(expression)
     }
   }
 

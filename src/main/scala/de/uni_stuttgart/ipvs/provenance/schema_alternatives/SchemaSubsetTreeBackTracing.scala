@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal, UnaryExpression}
 import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -37,6 +37,10 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     }
   }
 
+  def backtraceFunction(function: UnaryExpression): Boolean = {
+    backtraceExpression(function.child)
+  }
+
   def backtraceExpression(expression: Expression): Boolean = {
     expression match {
       case a: Alias => {
@@ -56,6 +60,9 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
       }
       case ag: AggregateExpression => {
         backtraceAggregateExpression(ag)
+      }
+      case func: UnaryExpression => {
+        backtraceFunction(func)
       }
     }
 
