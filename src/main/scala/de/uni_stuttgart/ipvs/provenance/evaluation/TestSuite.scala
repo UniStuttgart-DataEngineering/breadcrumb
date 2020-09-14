@@ -1,5 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Dataset, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
@@ -77,6 +78,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   }
 
   def executeScenario(scenario: TestScenario): Unit = {
+    ProvenanceContext.setTestScenario(scenario)
     var result = spark.emptyDataFrame
     evaluationResult.reset()
     if (testConfiguration.warmUp) {
@@ -90,6 +92,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     logger.debug(result.queryExecution.analyzed.toString())
     logger.debug("Executed Plan: ")
     logger.debug(result.queryExecution.executedPlan.toString())
+    ProvenanceContext.setTestScenario(null)
 
   }
 
