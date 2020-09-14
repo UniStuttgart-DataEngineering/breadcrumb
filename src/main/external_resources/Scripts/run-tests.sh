@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 repetitions="3"
-testMask="127"
+testMask="255"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 warmup="false"

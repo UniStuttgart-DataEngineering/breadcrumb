@@ -8,8 +8,8 @@ import org.apache.spark.sql.functions.{avg, countDistinct, explode, size }
 import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class TwitterScenario3a(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
-  override def getName(): String = "T3a"
+class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
+  override def getName(): String = "T6"
 
   import spark.implicits._
 
