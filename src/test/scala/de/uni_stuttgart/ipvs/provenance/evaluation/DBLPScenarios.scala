@@ -29,10 +29,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[RewriteWithSA] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
-//    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -160,10 +160,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario5(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-//    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
-    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA
+//    toBeDebugged.explain()
+//    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

@@ -18,7 +18,8 @@ class TwitterSuite(spark: SparkSession, testConfiguration: TestConfiguration) ex
   addScenario(new TwitterScenario3(spark, testConfiguration))
   addScenario(new TwitterScenario4(spark, testConfiguration))
   addScenario(new TwitterScenario5(spark, testConfiguration))
-  
+  addScenario(new TwitterScenario6(spark, testConfiguration))
+
   override def getName(): String = "Twitter"
 
 }

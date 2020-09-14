@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
-import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario3a, TwitterScenario4, TwitterScenario5}
+import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario6, TwitterScenario4, TwitterScenario5}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.scalatest.FunSuite
 
@@ -80,17 +80,17 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   }
 
   test("[RewriteWithoutSA] Scenario 3a"){
-    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    val scenario = new TwitterScenario6(spark, testConfiguration1)
     scenario.referenceScenario.filter($"name".contains("American Express")).show(50, false)
   }
 
   test("[Reference] Scenario 3a"){
-    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    val scenario = new TwitterScenario6(spark, testConfiguration1)
     scenario.referenceScenario.filter($"name".contains("American Express")).show(50, false)
   }
 
   test("[RewriteWithSA] Scenario 3a") {
-    val scenario = new TwitterScenario3a(spark, testConfiguration1)
+    val scenario = new TwitterScenario6(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     scenario.extendedScenarioWithSA.filter($"name".contains("American Express")).show(20)
     ProvenanceContext.setTestScenario(null)
