@@ -84,11 +84,6 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.referenceScenario.filter($"name".contains("Vanessa Tuqueque")).show(50, false)
   }
 
-  test("[Reference] Scenario 3a"){
-    val scenario = new TwitterScenario6(spark, testConfiguration1)
-    scenario.referenceScenario.filter($"name".contains("American Express")).show(50, false)
-  }
-
   test("[RewriteWithSA] Scenario 3a") {
     val scenario = new TwitterScenario6(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)

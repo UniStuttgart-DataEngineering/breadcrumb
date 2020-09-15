@@ -19,7 +19,9 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
     val filtered = extended.filter($"media_size" > 0)
     //val mentioned = filtered.withColumn("mentioned_user", explode($"entities.user_mentions"))
     //  .select($"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"media_size")
-    val users = filtered.select($"user.id".alias("uid"), $"user.name".alias("name"), $"media_size")
+    val users = filtered.select($"user.id".alias("uid"), $"user.name".alias("name"), $"media_size")//.alias("media_mentions"))
+        .filter($"user.name" === "Vanessa Tuqueque")
+    //users
     val res = users.groupBy($"uid", $"name").agg(avg($"media_size").alias("media_mentions"))
     res
   }

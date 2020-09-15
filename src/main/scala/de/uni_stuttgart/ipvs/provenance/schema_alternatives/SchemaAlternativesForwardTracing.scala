@@ -28,6 +28,7 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
   var isGeneratorExpression = false
 
   var withAlternatives = true
+  var inside_aggregation_function = false
 
   initialize()
 
@@ -98,7 +99,9 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
           currentOutputNode = currentOutputNode.getParent()
         }
       case _ => {
+        inside_aggregation_function = true
         forwardTraceExpression(ag.aggregateFunction.children.head)
+        inside_aggregation_function = false
       }
     }
 
@@ -211,8 +214,11 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       currentInputNode = currentInputNode.getPrimaryChild("element").get
     }
     currentOutputNode.constraint = currentInputNode.constraint
-    copyConstraints()
-    copyChildren()
+    if (!inside_aggregation_function){
+      copyConstraints()
+      copyChildren()
+
+    }
     if(isGeneratorExpression){
       currentInputNode = currentInputNode.getParent()
     }
