@@ -109,6 +109,14 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+  test("[MSRwA] Scenario 3") {
+    val scenario = new DBLPScenario3(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 
   // SCENARIO 4

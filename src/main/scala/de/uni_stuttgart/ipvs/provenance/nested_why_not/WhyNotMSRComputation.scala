@@ -47,8 +47,8 @@ object WhyNotMSRComputation {
     val validColumn = dataFrame.columns.filter(name => name == validAttribute.attributeName).head
     val compatibleColumn = dataFrame.columns.filter(name => name == compatibleAttribute.attributeName).head
     var relevantUnflattenedTuples = dataFrame.filter(col(validColumn) === true && col(compatibleColumn) === true)
-    relevantUnflattenedTuples.printSchema()
-    relevantUnflattenedTuples.show()
+    //relevantUnflattenedTuples.printSchema()
+    //relevantUnflattenedTuples.show()
     relevantUnflattenedTuples = relevantUnflattenedTuples.drop(validColumn).drop(compatibleColumn)
     val flattenedCompatiblesOnly = flattenNestedProvenanceCollections(relevantUnflattenedTuples, provenanceContext, alternative.id)
 
@@ -65,15 +65,15 @@ object WhyNotMSRComputation {
   }
 
   def computeMSRForSchemaAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext): Map[Int, DataFrame] = {
-    dataFrame.printSchema()
-    dataFrame.show(false)
+    //dataFrame.printSchema()
+    //dataFrame.show(false)
     val provenanceAttributesOnly = dataFrame.select(
       provenanceContext.getProvenanceAttributes().map(attribute => col(attribute.attributeName)): _*)
     val lastCompatibleAttribute = provenanceContext.getMostRecentCompatibilityAttributes()
     val (provenanceWithUid, uidAttribute) = addUID(provenanceAttributesOnly, provenanceContext)
     provenanceWithUid.cache()
-    provenanceWithUid.printSchema()
-    provenanceWithUid.show(false)
+    //provenanceWithUid.printSchema()
+    //provenanceWithUid.show(false)
     val compatibleNames = lastCompatibleAttribute.map{c => c.attributeName}
     val compatiblesOnly = filterForAllCompatibles(provenanceWithUid, compatibleNames) //tuple based only
     val pickyOperators = mutable.Map.empty[Int, DataFrame]

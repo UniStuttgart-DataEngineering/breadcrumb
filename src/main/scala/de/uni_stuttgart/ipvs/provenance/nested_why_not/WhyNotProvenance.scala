@@ -4,8 +4,10 @@ import org.apache.spark.sql.DataFrame
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.transformations.TransformationRewrite
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Schema, SchemaMatcher, Twig}
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.functions.typedLit
 
 /**
  * Entry point for plan rewrites
@@ -71,11 +73,28 @@ object WhyNotProvenance {
   def MSRsWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): Map[Int, DataFrame] = {
     val (result, provenanceContext) = dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)
     val res = WhyNotMSRComputation.computeMSRForSchemaAlternatives(result, provenanceContext)
+    res
+  }
+
+  def printMSRsWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig) = {
+    val res = MSRsWithAlternatives(dataFrame, whyNotTwig)
     for ((id, pickyOps) <- res) {
       println("Schema Alternative: " + id)
       pickyOps.show(false)
     }
-    res
+  }
+
+  def computeMSRsWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
+    val res: Map[Int, DataFrame] = MSRsWithAlternatives(dataFrame, whyNotTwig)
+    val (primaryAlternative, primaryDataFrame) = res.minBy(_._1)
+    var aggregatedResults = primaryDataFrame.withColumn("alternative", typedLit(f"${primaryAlternative}%06d"))
+    for ((alternative, altFrame) <- res) {
+      if (alternative != primaryAlternative){
+        val manipulatedDataFrame = altFrame.withColumn("alternative", typedLit(f"${alternative}%06d"))
+        aggregatedResults = aggregatedResults.union(manipulatedDataFrame)
+      }
+    }
+    aggregatedResults
   }
 
 }

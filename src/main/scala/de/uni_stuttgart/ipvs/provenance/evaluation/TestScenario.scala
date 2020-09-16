@@ -26,14 +26,18 @@ abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfigur
     WhyNotProvenance.computeMSRs(referenceScenario, whyNotQuestion)
   }
 
+  def extendedScenarioWithSAandMSR() : DataFrame = {
+    WhyNotProvenance.computeMSRsWithAlternatives(referenceScenario, whyNotQuestion)
+  }
 
 
-  def toCSV(iteration: Int, exeutionTime: Long): String = {
+
+  def toCSV(iteration: Int, executionTime: Long): String = {
     val builder = scala.collection.mutable.StringBuilder.newBuilder
     builder.append(toCSV())
     builder.append(iteration)
     builder.append(";")
-    builder.append(exeutionTime)
+    builder.append(executionTime)
     builder.append(";")
     builder.toString()
   }

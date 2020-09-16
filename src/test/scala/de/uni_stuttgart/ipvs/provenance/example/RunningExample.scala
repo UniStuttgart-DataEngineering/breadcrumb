@@ -171,8 +171,9 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
   test("Running example full with schema Alternative MSR") {
     val exampleData = runningExample()
     val wnTuple = exampleWhyNotTuple()
-    val rewrittenData = WhyNotProvenance.MSRsWithAlternatives(exampleData, wnTuple)
-    exampleData.show()
+    val rewrittenData = WhyNotProvenance.computeMSRsWithAlternatives(exampleData, wnTuple)
+    rewrittenData.show(false)
+    rewrittenData.explain()
     //rewrittenData.filter($"__ORIGINAL_0000_0015" === true && $"__VALID_0000_0015" === true).show()
   }
 

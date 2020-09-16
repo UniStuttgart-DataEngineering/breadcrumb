@@ -66,6 +66,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
       case 1 => scenario.extendedScenario()
       case 2 => scenario.extendedScenarioWithoutSA()
       case 3 => scenario.extendedScenarioWithSA()
+      case 4 => scenario.extendedScenarioWithSAandMSR()
       case _ => scenario.referenceScenario()
     }
     collectDataFrame(result, scenario.getName)
