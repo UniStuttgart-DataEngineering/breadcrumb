@@ -148,22 +148,22 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   // SCENARIO 5
   test("[Reference] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
-    scenario.referenceScenario.show(10)
+    scenario.referenceScenario.show(10, false)
   }
 
   test("[RewriteWithoutSA] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
-    scenario.extendedScenarioWithoutSA.filter($"name".contains("Sinziana Mazilu")).show(10)
+    scenario.extendedScenarioWithoutSA.show(10) //.filter($"name".contains("Sinziana Mazilu")).show(10)
   }
 
   test("[RewriteWithSA] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA
-//    toBeDebugged.explain()
-//    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    scenario.extendedScenarioWithSA
+    val toBeDebugged = scenario.extendedScenarioWithSA
+    toBeDebugged.explain()
+    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

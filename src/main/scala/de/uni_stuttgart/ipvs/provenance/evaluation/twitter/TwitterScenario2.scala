@@ -14,10 +14,14 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    val tw_select = tw.select($"user.name".alias("name"), $"user.location".alias("loc"), $"text")
+//    val tw_select = tw.select($"user.name".alias("name"), $"user.location".alias("loc"), $"text",
+//      size($"entities.hashtags").alias("sizeOfHashtags"), $"place.country".alias("pcountry")) // SA: place.country -> user.location
+    var tw_select = tw.withColumn("sizeOfHashtags", size($"entities.hashtags"))
+    tw_select = tw_select.withColumn("uLocation", $"user.location")
+    tw_select = tw_select.withColumn("uName", $"user.name")
     val tw_bts = tw_select.filter($"text".contains("BTS"))
     var res = tw_bts.filter($"place.country".contains("United States")) // SA: place.country -> user.location
-    res = res.groupBy($"loc").agg(collect_list($"name").alias("listOfNames"))
+    res = res.groupBy($"uLocation", $"sizeOfHashtags").agg(collect_list($"uName").alias("listOfNames"))
     res
   }
 

@@ -16,9 +16,15 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
     val www = loadWWW()
     val www_author = www.withColumn("wauthor", explode($"author"))
     val www_url = www_author.withColumn("wurl", explode($"url")) // SA: url -> note
-    val www_selected = www_url.select($"wauthor._VALUE".alias("name"), $"wurl._VALUE".alias("url"))
+    var www_selected = www_url.select($"wauthor._VALUE".alias("name"), $"wurl._VALUE".alias("url"))
+    www_selected = www_selected.filter($"url".isNotNull && $"url" =!= "null")
     var res = www_selected.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
 //    res = res.filter($"name".contains("Sinziana Mazilu"))
+//
+//    val flat1 = www.withColumn("uurl", explode($"url._VALUE"))
+//    val flat2 = flat1.withColumn("nnote", explode($"note._VALUE"))
+//    var res = flat2.groupBy($"uurl", $"nnote").agg(collect_list($"author"))
+////    res = res.filter(!$"uurl".contains("harvard") && lower($"nnote").contains("harvard") && $"nnote".contains("http"))
     res
   }
 

@@ -28,11 +28,13 @@ object TestConfiguration {
 
   def apply(parameters: Array[String]) : TestConfiguration = {
     val testConfiguration = new TestConfiguration()
-    testConfiguration._referenceScenario = parameters(0) match {
-      case "true" => true
-      case "false" => false
-      case _ => throw new MatchError("Reference query flag must be \"true\" or \"false\"")
-    }
+    testConfiguration.referenceScenario(toInt(parameters(0)).getOrElse(0))
+
+//    testConfiguration._referenceScenario = parameters(0) match {
+//      case "true" => true
+//      case "false" => false
+//      case _ => throw new MatchError("Reference query flag must be \"true\" or \"false\"")
+//    }
 
     testConfiguration._dataSize = parameters(1) match {
       case  "100" => 100
@@ -79,7 +81,7 @@ class TestConfiguration {
 
   lazy val logger = LoggerFactory.getLogger(getClass)
 
-  private var _referenceScenario: Boolean = false
+  private var _referenceScenario: Int = 0
   private var _pathToData : String = "/"
   private var _iterations : Int = 1
   private var _warmUp: Boolean = false
@@ -110,8 +112,8 @@ class TestConfiguration {
 
   def referenceScenario = _referenceScenario
 
-  def referenceScenario(boolean: Boolean) : TestConfiguration = {
-    if (!_built) _referenceScenario = boolean
+  def referenceScenario(int: Int) : TestConfiguration = {
+    if (!_built) _referenceScenario = int
     this
   }
 
