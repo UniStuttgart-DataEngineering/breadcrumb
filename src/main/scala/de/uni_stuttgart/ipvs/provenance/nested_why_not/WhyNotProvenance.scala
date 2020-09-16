@@ -68,8 +68,14 @@ object WhyNotProvenance {
     dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)._1
   }
 
-
-
-
+  def MSRsWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): Map[Int, DataFrame] = {
+    val (result, provenanceContext) = dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)
+    val res = WhyNotMSRComputation.computeMSRForSchemaAlternatives(result, provenanceContext)
+    for ((id, pickyOps) <- res) {
+      println("Schema Alternative: " + id)
+      pickyOps.show(false)
+    }
+    res
+  }
 
 }

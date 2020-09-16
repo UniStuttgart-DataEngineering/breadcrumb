@@ -126,8 +126,16 @@ case object Constants {
     name.contains(VALID_FIELD)
   }
 
+  protected[provenance] def isCompatibleField(name: String, alternativeIdx: Int): Boolean = {
+    name.contains(COMPATIBLE_FIELD) && name.contains(getAlternativeIdxString(alternativeIdx))
+  }
+
   protected[provenance] def isValidField(name: String, alternativeIdx: Int): Boolean = {
     name.contains(VALID_FIELD) && name.contains(getAlternativeIdxString(alternativeIdx))
+  }
+
+  protected[provenance] def isSurvivedField(name: String, alternativeIdx: Int): Boolean = {
+    name.contains(SURVIVED_FIELD) && name.contains(getAlternativeIdxString(alternativeIdx))
   }
 
   protected[provenance] def getAlternativeFieldName(name: String, oid: Int, alternativeIdx: Int): String = {

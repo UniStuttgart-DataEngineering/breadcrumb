@@ -183,6 +183,12 @@ class ProvenanceContext {
     validAttributes
   }
 
+  protected[provenance] def getValidAttribute(alternativeID: Int): Option[ProvenanceAttribute] = {
+    validAttributes.filter(attr => attr.attributeName.contains(Constants.getAlternativeIdxString(alternativeID))).headOption
+  }
+
+
+
   protected[provenance] def getOriginalAttributes(): Seq[ProvenanceAttribute] = {
     originalAttributes
   }
@@ -223,8 +229,16 @@ class ProvenanceContext {
     nestedProvenanceContexts.contains(provenanceAttribute)
   }
 
+  protected[provenance] def isNestedProvenanceAttribute(provenanceAttribute: ProvenanceAttribute, alternativeID: Int): Boolean = {
+    nestedProvenanceContexts.contains(provenanceAttribute) && provenanceAttribute.attributeName.contains(Constants.getAlternativeIdxString(alternativeID))
+  }
+
   protected[provenance] def isMostRecentCompatibleAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
     provenanceAttribute == mostRecentCompatibleAttribute
+  }
+
+  protected[provenance] def isMostRecentCompatibleAttribute(provenanceAttribute: ProvenanceAttribute, alternativeID: Int): Boolean = {
+    mostRecentCompatibleAttributes.contains(provenanceAttribute) && provenanceAttribute.attributeName.contains(Constants.getAlternativeIdxString(alternativeID))
   }
 
   protected[provenance] def isSurvivedAttribute(provenanceAttribute: ProvenanceAttribute): Boolean = {
