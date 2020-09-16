@@ -23,7 +23,7 @@ object TestExecution extends App {
   }
 
   def verifyParameters() = {
-    if (args.length != 7) {
+    if (args.length != 8) {
       println("Usage: ProvenanceEvaluation [twitter|dblp] [true|false] [100|200|300|400|500] [1..100] [true|false] testMask pathToData")
       println("Provided Parameters:")
       args.foreach(println)

@@ -39,10 +39,8 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 
-    for (i <- 0 until saSize) {
-      if (math.abs(i % 2) == 0) {
-        replaceBibtex(primaryTree.alternatives(i).rootNode)
-      }
+    for (i <- 0 until saSize by 2) {
+      replaceBibtex(primaryTree.alternatives(i).rootNode)
     }
 
     primaryTree

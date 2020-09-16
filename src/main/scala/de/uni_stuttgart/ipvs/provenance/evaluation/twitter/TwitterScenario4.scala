@@ -37,10 +37,8 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 
-    for (i <- 0 until saSize) {
-      if (math.abs(i % 2) == 0) {
-        replace1(primaryTree.alternatives(i).rootNode)
-      }
+    for (i <- 0 until saSize by 2) {
+      replace1(primaryTree.alternatives(i).rootNode)
     }
 
     primaryTree

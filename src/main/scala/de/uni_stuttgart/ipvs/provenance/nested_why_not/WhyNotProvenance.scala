@@ -6,6 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.transformations.TransformationRewrite
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Schema, SchemaMatcher, Twig}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.plans.logical.Project
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.functions.typedLit
 
@@ -47,8 +48,9 @@ object WhyNotProvenance {
   protected[provenance] def dataFrameAndProvenanceContext(dataFrame: DataFrame, whyNotTwig: Twig, rewriteFunction: (DataFrame, Twig) => Rewrite = internalRewrite): (DataFrame, ProvenanceContext) = {
     val execState = dataFrame.queryExecution
     val rewrite = rewriteFunction(dataFrame, whyNotTwig)
-    val plan = dataFrame.sparkSession.sessionState.analyzer.executeAndCheck(rewrite.plan)
+    var plan = dataFrame.sparkSession.sessionState.analyzer.executeAndCheck(rewrite.plan)
     //plan.resolve(Seq("otherValue"), dataFrame.sparkSession.conf.res)
+    plan = Project(plan.output.distinct, plan)
     val outputStruct = StructType(
       rewrite.plan.output.map(out => StructField(out.name, out.dataType))
     )
