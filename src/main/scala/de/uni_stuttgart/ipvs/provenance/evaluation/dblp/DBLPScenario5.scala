@@ -17,7 +17,7 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
     val www_author = www.withColumn("wauthor", explode($"author"))
     val www_url = www_author.withColumn("wurl", explode($"url")) // SA: url -> note
     var www_selected = www_url.select($"wauthor._VALUE".alias("name"), $"wurl._VALUE".alias("url"))
-    www_selected = www_selected.filter($"url".isNotNull && $"url" =!= "null")
+    //www_selected = www_selected.filter($"url".isNotNull && $"url" =!= "null")
     var res = www_selected.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
 //    res = res.filter($"name".contains("Sinziana Mazilu"))
 //

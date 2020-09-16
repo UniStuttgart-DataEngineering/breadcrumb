@@ -40,6 +40,12 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
   var children = scala.collection.mutable.Set.empty[SchemaNode]
   var constraint = _constraint
 
+  var inPathWithCondition = false
+
+  def hasValueConstraint(): Boolean = {
+    constraint.constraintString.nonEmpty
+  }
+
   def setParent(_parent: SchemaNode) = {
     parent = _parent
   }

@@ -351,6 +351,23 @@ class CollectionUnnestingTest extends FunSuite with SharedSparkTestDataFrames wi
     res.explain(true)
   }
 
+  test("[RewriteWithAlternatives] Explode retains empty collection") {
+    val df = getDataFrame(pathToNestedData00)
+    val otherDf = df.withColumn("flattened", explode($"nested_list"))
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, nestedWhyNotTuple)
+    res.show(false)
+    //assert(res.filter($"flat_key" === "6_flat_val_y").count() == 1)
+  }
+
+
+  test("[RewriteWithAlternatives] Explode retains empty collection2") {
+    val df = getDataFrame(pathToNestedData00)
+    val otherDf = df.withColumn("flattened", size($"nested_list"))
+    //val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, nestedWhyNotTuple)
+    otherDf.show(false)
+    //assert(res.filter($"flat_key" === "6_flat_val_y").count() == 1)
+  }
+
 
 
 

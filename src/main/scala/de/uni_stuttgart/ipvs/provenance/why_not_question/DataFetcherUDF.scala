@@ -8,6 +8,7 @@ import scala.collection.mutable
 class DataFetcherUDF extends UDF2[Row, Seq[Row], Boolean] {
 
   override def call(row: Row, other: Seq[Row]): Boolean = {
+    if (other.isEmpty) return true
     val tree = buildTree(other)
     validate(row, tree.root)
     //tree.root.children.forall(child => validate(row, tree.root))

@@ -57,6 +57,35 @@ class SchemaSubsetTree(_id: Int = -1) {
     nodes.toList
   }
 
+  def serializeReducedTree(): Seq[(Short, Short, Byte, Int, Int, String, String)] = {
+    resetMarking(rootNode)
+    markNodesWithConditions(rootNode)
+    val nodes = new ListBuffer[(Short, Short, Byte, Int, Int, String, String)]
+    serializeNodeWithCondition(rootNode, nodes, 0, 0.toShort)
+    nodes.toList
+  }
+
+  def resetMarking(node: SchemaNode): Unit = {
+    node.inPathWithCondition = false
+    for (child <- node.children){
+      resetMarking(child)
+    }
+  }
+
+  def markNodesWithConditions(node: SchemaNode): Unit = {
+    if (node.children.isEmpty){
+      if (node.hasValueConstraint()) {
+        node.inPathWithCondition = true
+      }
+    } else {
+      for (child <- node.children){
+        markNodesWithConditions(child)
+        node.inPathWithCondition |= child.inPathWithCondition
+      }
+    }
+
+  }
+
   // side-effect: Fill list buffer; increase Id
   def serializeNode(node: SchemaNode, nodes: ListBuffer[(Short, Short, Byte, Int, Int, String, String)], id: Short, parentId: Short): Short = {
     nodes += node.serialize(id, parentId)
@@ -67,6 +96,23 @@ class SchemaSubsetTree(_id: Int = -1) {
     }
     currentId // Check whether id labeling works properly
   }
+
+  def serializeNodeWithCondition(node: SchemaNode, nodes: ListBuffer[(Short, Short, Byte, Int, Int, String, String)], id: Short, parentId: Short): Short = {
+    if (!node.inPathWithCondition){
+      return id
+    }
+    nodes += node.serialize(id, parentId)
+    var currentId : Short = id
+    for (child <- node.children){
+      if (child.inPathWithCondition) {
+        currentId = (currentId + 1).toShort
+        currentId = serializeNodeWithCondition(child, nodes, currentId, id)
+      }
+    }
+    currentId // Check whether id labeling works properly
+  }
+
+
 
   def getNodeByPath(path: Seq[String]): Option[SchemaNode] ={
     var currentNode = rootNode
@@ -105,7 +151,7 @@ class SchemaSubsetTree(_id: Int = -1) {
     newParent.children += node
   }
   def getSchemaSubsetTreeExpression : Expression = {
-    typedLit(serialize()).expr
+    typedLit(serializeReducedTree()).expr
   }
 
 

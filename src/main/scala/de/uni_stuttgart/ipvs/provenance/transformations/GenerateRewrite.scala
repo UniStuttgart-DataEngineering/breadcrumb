@@ -131,7 +131,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
   }
 
   def getValidColumn(alternativeId: Int, input: Expression, index: Attribute, oldValidColumn: Attribute): NamedExpression ={
-    val condition: Expression = Or(LessThanOrEqual(index, Size(input)), And(EqualTo(index, Literal(1, IntegerType)), EqualTo(Size(input), Literal(0, IntegerType))))
+    val condition: Expression = Or(LessThanOrEqual(index, Size(input)), And(EqualTo(index, Literal(1, IntegerType)), LessThanOrEqual(Size(input), Literal(0, IntegerType))))
     val trueCase: Expression = oldValidColumn
     val falseCase: Expression = Literal(false, BooleanType)
     val caseExpression = CaseWhen(Seq((condition, trueCase)), falseCase)

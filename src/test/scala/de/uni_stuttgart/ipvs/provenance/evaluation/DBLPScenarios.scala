@@ -36,6 +36,13 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(null)
   }
 
+  test("[RewriteWithSAMSR] Scenario 1") {
+    val scenario = new DBLPScenario1(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
+
 //  test("[MSR] Scenario 1") {
 //    val scenario = new DBLPScenario1(spark, testConfiguration1)
 //    scenario.extendedScenario.show(10)
@@ -69,6 +76,13 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    val scenario = new DBLPScenario2(spark, testConfiguration1)
 //    scenario.extendedScenario.show(10)
 //  }
+
+  test("[RewriteWithSAMSR] Scenario 2") {
+    val scenario = new DBLPScenario2(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
 
 
 
@@ -154,6 +168,13 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
 
   // SCENARIO 5
+  test("[RewriteWithSAMSR] Scenario 5") {
+    val scenario = new DBLPScenario5(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
+
   test("[Reference] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
     scenario.referenceScenario.show(10, false)
@@ -171,7 +192,9 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA
     toBeDebugged.explain()
-    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    toBeDebugged.cache().show(20, false)
+    println(toBeDebugged.count())
+    toBeDebugged.filter($"name".contains("Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

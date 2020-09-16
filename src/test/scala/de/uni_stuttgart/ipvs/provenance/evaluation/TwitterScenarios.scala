@@ -40,6 +40,13 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+  test("[RewriteWithSAMSR] Scenario 1") {
+    val scenario = new TwitterScenario1(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
+
 
 //  SCENARIO 2
   test("[Reference] Scenario 2"){
@@ -67,6 +74,13 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[MSR] Scenario 2"){
     val scenario = new TwitterScenario2(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
+  }
+
+  test("[RewriteWithSAMSR] Scenario 2") {
+    val scenario = new TwitterScenario2(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
   }
 
 
@@ -123,6 +137,13 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     //    scenario.extendedScenario().explain(true)
   }
 
+  test("[RewriteWithSAMSR] Scenario 3") {
+    val scenario = new TwitterScenario3(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
+
 
 
 
@@ -153,6 +174,13 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+  test("[RewriteWithSAMSR] Scenario 4") {
+    val scenario = new TwitterScenario4(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+  }
+
 
   // SCENARIO 5
   test("[Reference] Scenario 5"){
@@ -179,6 +207,13 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[MSR] Scenario 5"){
     val scenario = new TwitterScenario5(spark, testConfiguration1)
     scenario.extendedScenario.show(10)
+  }
+
+  test("[RewriteWithSAMSR] Scenario 5") {
+    val scenario = new TwitterScenario5(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
   }
 
 
