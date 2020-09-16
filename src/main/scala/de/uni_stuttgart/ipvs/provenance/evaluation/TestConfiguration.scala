@@ -25,14 +25,17 @@ object TestConfiguration {
   //3 -> warmup
   //4 -> testMask
   //5 -> dataPath
+  //6 -> schemaAlternativeSize
 
   def apply(parameters: Array[String]) : TestConfiguration = {
     val testConfiguration = new TestConfiguration()
-    testConfiguration._referenceScenario = parameters(0) match {
-      case "true" => true
-      case "false" => false
-      case _ => throw new MatchError("Reference query flag must be \"true\" or \"false\"")
-    }
+    testConfiguration.referenceScenario(toInt(parameters(0)).getOrElse(0))
+
+//    testConfiguration._referenceScenario = parameters(0) match {
+//      case "true" => true
+//      case "false" => false
+//      case _ => throw new MatchError("Reference query flag must be \"true\" or \"false\"")
+//    }
 
     testConfiguration._dataSize = parameters(1) match {
       case  "100" => 100
@@ -61,6 +64,7 @@ object TestConfiguration {
     }
 
     testConfiguration._pathToData = parameters(5)
+    testConfiguration.schemaAlternativeSize(toInt(parameters(6)).getOrElse(1))
     testConfiguration.build()
   }
 
@@ -79,12 +83,13 @@ class TestConfiguration {
 
   lazy val logger = LoggerFactory.getLogger(getClass)
 
-  private var _referenceScenario: Boolean = false
+  private var _referenceScenario: Int = 0
   private var _pathToData : String = "/"
   private var _iterations : Int = 1
   private var _warmUp: Boolean = false
   private var _dataSize : Int = 100
   private var _testMask = 0
+  private var _schemaAlternativeSize: Int = 1
 
   private var _local = false
 
@@ -110,8 +115,8 @@ class TestConfiguration {
 
   def referenceScenario = _referenceScenario
 
-  def referenceScenario(boolean: Boolean) : TestConfiguration = {
-    if (!_built) _referenceScenario = boolean
+  def referenceScenario(int: Int) : TestConfiguration = {
+    if (!_built) _referenceScenario = int
     this
   }
 
@@ -151,6 +156,13 @@ class TestConfiguration {
     this
   }
 
+  def schemaAlternativeSize: Int = _schemaAlternativeSize
+
+  def schemaAlternativeSize(saSize: Int) : TestConfiguration = {
+    if (!_built) _schemaAlternativeSize = saSize
+    this
+  }
+
   def isLocal: Boolean = _local
 
   def isLocal(local: Boolean) : TestConfiguration = {
@@ -164,7 +176,6 @@ class TestConfiguration {
   }
 
   def commitId = _commitId
-
 
 
   private def getCommitId(): String = {

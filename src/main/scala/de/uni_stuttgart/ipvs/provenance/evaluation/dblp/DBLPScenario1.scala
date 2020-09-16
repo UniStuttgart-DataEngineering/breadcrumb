@@ -38,8 +38,15 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    createAlternatives(primaryTree, 1)
-    replaceTitle(primaryTree.alternatives(0).rootNode)
+    val saSize = testConfiguration.schemaAlternativeSize
+    createAlternatives(primaryTree, saSize)
+
+    for (i <- 0 until saSize) {
+      if (math.abs(i % 2) == 0) {
+        replaceTitle(primaryTree.alternatives(i).rootNode)
+      }
+    }
+
     primaryTree
   }
 

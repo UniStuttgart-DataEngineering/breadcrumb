@@ -14,32 +14,44 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.select($"id", $"place.country".alias("pcountry")) // SA: user.location
-//    res = res.filter($"pcountry".contains("Deutschland") || $"pcountry".contains("Germany"))
-    res = res.filter($"pcountry".contains("Germany"))
-    res = res.agg(count("id").alias("numOfTweets"))
+//    var res = tw.select($"id", $"user.location".alias("location"), $"place.name".alias("pname"))
+    var res = tw.withColumn("pname", $"place.name")
+    res = res.filter($"user.location".contains("CA")) // SA: user.location -> place.full_name
+//    res = res.withColumn("pname", $"place.name")
+    res = res.groupBy($"pname").agg(count("id").alias("numOfTweets"))
+//    res.filter($"pname".contains("San Diego"))
     res
   }
 
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val count = twig.createNode("numOfTweets", 1, 1, "gtgtgtgt100")
+    val city = twig.createNode("pname", 1, 1, "containsSan Diego")
+    val count = twig.createNode("numOfTweets", 1, 1, "gtgtgtgt6")
+    twig = twig.createEdge(root, city, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get
   }
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    createAlternatives(primaryTree, 1)
-    replace1(primaryTree.alternatives(0).rootNode)
+    val saSize = testConfiguration.schemaAlternativeSize
+    createAlternatives(primaryTree, saSize)
+
+    for (i <- 0 until saSize) {
+      if (math.abs(i % 2) == 0) {
+        replace1(primaryTree.alternatives(i).rootNode)
+      }
+    }
+
     primaryTree
   }
 
   def replace1(node: SchemaNode): Unit ={
-    if (node.name == "place" && node.parent.name == "root") {
-      node.name = "user"
-      node.getChild("country").get.name = "location"
+    if (node.name == "user" &&
+        node.parent.name == "root") {
+      node.name = "place"
+      node.getChild("location").get.name = "full_name"
       return
     }
     for (child <- node.children){

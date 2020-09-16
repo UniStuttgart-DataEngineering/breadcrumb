@@ -29,10 +29,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[RewriteWithSA] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
-    scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA //.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
+//    scenario.extendedScenarioWithSA
+    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"ititle".contains("Scalable algorithms for scholarly figure mining and semantics"))
 //    toBeDebugged.explain()
-//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -148,22 +148,22 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   // SCENARIO 5
   test("[Reference] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
-    scenario.referenceScenario.show(10)
+    scenario.referenceScenario.show(10, false)
   }
 
   test("[RewriteWithoutSA] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
-    scenario.extendedScenarioWithoutSA.filter($"name".contains("Sinziana Mazilu")).show(10)
+    scenario.extendedScenarioWithoutSA.show(10) //.filter($"name".contains("Sinziana Mazilu")).show(10)
   }
 
   test("[RewriteWithSA] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-    scenario.extendedScenarioWithSA
-//    val toBeDebugged = scenario.extendedScenarioWithSA
-//    toBeDebugged.explain()
-//    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    scenario.extendedScenarioWithSA
+    val toBeDebugged = scenario.extendedScenarioWithSA
+    toBeDebugged.explain()
+    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

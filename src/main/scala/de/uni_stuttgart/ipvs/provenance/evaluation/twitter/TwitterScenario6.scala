@@ -4,33 +4,46 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.functions.{avg, countDistinct, explode, size }
+import org.apache.spark.sql.functions.{avg, countDistinct, explode, size, count, sum, lit}
 import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
-  override def getName(): String = "T6"
+  override def getName(): String = "T3"
 
   import spark.implicits._
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    val extended = tw.withColumn("media_size", size($"entities.media") cast(LongType))
-    val filtered = extended.filter($"media_size" > 0)
-    //val mentioned = filtered.withColumn("mentioned_user", explode($"entities.user_mentions"))
-    //  .select($"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"media_size")
-    val users = filtered.select($"user.id".alias("uid"), $"user.name".alias("name"), $"media_size")//.alias("media_mentions"))
-        .filter($"user.name" === "Vanessa Tuqueque")
-    //users
-    val res = users.groupBy($"uid", $"name").agg(avg($"media_size").alias("media_mentions"))
+
+    var res = tw.withColumn("moreMedia", explode($"entities.media")) //SA: entities.media -> extended_entities.media
+    res = res.select($"user.id".alias("uid"), $"user.name".alias("name"), $"moreMedia")
+    res = res.groupBy($"uid", $"name").agg(count($"moreMedia").alias("numOfMedia"))
+    res = res.filter($"numOfMedia" > 2)
+//    res.filter($"name".contains("Coca cola"))
     res
+
+//     TODO: flatten on extended_tweet.entities.hashtags + filter on hashtag.text
+//    val extended = tw.withColumn("media_size", size($"extended_entities.media") cast(LongType))
+//    var filtered = flattened.filter($"media_size" > 1)
+//    filtered
+//    f.select($"user.name", $"user.screen_name", $"hashtag.text")
+//    filtered = filtered.filter($"hashtag.text".contains("NewZealand"))
+//    val mentioned = filtered.withColumn("mentioned_user", explode($"entities.user_mentions"))
+//      .select($"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"media_size")
+//    val users = filtered.select($"user.id".alias("uid"), $"user.name".alias("name"), $"media_size")//.alias("media_mentions"))
+//          .filter($"media_size" === 1)
+//        .filter($"user.name".contains("Social Media Marketing"))
+//    users
+//    var res = users.groupBy($"uid", $"name").agg(avg($"media_size").alias("media_mentions"))
+//    res
   }
 
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val name = twig.createNode("name", 1, 1, "Vanessa Tuqueque")
-    val count = twig.createNode("media_mentions", 1, 1, "gtgtgtgt1")
+    val name = twig.createNode("name", 1, 1, "Coca cola")
+    val count = twig.createNode("numOfMedia", 1, 1, "gtgtgtgt1")
     twig = twig.createEdge(root, name, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get
@@ -38,8 +51,11 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    testConfiguration
     createAlternatives(primaryTree, 1)
     replace1(primaryTree.alternatives(0).rootNode)
+//    replace1(primaryTree.alternatives(2).rootNode)
+//    replace1(primaryTree.alternatives(4).rootNode)
     primaryTree
   }
 

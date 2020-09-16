@@ -21,7 +21,6 @@ class DBLPSuite(spark: SparkSession, testConfiguration: TestConfiguration) exten
   addScenario(new DBLPScenario3(spark, testConfiguration))
   addScenario(new DBLPScenario4(spark, testConfiguration))
   addScenario(new DBLPScenario5(spark, testConfiguration))
-  addScenario(new DBLPScenario6(spark, testConfiguration))
 
   override def getName(): String = "DBLP"
 }

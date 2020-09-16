@@ -63,7 +63,9 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize} begins")
     val t0 = System.nanoTime()
     val result = testConfiguration.referenceScenario match {
-      case false => scenario.extendedScenario()
+      case 1 => scenario.extendedScenario()
+      case 2 => scenario.extendedScenarioWithoutSA()
+      case 3 => scenario.extendedScenarioWithSA()
       case _ => scenario.referenceScenario()
     }
     collectDataFrame(result, scenario.getName)
