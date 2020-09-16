@@ -25,6 +25,7 @@ object TestConfiguration {
   //3 -> warmup
   //4 -> testMask
   //5 -> dataPath
+  //6 -> schemaAlternativeSize
 
   def apply(parameters: Array[String]) : TestConfiguration = {
     val testConfiguration = new TestConfiguration()
@@ -63,6 +64,7 @@ object TestConfiguration {
     }
 
     testConfiguration._pathToData = parameters(5)
+    testConfiguration.schemaAlternativeSize(toInt(parameters(6)).getOrElse(1))
     testConfiguration.build()
   }
 
@@ -87,6 +89,7 @@ class TestConfiguration {
   private var _warmUp: Boolean = false
   private var _dataSize : Int = 100
   private var _testMask = 0
+  private var _schemaAlternativeSize: Int = 1
 
   private var _local = false
 
@@ -153,6 +156,13 @@ class TestConfiguration {
     this
   }
 
+  def schemaAlternativeSize: Int = _schemaAlternativeSize
+
+  def schemaAlternativeSize(saSize: Int) : TestConfiguration = {
+    if (!_built) _schemaAlternativeSize = saSize
+    this
+  }
+
   def isLocal: Boolean = _local
 
   def isLocal(local: Boolean) : TestConfiguration = {
@@ -166,7 +176,6 @@ class TestConfiguration {
   }
 
   def commitId = _commitId
-
 
 
   private def getCommitId(): String = {

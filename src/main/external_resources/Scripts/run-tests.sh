@@ -4,6 +4,7 @@ testMask="127"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 warmup="true"
+saSize="1"
 
 for testSuite in "dblp" "twitter"; do
     if [ $testSuite = "twitter" ]; then
@@ -14,7 +15,7 @@ for testSuite in "dblp" "twitter"; do
     for reference in "0" "2" "3"; do
         for size in "100" "200" "300" "400" "500"; do
             for iteration in "1"; do
-                ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath
+                ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
             done
         done
     done
