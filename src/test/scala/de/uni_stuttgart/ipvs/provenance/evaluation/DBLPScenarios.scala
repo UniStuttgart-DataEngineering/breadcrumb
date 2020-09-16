@@ -40,7 +40,8 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(false)
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
   }
 
 //  test("[MSR] Scenario 1") {
@@ -81,7 +82,9 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario2(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(false)
+    res.show(10, false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
   }
 
 
@@ -123,11 +126,12 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
-  test("[MSRwA] Scenario 3") {
+  test("[RewriteWithSAMSR] Scenario 3") {
     val scenario = new DBLPScenario3(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
     res.show(false)
+    res.explain()
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -168,13 +172,6 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
 
   // SCENARIO 5
-  test("[RewriteWithSAMSR] Scenario 5") {
-    val scenario = new DBLPScenario5(spark, testConfiguration1)
-    ProvenanceContext.setTestScenario(scenario)
-    val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(false)
-  }
-
   test("[Reference] Scenario 5"){
     val scenario = new DBLPScenario5(spark, testConfiguration1)
     scenario.referenceScenario.show(10, false)
@@ -192,17 +189,25 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA
     toBeDebugged.explain()
-    toBeDebugged.cache().show(20, false)
-    println(toBeDebugged.count())
-    toBeDebugged.filter($"name".contains("Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    toBeDebugged.cache().show(20, false)
+//    println(toBeDebugged.count())
+    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
-  test("[MSR] Scenario 5"){
-    val scenario = new DBLPScenario5(spark, testConfiguration1)
-    scenario.extendedScenario.show(10)
-//    scenario.extendedScenario.explain(true)
-  }
+//  test("[MSR] Scenario 5"){
+//    val scenario = new DBLPScenario5(spark, testConfiguration1)
+//    scenario.extendedScenario.show(10)
+////    scenario.extendedScenario.explain(true)
+//  }
 
+  test("[RewriteWithSAMSR] Scenario 5") {
+    val scenario = new DBLPScenario5(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
 
 }
