@@ -158,7 +158,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario4(spark, testConfiguration1)
     var res = scenario.referenceScenario
 //    res = res.filter($"hashtagText".contains("Warcraft"))
-    res.show(10)
+    res.show(20, false)
   }
 
   test("[RewriteWithoutSA] Scenario 4"){
@@ -171,7 +171,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"hashtagText".contains("Warcraft"))
+    var toBeDebugged = scenario.extendedScenarioWithSA.filter($"hashtagText".contains("Arsenal"))
     toBeDebugged.explain()
     toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
@@ -195,7 +195,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   // SCENARIO 5
   test("[Reference] Scenario 5"){
     val scenario = new TwitterScenario5(spark, testConfiguration1)
-    scenario.referenceScenario.show(50)
+    scenario.referenceScenario.show(50, false)
   }
 
   test("[RewriteWithoutSA] Scenario 5"){
@@ -210,7 +210,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA.filter($"pname".contains("San Diego"))
     toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    toBeDebugged.show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -224,7 +224,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
     res.show(false)
-    res.explain()
+//    res.explain()
     ProvenanceContext.setTestScenario(null)
   }
 
