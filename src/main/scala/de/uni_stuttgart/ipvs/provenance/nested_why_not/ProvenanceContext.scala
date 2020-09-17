@@ -14,13 +14,31 @@ case class ProvenanceAttribute(oid: Int, attributeName: String, attributeType: D
 
 object ProvenanceContext {
 
+  def associateIds(provenanceContext: ProvenanceContext, leftContext: ProvenanceContext, rightContext: ProvenanceContext): Unit = {
+    val totalNumberOfAlternatives = leftContext.primarySchemaAlternative.getAllAlternatives().size * rightContext.primarySchemaAlternative.getAllAlternatives().size
+    val alternatingFactor = rightContext.primarySchemaAlternative.getAllAlternatives().size
+    for (idx <- 0 until totalNumberOfAlternatives){
+      val outputId = provenanceContext.primarySchemaAlternative.getAllAlternatives()(idx).id
+      val leftId = leftContext.primarySchemaAlternative.getAllAlternatives()((idx) / alternatingFactor).id
+      val rightId = rightContext.primarySchemaAlternative.getAllAlternatives()((idx) % alternatingFactor).id
+      provenanceContext.associatedIds.put(outputId, (leftId, rightId))
+    }
+  }
+
   protected[provenance] def mergeContext(leftContext: ProvenanceContext, rightContext: ProvenanceContext): ProvenanceContext = {
     val provenanceContext = new ProvenanceContext()
     provenanceContext.nestedProvenanceContexts ++= leftContext.nestedProvenanceContexts
     provenanceContext.nestedProvenanceContexts ++= rightContext.nestedProvenanceContexts
     provenanceContext.provenanceAttributes ++= leftContext.provenanceAttributes
     provenanceContext.provenanceAttributes ++= rightContext.provenanceAttributes
+    provenanceContext.provenanceAttributes --= leftContext.getValidAttributes()
+    provenanceContext.provenanceAttributes --= rightContext.getValidAttributes()
+    provenanceContext.provenanceAttributes --= leftContext.getOriginalAttributes()
+    provenanceContext.provenanceAttributes --= rightContext.getOriginalAttributes()
     provenanceContext.primarySchemaAlternative = mergeSchemaAlternatives(leftContext, rightContext)
+    provenanceContext.associatedIds ++= leftContext.associatedIds
+    provenanceContext.associatedIds ++= rightContext.associatedIds
+    associateIds(provenanceContext, leftContext, rightContext)
     provenanceContext
   }
 
@@ -33,6 +51,8 @@ object ProvenanceContext {
         PrimarySchemaSubsetTree.merge(left, right)
       }
     }
+
+
   }
 
   def apply() = new ProvenanceContext()
@@ -40,6 +60,7 @@ object ProvenanceContext {
   def apply(childContext: ProvenanceContext, provenanceAttribute: ProvenanceAttribute) = {
     val provenanceContext = new ProvenanceContext()
     provenanceContext.addNestedProvenanceContext(childContext, provenanceAttribute)
+    provenanceContext.associatedIds ++= childContext.associatedIds
     provenanceContext
   }
 
@@ -80,6 +101,8 @@ class ProvenanceContext {
   protected[provenance] var mostRecentSurvivorAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
   protected[provenance] var validAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
   protected[provenance] var originalAttributes: Seq[ProvenanceAttribute] = List.empty[ProvenanceAttribute]
+
+  protected[provenance] val associatedIds = mutable.Map.empty[Int, (Int, Int)]
 
 
 

@@ -107,7 +107,7 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
       provenanceAttributes += provenanceAttribute
       originalColumns += compatibleExpression
     }
-    currentProvenanceContext.addCompatibilityAttributes(provenanceAttributes)
+    currentProvenanceContext.replaceOriginalAttributes(provenanceAttributes)
     originalColumns
   }
 

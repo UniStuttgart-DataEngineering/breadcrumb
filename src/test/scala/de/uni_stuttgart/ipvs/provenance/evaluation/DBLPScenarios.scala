@@ -17,7 +17,11 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
   // SCENARIO 1
   test("[Reference] Scenario 1"){
     val scenario = new DBLPScenario1(spark, testConfiguration1)
-    scenario.referenceScenario.show(10)
+    var res = scenario.referenceScenario
+    val constraint = "Scalable algorithms for scholarly figure mining and semantics"
+    //res = res.filter($"ititle".contains(constraint))
+    res.show(10)
+    res
   }
 
   test("[RewriteWithoutSA] Scenario 1"){
@@ -43,6 +47,8 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     res.show(10)
     ProvenanceContext.setTestScenario(null)
   }
+
+
 
 //  test("[MSR] Scenario 1") {
 //    val scenario = new DBLPScenario1(spark, testConfiguration1)
@@ -169,6 +175,15 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     scenario.extendedScenario.show(10)
   }
 
+  test("[RewriteWithSAMSR] Scenario 4") {
+    val scenario = new DBLPScenario4(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 
   // SCENARIO 5
@@ -209,5 +224,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }
+
+
 
 }

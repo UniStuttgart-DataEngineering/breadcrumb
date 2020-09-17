@@ -50,7 +50,6 @@ class FilterRewrite(filter: Filter, oid: Int) extends UnaryTransformationRewrite
      */
 
     val projectList = rewrittenChild.output ++
-      compatibleColumns(childRewrite) ++
       survivorColumns(childRewrite)
 
 

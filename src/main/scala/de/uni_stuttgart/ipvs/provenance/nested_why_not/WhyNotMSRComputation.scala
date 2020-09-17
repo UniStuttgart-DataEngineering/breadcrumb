@@ -14,6 +14,8 @@ object WhyNotMSRComputation {
   private val compatibleCountName = "compatibleCount"
   private val intermediateTupleUnnestingName = "flattened"
 
+  private var relevantAlternativeIds = mutable.Set(Int)
+
   def computeMSR(dataFrame: DataFrame, provenanceContext: ProvenanceContext): DataFrame = {
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
 //    dataFrame.show(false)
@@ -41,19 +43,21 @@ object WhyNotMSRComputation {
 
   def computeMSRForAlternative(dataFrame: DataFrame, provenanceContext: ProvenanceContext, alternative: SchemaSubsetTree, uidAttribute: ProvenanceAttribute): DataFrame = {
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
+    val relevantIds : Set[Int] = getAllRelevantIds(provenanceContext, alternative.id, mutable.Set.empty[Int]).toSet
     val validAttribute = provenanceContext.getValidAttributes().filter(attribute => attribute.attributeName.contains(Constants.getAlternativeIdxString(alternative.id))).head
     val compatibleAttribute = provenanceContext.getMostRecentCompatibilityAttributes().filter(attribute => attribute.attributeName.contains(Constants.getAlternativeIdxString(alternative.id))).head
 
     val validColumn = dataFrame.columns.filter(name => name == validAttribute.attributeName).head
     val compatibleColumn = dataFrame.columns.filter(name => name == compatibleAttribute.attributeName).head
     var relevantUnflattenedTuples = dataFrame.filter(col(validColumn) === true && col(compatibleColumn) === true)
+    relevantUnflattenedTuples.show(10, false)
     //relevantUnflattenedTuples.printSchema()
     //relevantUnflattenedTuples.show()
     relevantUnflattenedTuples = relevantUnflattenedTuples.drop(validColumn).drop(compatibleColumn)
     val flattenedCompatiblesOnly = flattenNestedProvenanceCollections(relevantUnflattenedTuples, provenanceContext, alternative.id)
 
 
-    val filteredColumns = flattenedCompatiblesOnly.columns.filter(col => Constants.isSurvivedField(col, alternative.id) || Constants.isIDField(col))
+    val filteredColumns = flattenedCompatiblesOnly.columns.filter(col => Constants.isSurvivedField(col, relevantIds) || Constants.isIDField(col))
     val survivedCompatiblesOnly = flattenedCompatiblesOnly.select(filteredColumns.map(col(_)): _*)
     var pickyOperators = survivedCompatiblesOnly.withColumn(operatorListName, msrUDF(struct(survivedCompatiblesOnly.columns.toSeq.map(col(_)): _*)))
     pickyOperators = pickyOperators.groupBy(operatorListName).agg(countDistinct(col(uidAttribute.attributeName)).alias(compatibleCountName))
@@ -67,6 +71,10 @@ object WhyNotMSRComputation {
   def computeMSRForSchemaAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext): Map[Int, DataFrame] = {
     //dataFrame.printSchema()
     //dataFrame.show(false)
+    import dataFrame.sparkSession.implicits._
+    //val constraint = "Scalable algorithms for scholarly figure mining and semantics"
+    //val column = provenanceContext.getMostRecentCompatibilityAttribute(provenanceContext.primarySchemaAlternative.id).get.attributeName
+    //dataFrame.filter(col(column) === true)/*.select(col("author"), col(column))*/.show(20, false)
     val provenanceAttributesOnly = dataFrame.select(
       provenanceContext.getProvenanceAttributes().map(attribute => col(attribute.attributeName)): _*)
     val lastCompatibleAttribute = provenanceContext.getMostRecentCompatibilityAttributes()
@@ -81,6 +89,17 @@ object WhyNotMSRComputation {
       pickyOperators.put(alternative.id, computeMSRForAlternative(compatiblesOnly, provenanceContext, alternative, uidAttribute))
     }
     pickyOperators.toMap
+  }
+
+  def getAllRelevantIds(provenanceContext: ProvenanceContext, currentId: Int, ids: mutable.Set[Int]): mutable.Set[Int] = {
+    if (ids.contains(currentId)){
+      return ids
+    }
+    ids += currentId
+    val (left, right) = provenanceContext.associatedIds.getOrElse(currentId, (currentId, currentId))
+    ids ++= getAllRelevantIds(provenanceContext, left, ids)
+    ids ++= getAllRelevantIds(provenanceContext, right, ids)
+    ids
   }
 
   def addUID(dataFrame: DataFrame, provenanceContext: ProvenanceContext): (DataFrame, ProvenanceAttribute) = {

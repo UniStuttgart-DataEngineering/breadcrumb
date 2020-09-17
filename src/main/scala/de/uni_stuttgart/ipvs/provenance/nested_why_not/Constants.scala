@@ -138,6 +138,14 @@ case object Constants {
     name.contains(SURVIVED_FIELD) && name.contains(getAlternativeIdxString(alternativeIdx))
   }
 
+  protected[provenance] def isSurvivedField(name: String, alternativeIds: Set[Int]): Boolean = {
+    val alternativeStrings = alternativeIds.map{id => getAlternativeIdxString(id)}
+    val alternativeChecks = alternativeStrings.map{altS => name.contains(altS)}.foldLeft(false) {
+      (res, current) => res || current
+    }
+    name.contains(SURVIVED_FIELD) && alternativeChecks
+  }
+
   protected[provenance] def getAlternativeFieldName(name: String, oid: Int, alternativeIdx: Int): String = {
     getFieldName(name, oid, alternativeIdx)
   }
