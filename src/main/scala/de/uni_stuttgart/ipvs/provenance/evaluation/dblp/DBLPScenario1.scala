@@ -4,6 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
+import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
 import org.apache.spark.sql.functions.{collect_list, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -38,13 +39,15 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = testConfiguration.schemaAlternativeSize
-    createAlternatives(primaryTree, saSize)
+    val inproceedings = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("inproceedings")
+    if (!inproceedings) {
+      val saSize = testConfiguration.schemaAlternativeSize
+      createAlternatives(primaryTree, saSize)
 
-    for (i <- 0 until saSize by 2) {
-      replaceTitle(primaryTree.alternatives(i).rootNode)
+      for (i <- 0 until saSize by 2) {
+        replaceTitle(primaryTree.alternatives(i).rootNode)
+      }
     }
-
     primaryTree
   }
 

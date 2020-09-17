@@ -4,6 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
+import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
 import org.apache.spark.sql.functions.{collect_list, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -19,10 +20,11 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
     inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
     val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("ipauthor"), $"title._VALUE".alias("ititle"))
-    val proceedings_springer = proceedings.filter($"publisher._VALUE".contains("ACM")) // SA: series._VALUE
-    val proceedings_tenyears = proceedings_springer.filter($"year".contains("2015")) // SA: _mdate
-    val proceedings_selected = proceedings_tenyears.select($"_key", $"year")
-    val proceedings_with_inproceedings = proceedings_selected.join(inproceedings_selected, $"_key" === $"crf")
+
+    val proceedings_relevant = proceedings.select($"_key", $"year".alias("publication_year"), $"publisher._VALUE".alias("publisher"))
+    val proceedings_acm = proceedings_relevant.filter($"publisher".contains("ACM")) // SA: series._VALUE
+    val proceedings_tenyears = proceedings_acm.filter($"publication_year".contains("2015")) // SA: _mdate
+    val proceedings_with_inproceedings = proceedings_tenyears.join(inproceedings_selected, $"_key" === $"crf")
     val proceedings_with_inproceedingsRenamed = proceedings_with_inproceedings.withColumnRenamed("ipauthor", "author")
     val res = proceedings_with_inproceedingsRenamed.groupBy($"author").agg(collect_list($"ititle").alias("ititleList"))
     res
@@ -42,21 +44,24 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = testConfiguration.schemaAlternativeSize * 3
-    createAlternatives(primaryTree, saSize)
+    val inproceedings = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("inproceedings")
+    println(inproceedings)
+    if (!inproceedings) {
+      val saSize = testConfiguration.schemaAlternativeSize * 3
+      createAlternatives(primaryTree, saSize)
 
-    for (i <- 0 until saSize) {
-      if (math.abs(i % 6) == 0) {
-        replace1(primaryTree.alternatives(i).rootNode)
-      }
-      if (math.abs(i % 6) == 1) {
-        replace2(primaryTree.alternatives(i).rootNode)
-      }
-      if (math.abs(i % 6) == 2) {
-        replace3(primaryTree.alternatives(i).rootNode)
+      for (i <- 0 until saSize) {
+        if (math.abs(i % 6) == 0) {
+          replace1(primaryTree.alternatives(i).rootNode)
+        }
+        if (math.abs(i % 6) == 1) {
+          replace2(primaryTree.alternatives(i).rootNode)
+        }
+        if (math.abs(i % 6) == 2) {
+          replace3(primaryTree.alternatives(i).rootNode)
+        }
       }
     }
-
     primaryTree
   }
 
