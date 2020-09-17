@@ -16,19 +16,22 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
     val tw = loadTweets()
     var res = tw.withColumn("hashtag", explode($"entities.hashtags"))
     res = res.select($"hashtag.text".alias("hashtagText"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
-    res = res.filter($"text".contains("War"))
-    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
-    res = res.filter($"numOfCountries" > 0)
+    res = res.filter($"text".contains("UEFA"))
+//    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
+//    res = res.filter($"numOfCountries" > 0)
+    res = res.groupBy($"hashtagText").agg(collect_list($"country").alias("listOfCountries"))
+    res = res.filter(size($"listOfCountries") > 0)
     res
   }
 
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val user = twig.createNode("hashtagText", 1, 1, "containsWarcraft")
-    val cnt = twig.createNode("numOfCountries", 1, 1, "gtgtgtgt1")
-    twig = twig.createEdge(root, user, false)
-    twig = twig.createEdge(root, cnt, false)
+//    val user = twig.createNode("hashtagText", 1, 1, "containsArsenal")
+    val list = twig.createNode("listOfCountries", 1, 1, "")
+    val element = twig.createNode("element", 1, 1, "containsEngland")
+    twig = twig.createEdge(root, list, false)
+    twig = twig.createEdge(list, element, false)
     twig.validate.get
   }
 
