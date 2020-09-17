@@ -14,8 +14,8 @@ class TwitterScenario1 (spark: SparkSession, testConfiguration: TestConfiguratio
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.select($"entities.media".alias("media"), $"text", $"id_str")
-    res = res.withColumn("medias", explode($"media")) // SA: media -> urls
+    var res = tw.select($"entities.media".alias("media"), $"text", $"id_str") // SA: media -> urls
+    res = res.withColumn("medias", explode($"media"))
 //    res = res.filter($"text".contains("Lebron") || $"hashtag.text".contains("Lebron")) // SA: hashtag.text -> hashtag.description
     res = res.filter($"text".contains("Michael Jordan"))
     res = res.select($"id_str", $"medias.url".alias("media_url"))

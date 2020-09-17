@@ -15,7 +15,7 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
     val mentioned = tw.withColumn("mentioned_user", explode($"entities.user_mentions"))
-    val media = mentioned.withColumn("medias", explode_outer($"entities.media")) // SA: media -> urls
+    val media = mentioned.withColumn("medias", explode($"entities.media")) // SA: media -> urls
     val extracted_mentioned_users = media.select($"id".alias("tid"), $"created_at", $"text",
       $"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
 //      $"entities.urls".alias("media"))

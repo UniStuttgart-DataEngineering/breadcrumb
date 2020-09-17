@@ -24,8 +24,9 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 //    res = res.groupBy($"pname", $"hashtagText").agg(collect_list($"uurl").alias("listOfUrls"))
 ////    res = res.filter($"pname".contains("Los Angeles"))
 
-    var res = tw.withColumn("pname", $"place.name")
-    res = res.filter($"user.location".contains("CA")) // SA: user.location -> place.full_name
+//    var res = tw.withColumn("pname", $"place.name")
+    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"))  // SA: user.location -> place.full_name
+    res = res.filter($"location".contains("CA"))
     res = res.groupBy($"pname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
     res
@@ -75,17 +76,17 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     primaryTree
   }
 
-  def replace1(node: SchemaNode): Unit ={
-    if (node.name == "media" &&
-      node.parent.name == "entities" &&
-      node.parent.parent.name == "root") {
-      node.name = "urls"
-      return
-    }
-    for (child <- node.children){
-      replace1(child)
-    }
-  }
+//  def replace1(node: SchemaNode): Unit ={
+//    if (node.name == "media" &&
+//      node.parent.name == "entities" &&
+//      node.parent.parent.name == "root") {
+//      node.name = "urls"
+//      return
+//    }
+//    for (child <- node.children){
+//      replace1(child)
+//    }
+//  }
 
   def replace2(node: SchemaNode): Unit ={
     if (node.name == "user" &&
@@ -99,29 +100,29 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     }
   }
 
-  var node1 = ""
-  var node2 = ""
-
-  def replace3(node: SchemaNode): Unit ={
-    if (node.name == "media" &&
-      node.parent.name == "entities" &&
-      node.parent.parent.name == "root") {
-      node.name = "urls"
-      node1 = node.name
-    }
-    if (node.name == "user" &&
-      node.parent.name == "root") {
-      node.name = "place"
-      node.getChild("location").get.name = "full_name"
-      node2 = node.name
-    }
-    if (node1 == "urls" && node2 == "place")
-      return
-
-    for (child <- node.children){
-      replace3(child)
-    }
-
-  }
+//  var node1 = ""
+//  var node2 = ""
+//
+//  def replace3(node: SchemaNode): Unit ={
+//    if (node.name == "media" &&
+//      node.parent.name == "entities" &&
+//      node.parent.parent.name == "root") {
+//      node.name = "urls"
+//      node1 = node.name
+//    }
+//    if (node.name == "user" &&
+//      node.parent.name == "root") {
+//      node.name = "place"
+//      node.getChild("location").get.name = "full_name"
+//      node2 = node.name
+//    }
+//    if (node1 == "urls" && node2 == "place")
+//      return
+//
+//    for (child <- node.children){
+//      replace3(child)
+//    }
+//
+//  }
 
 }

@@ -27,9 +27,12 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-//    val user = twig.createNode("hashtagText", 1, 1, "containsArsenal")
+    val user = twig.createNode("hashtagText", 1, 1, "containsArsenalFC")
+//    val cnt = twig.createNode("numOfCountries", 1, 1, "gtgtgtgt1")
     val list = twig.createNode("listOfCountries", 1, 1, "")
     val element = twig.createNode("element", 1, 1, "containsEngland")
+    twig = twig.createEdge(root, user, false)
+//    twig = twig.createEdge(root, cnt, false)
     twig = twig.createEdge(root, list, false)
     twig = twig.createEdge(list, element, false)
     twig.validate.get
