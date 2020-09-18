@@ -24,8 +24,9 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 //    res = res.groupBy($"pname", $"hashtagText").agg(collect_list($"uurl").alias("listOfUrls"))
 ////    res = res.filter($"pname".contains("Los Angeles"))
 
-    var res = tw.withColumn("pname", $"place.name")
-    res = res.filter($"user.location".contains("CA")) // SA: user.location -> place.full_name
+//    var res = tw.withColumn("pname", $"place.name")
+    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"))  // SA: user.location -> place.full_name
+    res = res.filter($"location".contains("CA"))
     res = res.groupBy($"pname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
     res
@@ -88,6 +89,7 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     }
   }
 
+
   def replace2(node: SchemaNode): Unit ={
     if (node.name == "user" &&
         node.parent.name == "root") {
@@ -131,5 +133,7 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     }
 
   }
+
+
 
 }

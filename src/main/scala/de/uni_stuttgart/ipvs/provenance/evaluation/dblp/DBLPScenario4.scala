@@ -20,7 +20,6 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     var inproceedings_flattened = inproceedings.withColumn("crf", explode($"crossref"))
     inproceedings_flattened = inproceedings_flattened.withColumn("iauthor", explode($"author"))
     val inproceedings_selected = inproceedings_flattened.select($"crf", $"iauthor._VALUE".alias("ipauthor"), $"title._VALUE".alias("ititle"))
-
     val proceedings_relevant = proceedings.select($"_key", $"year".alias("publication_year"), $"publisher._VALUE".alias("publisher"))
     val proceedings_acm = proceedings_relevant.filter($"publisher".contains("ACM")) // SA: series._VALUE
     val proceedings_tenyears = proceedings_acm.filter($"publication_year".contains("2015")) // SA: _mdate

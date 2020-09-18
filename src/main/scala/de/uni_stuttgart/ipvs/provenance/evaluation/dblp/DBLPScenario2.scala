@@ -16,9 +16,9 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
   override def referenceScenario: DataFrame = {
     val article = loadArticle()
     val article_flattened = article.withColumn("aauthor", explode($"author"))
-    val article_select = article_flattened.select($"aauthor._VALUE".alias("author"), $"title._bibtex".alias("title")) // SchemaAlternative: "title._VALUE"
+    val article_select = article_flattened.select($"aauthor._VALUE".alias("author"), $"title._bibtex".alias("title")) // SA: title._bibtex -> title._VALUE
 //    val article_notnull = article_select.filter($"title".isNotNull || $"title" != "null" || $"title" != "")
-    val article_filter = article_select.filter(!$"author".contains("Dey")) // SchemaAlternative: "ee._VALUE"
+    val article_filter = article_select.filter(!$"author".contains("Dey"))
     val res = article_filter.groupBy($"author").agg(count($"title").alias("cnt"))
     article_filter
     res

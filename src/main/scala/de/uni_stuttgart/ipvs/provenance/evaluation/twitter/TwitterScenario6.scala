@@ -16,8 +16,8 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
 
-    var res = tw.withColumn("moreMedia", explode($"entities.media")) //SA: entities.media -> extended_entities.media
-    res = res.select($"user.id".alias("uid"), $"user.name".alias("name"), $"moreMedia")
+    var res = tw.select($"user.id".alias("uid"), $"user.name".alias("name"), $"entities.media".alias("medias")) //SA: entities.media -> extended_entities.media
+    res = res.withColumn("moreMedia", explode($"medias"))
     res = res.groupBy($"uid", $"name").agg(count($"moreMedia").alias("numOfMedia"))
     res = res.filter($"numOfMedia" > 2)
 //    res.filter($"name".contains("Coca cola"))
@@ -51,11 +51,13 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    testConfiguration
-    createAlternatives(primaryTree, 1)
-    replace1(primaryTree.alternatives(0).rootNode)
-//    replace1(primaryTree.alternatives(2).rootNode)
-//    replace1(primaryTree.alternatives(4).rootNode)
+    val saSize = testConfiguration.schemaAlternativeSize
+    createAlternatives(primaryTree, saSize)
+
+    for (i <- 0 until saSize by 2) {
+      replace1(primaryTree.alternatives(i).rootNode)
+    }
+
     primaryTree
   }
 
