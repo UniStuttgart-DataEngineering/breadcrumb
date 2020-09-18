@@ -220,6 +220,16 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(null)
   }
 
+  test("[RewriteWithPreparedSAMSR] Scenario 4") {
+    val scenario = new DBLPScenario4(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 
   // SCENARIO 5
