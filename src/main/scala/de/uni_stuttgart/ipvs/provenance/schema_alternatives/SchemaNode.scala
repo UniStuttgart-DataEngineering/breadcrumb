@@ -114,6 +114,7 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
     val copiedName = name + ""
     val copiedConstrained = constraint.deepCopy()
     val copiedNode = SchemaNode(copiedName, copiedConstrained, copiedParent)
+    copiedNode.modified = modified
     for (child <- children){
       copiedNode.addChild(child.deepCopy(copiedNode))
     }

@@ -1,6 +1,6 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
-import de.uni_stuttgart.ipvs.provenance.nested_why_not.WhyNotProvenance
+import de.uni_stuttgart.ipvs.provenance.nested_why_not.{ProvenanceAttribute, ProvenanceContext, WhyNotMSRComputation, WhyNotProvenance}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
@@ -13,6 +13,8 @@ abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfigur
   def whyNotQuestion(): Twig
 
   def referenceScenario() : DataFrame
+
+  var currentDataFrame: DataFrame = null
 
   def extendedScenarioWithoutSA() : DataFrame = {
     WhyNotProvenance.rewrite(referenceScenario, whyNotQuestion)
@@ -28,6 +30,15 @@ abstract class TestScenario(spark: SparkSession, testConfiguration: TestConfigur
 
   def extendedScenarioWithSAandMSR() : DataFrame = {
     WhyNotProvenance.computeMSRsWithAlternatives(referenceScenario, whyNotQuestion)
+  }
+
+  def prepareScenarioForMSRComputation(): DataFrame = {
+    currentDataFrame = WhyNotProvenance.prepareMSRsWithAlternatives(referenceScenario, whyNotQuestion)
+    currentDataFrame
+  }
+
+  def extendedScenarioWithPreparedSAandMSR() : DataFrame = {
+    WhyNotProvenance.computePreparedMSRsWithAlternatives(currentDataFrame)
   }
 
 

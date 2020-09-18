@@ -15,6 +15,7 @@ case class ProvenanceAttribute(oid: Int, attributeName: String, attributeType: D
 object ProvenanceContext {
 
   def associateIds(provenanceContext: ProvenanceContext, leftContext: ProvenanceContext, rightContext: ProvenanceContext): Unit = {
+    //TODO handle case without schema alternatives
     val totalNumberOfAlternatives = leftContext.primarySchemaAlternative.getAllAlternatives().size * rightContext.primarySchemaAlternative.getAllAlternatives().size
     val alternatingFactor = rightContext.primarySchemaAlternative.getAllAlternatives().size
     for (idx <- 0 until totalNumberOfAlternatives){

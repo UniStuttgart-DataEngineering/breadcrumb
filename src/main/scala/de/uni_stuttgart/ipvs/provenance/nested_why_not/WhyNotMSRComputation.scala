@@ -14,7 +14,8 @@ object WhyNotMSRComputation {
   private val compatibleCountName = "compatibleCount"
   private val intermediateTupleUnnestingName = "flattened"
 
-  private var relevantAlternativeIds = mutable.Set(Int)
+  var currentProvenanceContext: ProvenanceContext = null
+  var currentUidAttribute: ProvenanceAttribute = null
 
   def computeMSR(dataFrame: DataFrame, provenanceContext: ProvenanceContext): DataFrame = {
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
@@ -46,8 +47,17 @@ object WhyNotMSRComputation {
       .foldLeft(mutable.Set.empty[Int])((res, item) => res ++= item._2).toSeq
   }
 
+  def prepareForMSRComputationWithAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext): DataFrame = {
+    currentProvenanceContext = provenanceContext
+    val provenanceAttributesOnly = dataFrame.select(
+      provenanceContext.getProvenanceAttributes().map(attribute => col(attribute.attributeName)): _*)
+    val (provenanceWithUid, uidAttribute) = addUID(provenanceAttributesOnly, provenanceContext)
+    currentUidAttribute = uidAttribute
+    provenanceWithUid.cache()
+  }
+
   def computeMSRForAlternative(dataFrame: DataFrame, provenanceContext: ProvenanceContext, alternative: SchemaSubsetTree, uidAttribute: ProvenanceAttribute): DataFrame = {
-    val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
+    //val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
     val msrUDFWithAlternatives = dataFrame.sparkSession.udf.register("msr", new MSRComputationAlternativeUDF().call _)
     val relevantIds : Set[Int] = getAllRelevantIds(provenanceContext, alternative.id, mutable.Set.empty[Int]).toSet
     val modifiedOps = getModifiedOps(provenanceContext, relevantIds)
@@ -75,25 +85,27 @@ object WhyNotMSRComputation {
     dataFrame.filter(greatest(columnNames.map(col): _*) === true)
   }
 
-  def computeMSRForSchemaAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext): Map[Int, DataFrame] = {
+  def computeMSRForSchemaAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext, prepared: Boolean = false, uidAttribute: ProvenanceAttribute = null): Map[Int, DataFrame] = {
     //dataFrame.printSchema()
     //dataFrame.show(false)
     import dataFrame.sparkSession.implicits._
     //val constraint = "Scalable algorithms for scholarly figure mining and semantics"
     //val column = provenanceContext.getMostRecentCompatibilityAttribute(provenanceContext.primarySchemaAlternative.id).get.attributeName
     //dataFrame.filter(col(column) === true)/*.select(col("author"), col(column))*/.show(20, false)
-    val provenanceAttributesOnly = dataFrame.select(
-      provenanceContext.getProvenanceAttributes().map(attribute => col(attribute.attributeName)): _*)
+    val (provenanceWithUid, uidAttr) =
+    if (!prepared){
+      (prepareForMSRComputationWithAlternatives(dataFrame,provenanceContext), currentUidAttribute)
+    } else {
+      (dataFrame, uidAttribute)
+    }
     val lastCompatibleAttribute = provenanceContext.getMostRecentCompatibilityAttributes()
-    val (provenanceWithUid, uidAttribute) = addUID(provenanceAttributesOnly, provenanceContext)
-    provenanceWithUid.cache()
     //provenanceWithUid.printSchema()
     //provenanceWithUid.show(false)
     val compatibleNames = lastCompatibleAttribute.map{c => c.attributeName}
     val compatiblesOnly = filterForAllCompatibles(provenanceWithUid, compatibleNames) //tuple based only
     val pickyOperators = mutable.Map.empty[Int, DataFrame]
     for (alternative <- provenanceContext.primarySchemaAlternative.getAllAlternatives()){
-      pickyOperators.put(alternative.id, computeMSRForAlternative(compatiblesOnly, provenanceContext, alternative, uidAttribute))
+      pickyOperators.put(alternative.id, computeMSRForAlternative(compatiblesOnly, provenanceContext, alternative, uidAttr))
     }
     pickyOperators.toMap
   }

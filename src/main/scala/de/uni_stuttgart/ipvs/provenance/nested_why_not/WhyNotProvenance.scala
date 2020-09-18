@@ -99,4 +99,23 @@ object WhyNotProvenance {
     aggregatedResults
   }
 
+  def prepareMSRsWithAlternatives(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame = {
+    val (result, provenanceContext) = dataFrameAndProvenanceContext(dataFrame, whyNotTwig, internalRewriteWithAlternatives)
+    val res = WhyNotMSRComputation.prepareForMSRComputationWithAlternatives(result, provenanceContext)
+    res
+  }
+
+  def computePreparedMSRsWithAlternatives(dataFrame: DataFrame): DataFrame = {
+    val res = WhyNotMSRComputation.computeMSRForSchemaAlternatives(dataFrame, WhyNotMSRComputation.currentProvenanceContext, true, WhyNotMSRComputation.currentUidAttribute)
+    val (primaryAlternative, primaryDataFrame) = res.minBy(_._1)
+    var aggregatedResults = primaryDataFrame.withColumn("alternative", typedLit(f"${primaryAlternative}%06d"))
+    for ((alternative, altFrame) <- res) {
+      if (alternative != primaryAlternative){
+        val manipulatedDataFrame = altFrame.withColumn("alternative", typedLit(f"${alternative}%06d"))
+        aggregatedResults = aggregatedResults.union(manipulatedDataFrame)
+      }
+    }
+    aggregatedResults
+  }
+
 }

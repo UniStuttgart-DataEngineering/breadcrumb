@@ -60,15 +60,16 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
   }
 
   def executeScenarioIteration(scenario: TestScenario, iteration: Int): DataFrame = {
-    logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize} begins")
-    val t0 = System.nanoTime()
     val result = testConfiguration.referenceScenario match {
       case 1 => scenario.extendedScenario()
       case 2 => scenario.extendedScenarioWithoutSA()
       case 3 => scenario.extendedScenarioWithSA()
       case 4 => scenario.extendedScenarioWithSAandMSR()
+      case 5 => scenario.extendedScenarioWithPreparedSAandMSR()
       case _ => scenario.referenceScenario()
     }
+    logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize} begins")
+    val t0 = System.nanoTime()
     collectDataFrame(result, scenario.getName)
     val t1 = System.nanoTime()
     logger.warn(s"${scenario.getName} in iteration ${iteration} with data size ${testConfiguration.dataSize}: ${(t1 - t0)} ns")
@@ -84,6 +85,10 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     ProvenanceContext.setTestScenario(scenario)
     var result = spark.emptyDataFrame
     evaluationResult.reset()
+    if (testConfiguration.referenceScenario == 5) {
+      val res = scenario.prepareScenarioForMSRComputation()
+      collectDataFrame(res, scenario.getName + "intermediate")
+    }
     if (testConfiguration.warmUp) {
       result = executeScenarioIteration(scenario, -1)
     }
