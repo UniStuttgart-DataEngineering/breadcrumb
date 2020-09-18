@@ -14,9 +14,11 @@ class DBLPScenario5(spark: SparkSession, testConfiguration: TestConfiguration) e
 
   override def referenceScenario: DataFrame = {
     val www = loadWWW()
-    val www_author = www.withColumn("wauthor", explode($"author"))
-    val www_url = www_author.withColumn("wurl", explode($"url")) // SA: url -> note
-    var www_selected = www_url.select($"wauthor._VALUE".alias("name"), $"wurl._VALUE".alias("url"))
+
+    val select = www.select($"author".alias("wauthor"),  $"url".alias("wurl"))
+    val www_author = select.withColumn("wauthors", explode($"wauthor"))
+    val www_url = www_author.withColumn("wurls", explode($"wurl")) // SA: url -> note
+    var www_selected = www_url.select($"wauthors._VALUE".alias("name"), $"wurls._VALUE".alias("url"))
     var res = www_selected.groupBy($"name").agg(collect_list($"url").alias("listOfUrl"))
 //    res = res.filter($"name".contains("Sinziana Mazilu"))
 //
