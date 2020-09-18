@@ -14,8 +14,9 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.withColumn("hashtag", explode($"entities.hashtags"))
-    res = res.select($"hashtag.text".alias("hashtagText"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
+    var res = tw.select($"entities.hashtags".alias("hashtags"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
+    res = res.withColumn("hashtag", explode($"hashtags")).withColumn("hashtagText", $"hashtag.text")
+//    res = res.select($"hashtag.text".alias("hashtagText"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
     res = res.filter($"text".contains("UEFA"))
 //    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
 //    res = res.filter($"numOfCountries" > 0)

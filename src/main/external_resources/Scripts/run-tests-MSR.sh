@@ -6,13 +6,13 @@ dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 warmup="true"
 saSize="1"
 
-for testSuite in "twitter"; do
+for testSuite in "dblp" "twitter"; do
     if [ $testSuite = "twitter" ]; then
         dataPath=$twitterPath
     else
         dataPath=$dblpPath
     fi
-    for reference in "0" "3"; do
+    for reference in "5"; do
         for size in "100" "200" "300" "400" "500"; do
             for iteration in "1"; do
                 ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
