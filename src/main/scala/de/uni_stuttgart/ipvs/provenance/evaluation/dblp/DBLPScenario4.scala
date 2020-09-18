@@ -92,10 +92,12 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     if (node.name == "publisher") {
       node.name = "series"
       node1 = node.name
+      node.modified = true
     }
     if (node.name == "year") {
       node.name = "_mdate"
       node2 = node.name
+      node.modified = true
     }
     if (node1 == "series" && node2 == "_mdate")
       return

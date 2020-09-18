@@ -55,6 +55,7 @@ class DBLPScenario1(spark: SparkSession, testConfiguration: TestConfiguration) e
     // to avoid "title._VALUE"
     if (node.name == "title" && node.children.isEmpty) {
       node.name = "booktitle"
+      node.modified = true
       return
     }
     for (child <- node.children){

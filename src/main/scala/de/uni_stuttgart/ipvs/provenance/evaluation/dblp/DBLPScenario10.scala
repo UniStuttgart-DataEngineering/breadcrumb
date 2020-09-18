@@ -52,6 +52,7 @@ class DBLPScenario10(spark: SparkSession, testConfiguration: TestConfiguration) 
   def replace1(node: SchemaNode): Unit ={
     if (node.name == "url") {
       node.name = "ee"
+      node.modified = true
       return
     }
     for (child <- node.children){

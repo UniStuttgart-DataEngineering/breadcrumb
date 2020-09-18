@@ -80,6 +80,7 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
       node.parent.name == "entities" &&
       node.parent.parent.name == "root") {
       node.name = "urls"
+      node.modified = true
       return
     }
     for (child <- node.children){
@@ -91,7 +92,10 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     if (node.name == "user" &&
         node.parent.name == "root") {
       node.name = "place"
-      node.getChild("location").get.name = "full_name"
+      node.modified = true
+      val child = node.getChild("location").get
+      child.name = "full_name"
+      child.modified = true
       return
     }
     for (child <- node.children){
@@ -107,12 +111,16 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
       node.parent.name == "entities" &&
       node.parent.parent.name == "root") {
       node.name = "urls"
+      node.modified = true
       node1 = node.name
     }
     if (node.name == "user" &&
       node.parent.name == "root") {
       node.name = "place"
-      node.getChild("location").get.name = "full_name"
+      node.modified = true
+      val child = node.getChild("location").get
+      child.name = "full_name"
+      child.modified = true
       node2 = node.name
     }
     if (node1 == "urls" && node2 == "place")

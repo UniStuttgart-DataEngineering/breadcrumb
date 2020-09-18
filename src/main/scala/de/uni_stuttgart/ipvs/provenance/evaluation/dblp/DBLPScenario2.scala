@@ -49,6 +49,7 @@ class DBLPScenario2(spark: SparkSession, testConfiguration: TestConfiguration) e
   def replaceBibtex(node: SchemaNode): Unit ={
     if (node.name == "_bibtex") {
       node.name = "_VALUE"
+      node.modified = true
       return
     }
     for (child <- node.children){

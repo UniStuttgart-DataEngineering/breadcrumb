@@ -61,6 +61,7 @@ class DBLPScenario3(spark: SparkSession, testConfiguration: TestConfiguration) e
   def replaceTitle(node: SchemaNode): Unit ={
     if (node.name == "author") {
       node.name = "editor"
+      node.modified = true
       return
     }
     for (child <- node.children){

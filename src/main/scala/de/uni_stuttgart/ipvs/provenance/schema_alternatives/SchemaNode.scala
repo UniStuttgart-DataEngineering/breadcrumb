@@ -39,6 +39,7 @@ class SchemaNode(_name: String, _constraint: Constraint, _parent: SchemaNode = n
   var parent : SchemaNode = _parent
   var children = scala.collection.mutable.Set.empty[SchemaNode]
   var constraint = _constraint
+  var modified = false
 
   var inPathWithCondition = false
 

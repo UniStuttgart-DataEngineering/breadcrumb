@@ -104,6 +104,7 @@ class ProvenanceContext {
 
   protected[provenance] val associatedIds = mutable.Map.empty[Int, (Int, Int)]
 
+  protected[provenance] val operatorsModifiedByAlternatives = mutable.Map.empty[Int, mutable.Set[Int]]
 
 
   protected def addNestedProvenanceContext(provenanceContext: ProvenanceContext, provenanceAttribute: ProvenanceAttribute): Unit = {
@@ -282,6 +283,11 @@ class ProvenanceContext {
 
   protected[provenance] def getProvenanceAttributes(): Seq[ProvenanceAttribute] = {
     provenanceAttributes
+  }
+
+  protected[provenance] def addModifiedOperatorIdtoSchemaAlternative(alternativeId: Int, oid: Int): Unit = {
+    val set = operatorsModifiedByAlternatives.getOrElseUpdate(alternativeId, mutable.Set.empty[Int])
+    set += oid
   }
 
 }

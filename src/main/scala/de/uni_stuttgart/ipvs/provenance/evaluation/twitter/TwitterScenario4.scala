@@ -50,7 +50,10 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
   def replace1(node: SchemaNode): Unit ={
     if (node.name == "place" && node.parent.name == "root") {
       node.name = "user"
-      node.getChild("country").get.name = "location"
+      node.modified = true
+      val child = node.getChild("country").get
+      child.name = "location"
+      child.modified = true
       return
     }
     for (child <- node.children){

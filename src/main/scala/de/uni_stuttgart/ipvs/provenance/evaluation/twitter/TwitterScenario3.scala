@@ -59,6 +59,7 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
         node.parent.name == "entities" &&
         node.parent.parent.name == "root") {
       node.name = "urls"
+      node.modified = true
       return
     }
     for (child <- node.children){

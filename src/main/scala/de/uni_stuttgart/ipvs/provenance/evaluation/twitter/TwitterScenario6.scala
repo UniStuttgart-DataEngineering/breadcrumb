@@ -64,6 +64,7 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
       node.parent.name == "entities" &&
       node.parent.parent.name == "root") {
       node.parent.name = "extended_entities"
+      node.parent.modified = true
       return
     }
     for (child <- node.children){
