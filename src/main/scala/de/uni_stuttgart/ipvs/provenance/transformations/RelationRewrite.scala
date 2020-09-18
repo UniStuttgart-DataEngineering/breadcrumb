@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaNode, PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaNode, PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeBackTracing}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Project}
 import org.apache.spark.sql.types.BooleanType

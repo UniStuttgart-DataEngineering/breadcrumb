@@ -39,6 +39,8 @@ object ProvenanceContext {
     provenanceContext.associatedIds ++= leftContext.associatedIds
     provenanceContext.associatedIds ++= rightContext.associatedIds
     associateIds(provenanceContext, leftContext, rightContext)
+    provenanceContext.operatorsModifiedByAlternatives ++= leftContext.operatorsModifiedByAlternatives
+    provenanceContext.operatorsModifiedByAlternatives ++= rightContext.operatorsModifiedByAlternatives
     provenanceContext
   }
 
@@ -61,6 +63,7 @@ object ProvenanceContext {
     val provenanceContext = new ProvenanceContext()
     provenanceContext.addNestedProvenanceContext(childContext, provenanceAttribute)
     provenanceContext.associatedIds ++= childContext.associatedIds
+    provenanceContext.operatorsModifiedByAlternatives ++= childContext.operatorsModifiedByAlternatives
     provenanceContext
   }
 

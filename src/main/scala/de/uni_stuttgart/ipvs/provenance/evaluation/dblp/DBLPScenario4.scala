@@ -67,6 +67,7 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
   def replace1(node: SchemaNode): Unit ={
     if (node.name == "publisher") {
       node.name = "series"
+      node.modified = true
       return
     }
     for (child <- node.children){
@@ -77,6 +78,7 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
   def replace2(node: SchemaNode): Unit ={
     if (node.name == "year") {
       node.name = "_mdate"
+      node.modified = true
       return
     }
     for (child <- node.children){

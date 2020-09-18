@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import java.sql.SQLSyntaxErrorException
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaNode, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.analysis.{MultiAlias, UnresolvedAlias}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CreateNamedStruct, Expression, GetStructField, Literal, NamedExpression}
@@ -87,6 +87,7 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
     val childRewrite = child.rewriteWithAlternatives()
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
+    AlternativeOidAdder(provenanceContext, project.projectList, oid).traceAttributeAccess()
     val alternativeExpressions = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, rewrittenChild, project.projectList).forwardTraceNamedExpressions()
 
     //val addressAttributes = rewrittenChild.output.find(attr => attr.name == "address").toSeq
@@ -99,6 +100,7 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
     //TODO: update alternative schema trees --> should be done now, too
     val outputTrees = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenChild, project.projectList).forwardTraceExpressions().getOutputWhyNotQuestion()
     provenanceContext.primarySchemaAlternative = outputTrees
+
     Rewrite(rewrittenProjection, provenanceContext)
 
   }

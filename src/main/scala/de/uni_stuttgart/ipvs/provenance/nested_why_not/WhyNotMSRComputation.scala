@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.nested_why_not
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.SchemaSubsetTree
 import de.uni_stuttgart.ipvs.provenance.why_not_question.{DataFetcherUDF, Twig}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.functions.{col, count, countDistinct, explode, greatest, monotonically_increasing_id, struct}
+import org.apache.spark.sql.functions.{col, count, countDistinct, explode, greatest, monotonically_increasing_id, struct, typedLit}
 import org.apache.spark.sql.types.LongType
 
 import scala.collection.mutable
@@ -41,16 +41,23 @@ object WhyNotMSRComputation {
 
   }
 
+  def getModifiedOps(provenanceContext: ProvenanceContext, relevantIds: Set[Int]) : Seq[Int] = {
+    provenanceContext.operatorsModifiedByAlternatives.filter(item => relevantIds.contains(item._1))
+      .foldLeft(mutable.Set.empty[Int])((res, item) => res ++= item._2).toSeq
+  }
+
   def computeMSRForAlternative(dataFrame: DataFrame, provenanceContext: ProvenanceContext, alternative: SchemaSubsetTree, uidAttribute: ProvenanceAttribute): DataFrame = {
     val msrUDF = dataFrame.sparkSession.udf.register("msr", new MSRComputationUDF().call _)
+    val msrUDFWithAlternatives = dataFrame.sparkSession.udf.register("msr", new MSRComputationAlternativeUDF().call _)
     val relevantIds : Set[Int] = getAllRelevantIds(provenanceContext, alternative.id, mutable.Set.empty[Int]).toSet
+    val modifiedOps = getModifiedOps(provenanceContext, relevantIds)
     val validAttribute = provenanceContext.getValidAttributes().filter(attribute => attribute.attributeName.contains(Constants.getAlternativeIdxString(alternative.id))).head
     val compatibleAttribute = provenanceContext.getMostRecentCompatibilityAttributes().filter(attribute => attribute.attributeName.contains(Constants.getAlternativeIdxString(alternative.id))).head
 
     val validColumn = dataFrame.columns.filter(name => name == validAttribute.attributeName).head
     val compatibleColumn = dataFrame.columns.filter(name => name == compatibleAttribute.attributeName).head
     var relevantUnflattenedTuples = dataFrame.filter(col(validColumn) === true && col(compatibleColumn) === true)
-    relevantUnflattenedTuples.show(10, false)
+    //relevantUnflattenedTuples.show(10, false)
     //relevantUnflattenedTuples.printSchema()
     //relevantUnflattenedTuples.show()
     relevantUnflattenedTuples = relevantUnflattenedTuples.drop(validColumn).drop(compatibleColumn)
@@ -59,7 +66,7 @@ object WhyNotMSRComputation {
 
     val filteredColumns = flattenedCompatiblesOnly.columns.filter(col => Constants.isSurvivedField(col, relevantIds) || Constants.isIDField(col))
     val survivedCompatiblesOnly = flattenedCompatiblesOnly.select(filteredColumns.map(col(_)): _*)
-    var pickyOperators = survivedCompatiblesOnly.withColumn(operatorListName, msrUDF(struct(survivedCompatiblesOnly.columns.toSeq.map(col(_)): _*)))
+    var pickyOperators = survivedCompatiblesOnly.withColumn(operatorListName, msrUDFWithAlternatives(struct(survivedCompatiblesOnly.columns.toSeq.map(col(_)): _*), typedLit(modifiedOps)))
     pickyOperators = pickyOperators.groupBy(operatorListName).agg(countDistinct(col(uidAttribute.attributeName)).alias(compatibleCountName))
     pickyOperators
   }

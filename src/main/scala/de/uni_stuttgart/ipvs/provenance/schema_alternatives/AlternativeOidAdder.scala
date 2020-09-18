@@ -4,7 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, BinaryExpression, CreateNamedStruct, Expression, GetStructField, LeafExpression, UnaryExpression}
 
-object SchemaSubsetTreeAccessAdder {
+object AlternativeOidAdder {
   def apply(provenanceContext: ProvenanceContext, expressions: Seq[Expression], oid: Int) = new AlternativeOidAdder(provenanceContext, expressions, oid: Int)
 }
 
@@ -62,8 +62,10 @@ class AlternativeOidAdder(provenanceContext: ProvenanceContext, expressions: Seq
       }
     }
     val node = currentNode.getPrimaryChild(gs.name.get).getOrElse(return)
-    if (node.modified){
-      return
+    for ((altNode, id) <- node.alternatives zip provenanceContext.primarySchemaAlternative.alternatives.map(_.id)){
+      if (altNode.modified){
+        provenanceContext.addModifiedOperatorIdtoSchemaAlternative(id, oid)
+      }
     }
     currentNode = node
   }

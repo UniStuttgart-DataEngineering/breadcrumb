@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 //import com.sun.tools.corba.se.idl.constExpr.NotEqual
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, First, Max, Min}
@@ -269,6 +269,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
 
 
 
+    AlternativeOidAdder(provenanceContext, aggregate.aggregateExpressions, oid).traceAttributeAccess()
     val updatedTree = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenAggregate, aggregate.aggregateExpressions).forwardTraceExpressions().forwardTraceConstraintsOnAggregatedValues(outputWhyNotQuestion).getOutputWhyNotQuestion()
     val aggregatedProvenanceAttribute = ProvenanceAttribute(oid, Constants.getProvenanceCollectionFieldName(oid), provenanceCollection.dataType)
     val aggregateContext = ProvenanceContext(provenanceContext, aggregatedProvenanceAttribute)
@@ -335,6 +336,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
 
     val newCompatibleColumns = compatibleColumns(secondAggregation, aggregateContext)
     val finalProjection = Project(secondAggregation.output ++ newCompatibleColumns, secondAggregation)
+
 
     Rewrite(finalProjection, aggregateContext)
   }

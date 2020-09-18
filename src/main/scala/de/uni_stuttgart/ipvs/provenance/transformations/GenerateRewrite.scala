@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.transformations
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite}
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, CaseWhen, ElementAt, EqualTo, Explode, Expression, GreaterThan, Greatest, IsNotNull, LessThanOrEqual, Literal, NamedExpression, Or, PosExplode, ScalaUDF, Size}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
 import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType}
@@ -197,6 +197,7 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     val rewrittenChild = childRewrite.plan
     val provenanceContext = childRewrite.provenanceContext
     val (alternativeInputs, alternativeOutputs) = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, rewrittenChild, generate.output).forwardTraceGenerator(generate.generator.children, generate.generatorOutput)
+    AlternativeOidAdder(provenanceContext, generate.generator.children, oid).traceAttributeAccess()
     val updatedTree = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenChild, generate.output).forwardTraceGenerator(generate.generator.children, generate.generatorOutput)
     provenanceContext.primarySchemaAlternative = updatedTree
 
@@ -210,7 +211,6 @@ class GenerateRewrite(generate: Generate, oid: Int) extends UnaryTransformationR
     val withProvenanceColumns = planWithProvenanceColumns(withOldValidColumns, provenanceContext, alternativeInputs, oldValidColumns)
 
     val rewrittenFilterWithOriginals = getPlanWithNewOriginalColumns(withProvenanceColumns, provenanceContext)
-
 
     Rewrite(rewrittenFilterWithOriginals, provenanceContext)
   }
