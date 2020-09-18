@@ -87,7 +87,7 @@ abstract class TestSuite(spark: SparkSession, testConfiguration: TestConfigurati
     evaluationResult.reset()
     if (testConfiguration.referenceScenario == 5) {
       val res = scenario.prepareScenarioForMSRComputation()
-      collectDataFrame(res, scenario.getName + "intermediate")
+      collectDataFrame(res, scenario.getName + "__intermediate")
     }
     if (testConfiguration.warmUp) {
       result = executeScenarioIteration(scenario, -1)
