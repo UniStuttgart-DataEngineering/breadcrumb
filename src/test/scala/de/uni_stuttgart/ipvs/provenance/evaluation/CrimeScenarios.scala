@@ -17,14 +17,21 @@ class CrimeScenarios extends FunSuite with SharedSparkTestDataFrames {
   test("[Reference] Scenario 1"){
     val scenario = new CrimeScenario1(spark, testConfiguration1)
     var res = scenario.referenceScenario
-    res = res.filter($"pname".contains("Roger") && $"type".contains("Laugh"))
+    res = res.filter($"pname".contains("Roger") )//&& $"ctype".contains("Laugh"))
     res.show(10)
     res
   }
 
   test("[RewriteWithoutSA] Scenario 1"){
     val scenario = new CrimeScenario1(spark, testConfiguration1)
-    scenario.extendedScenarioWithoutSA.filter($"pname".contains("Roger") && $"type".contains("Laugh")).show(10)
+    scenario.extendedScenarioWithoutSA.filter($"pname".contains("Roger") /*&& $"type".contains("Laugh")*/).show(10)
+  }
+
+  test("[RewriteWithSAMSR] Scenario 1"){
+    val scenario = new CrimeScenario1(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    //scenario.extendedScenarioWithSA().explain(true)
+    val res = scenario.extendedScenarioWithSAandMSR().show(10) // /*&& $"type".contains("Laugh")*/).show(10)
   }
 
 
@@ -56,6 +63,41 @@ class CrimeScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("[RewriteWithSAMSR] Scenario 2") {
     val scenario = new CrimeScenario2(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+
+
+  // SCENARIO 3
+  test("[Reference] Scenario 3"){
+    val scenario = new CrimeScenario3(spark, testConfiguration1)
+    var res = scenario.referenceScenario
+    res = res.filter($"ctype" === "riot")
+    res.show(100)
+    res
+  }
+
+  test("[RewriteWithoutSA] Scenario 3"){
+    val scenario = new CrimeScenario3(spark, testConfiguration1)
+    //    scenario.extendedScenarioWithoutSA.show(10)
+    scenario.extendedScenarioWithoutSA.filter($"pname".contains("Conedera")).show(10)
+  }
+
+  test("[RewriteWithSA] Scenario 3"){
+    val scenario = new CrimeScenario3(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    //    scenario.extendedScenarioWithSA
+    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"pname".contains("Conedera"))
+    //    toBeDebugged.explain()
+    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithSAMSR] Scenario 3") {
+    val scenario = new CrimeScenario3(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
     res.show(10)

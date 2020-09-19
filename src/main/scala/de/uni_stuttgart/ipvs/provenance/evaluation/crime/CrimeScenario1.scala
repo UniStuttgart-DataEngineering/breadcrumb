@@ -9,6 +9,10 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 class CrimeScenario1(spark: SparkSession, testConfiguration: TestConfiguration) extends CrimeScenario (spark, testConfiguration) {
   override def getName: String = "C1"
 
+  /*
+  Filter on person and last join are problematic, because Roger has black hair and no join partner
+   */
+
   import spark.implicits._
 
   override def referenceScenario: DataFrame = {
@@ -16,18 +20,18 @@ class CrimeScenario1(spark: SparkSession, testConfiguration: TestConfiguration) 
     val person = loadPerson()
     val sawperson = loadSawperson()
     val witness = loadWitness()
-
     var res = crime.join(witness, $"csector" === $"wsector")
-    res = res.join(sawperson, $"name" === $"witness")
-    res = res.join(person, $"shair" === $"phair" && $"sclothes" === $"pclothes")
-    res = res.select($"pname", $"type")
+    res = res.join(sawperson, $"wname" === $"spwitness")
+    val filteredPerson = person.filter($"phair" === "blue")
+    res = res.join(filteredPerson, $"sphair" === $"phair" && $"spclothes" === $"pclothes")
+    res = res.select($"pname", $"ctype")
     res
   }
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val text = twig.createNode("pname", 1, 1, "containsConedera")
+    val text = twig.createNode("pname", 1, 1, "containsRoger")
     twig = twig.createEdge(root, text, false)
     twig.validate.get
   }

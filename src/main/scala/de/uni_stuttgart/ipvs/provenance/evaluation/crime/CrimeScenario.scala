@@ -10,10 +10,10 @@ abstract class CrimeScenario(spark: SparkSession, testConfiguration: TestConfigu
 //  val pathToGeniueDBLP = "/user/hadoop/diesterf/data/dblp/json/"
   // path for run in local
   val pathToGeniueCrime = getPathToGeniueCrime()
-  val crimeSchema = getCrimeSchema()
-  val personSchema = getPersonSchema()
-  val sawpersonSchema = getSawpersonSchema()
-  val witnessSchema = getWitnessSchema()
+  //val crimeSchema = getCrimeSchema()
+  //val personSchema = getPersonSchema()
+  //val sawpersonSchema = getSawpersonSchema()
+  // witnessSchema = getWitnessSchema()
 
   protected def getPathToGeniueCrime(): String = {
     if (testConfiguration.isLocal) {
@@ -23,6 +23,7 @@ abstract class CrimeScenario(spark: SparkSession, testConfiguration: TestConfigu
     }
   }
 
+  /*
   def getCrimeSchema() : StructType = {
     val i = spark.read.format("csv").option("header", "true").load(pathToGeniueCrime + "crime.csv")
     i.schema
@@ -51,27 +52,34 @@ abstract class CrimeScenario(spark: SparkSession, testConfiguration: TestConfigu
     }
   }
 
+   */
+
 
 
 
   def loadCrime(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/crime"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
-    spark.read.schema(crimeSchema).json(completePath)
+    //val completePath = testConfiguration.pathToData + "/crime"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
+    spark.read.format("csv").option("header", "true").option("delimiter", ",").load(pathToGeniueCrime + "crime.csv")
+
+    //spark.read.schema(crimeSchema).json(completePath)
   }
 
   def loadPerson(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/person"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
-    spark.read.schema(personSchema).json(completePath)
+    spark.read.format("csv").option("header", "true").option("delimiter", ",").load(pathToGeniueCrime + "person.csv")
+    //val completePath = testConfiguration.pathToData + "/person"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
+    //spark.read.schema(personSchema).json(completePath)
   }
 
   def loadSawperson(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/sawperson"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
-    spark.read.schema(sawpersonSchema).json(completePath)
+    spark.read.format("csv").option("header", "true").option("delimiter", ",").load(pathToGeniueCrime + "sawperson.csv")
+    //val completePath = testConfiguration.pathToData + "/sawperson"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
+    //spark.read.schema(sawpersonSchema).json(completePath)
   }
 
   def loadWitness(): DataFrame = {
-    val completePath = testConfiguration.pathToData + "/witness"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
-    spark.read.schema(witnessSchema).json(completePath)
+    spark.read.format("csv").option("header", "true").option("delimiter", ",").load(pathToGeniueCrime + "witness.csv")
+    //val completePath = testConfiguration.pathToData + "/witness"+ getPathOffset() + testConfiguration.getZeros() +"*.csv"
+    //spark.read.schema(witnessSchema).json(completePath)
   }
 
 

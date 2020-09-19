@@ -82,7 +82,8 @@ object WhyNotMSRComputation {
   }
 
   def filterForAllCompatibles(dataFrame: DataFrame, columnNames: Seq[String]): DataFrame = {
-    dataFrame.filter(greatest(columnNames.map(col): _*) === true)
+    val expressions = columnNames.map(col) :+ typedLit(false)
+    dataFrame.filter(greatest(expressions: _*) === true)
   }
 
   def computeMSRForSchemaAlternatives(dataFrame: DataFrame, provenanceContext: ProvenanceContext, prepared: Boolean = false, uidAttribute: ProvenanceAttribute = null): Map[Int, DataFrame] = {

@@ -29,7 +29,8 @@ class MSRComputationAlternativeUDF extends UDF2[Row, Seq[Int], mutable.WrappedAr
 
 
     for(col <- survivorColumns) {
-      if (row.getAs[Boolean](col) == false){
+      val idx = row.schema.fieldIndex(col)
+      if (!row.isNullAt(idx) && row.getAs[Boolean](col) == false){
         pickyOperators += getOperatorIdString(col)
       }
     }

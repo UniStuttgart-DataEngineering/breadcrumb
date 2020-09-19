@@ -238,9 +238,10 @@ class JoinRewrite (val join: Join, override val oid: Int) extends BinaryTransfor
     val rewrittenJoin = Join(leftPlan, rightPlan, FullOuter, Some(joinCondition))
 
     //compatibles
-    val leftCompatibleColumns = provenanceContext.getExpressionsFromProvenanceAttributes(leftRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
-    val rightCompatibleColumns = provenanceContext.getExpressionsFromProvenanceAttributes(rightRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
-    val compatibles = compatibleColumns(provenanceContext, leftCompatibleColumns, rightCompatibleColumns)
+    //val leftCompatibleColumns = provenanceContext.getExpressionsFromProvenanceAttributes(leftRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
+    //val rightCompatibleColumns = provenanceContext.getExpressionsFromProvenanceAttributes(rightRewrite.provenanceContext.getMostRecentCompatibilityAttributes(), rewrittenJoin.output)
+    //val compatibles = compatibleColumns(provenanceContext, leftCompatibleColumns, rightCompatibleColumns)
+    val compatibles = super.compatibleColumns(rewrittenJoin, provenanceContext)
 
     //survivors
     val survivors = survivorColumns(provenanceContext, alternativeExpressions)

@@ -45,12 +45,14 @@ class PrimarySchemaNode(_name: String, _constraint: Constraint, _parent: SchemaN
     val copiedName = name + ""
     val copiedConstrained = constraint.deepCopy()
     val copiedNode = if(copyPrimary) PrimarySchemaNode(copiedName, copiedConstrained, parent) else this
+    copiedNode.modified = modified
     parent.addChild(copiedNode)
     val inputAlternatives = getAllAlternatives()
     for ((alternative, idx) <- parent.alternatives.zipWithIndex){
       val inputIdx: Int = if (alternating) (idx + 1) % alternatingFactor else (idx + 1) / alternatingFactor
       //val copy = inputAlternatives(inputIdx).deepCopy(alternative)
       val copy = inputAlternatives(inputIdx).deepCopyWithoutChildren(alternative)
+      copy.modified = inputAlternatives(inputIdx).modified
       copiedNode.addAlternative(copy)
       alternative.addChild(copy)
     }
