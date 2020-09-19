@@ -14,8 +14,9 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
 
   override def referenceScenario(): DataFrame = {
     val tw = loadTweets()
-    var res = tw.select($"entities.hashtags".alias("hashtags"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
-    res = res.withColumn("hashtag", explode($"hashtags")).withColumn("hashtagText", $"hashtag.text")
+    var res = tw.select($"created_at".alias("created"), $"entities.hashtags".alias("hashtags"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
+    res = res.withColumn("hashtag", explode($"hashtags"))
+    res = res.withColumn("hashtagText", $"hashtag.text")
 //    res = res.select($"hashtag.text".alias("hashtagText"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
     res = res.filter($"text".contains("UEFA"))
 //    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
@@ -28,7 +29,7 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
   override def whyNotQuestion(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val user = twig.createNode("hashtagText", 1, 1, "containsArsenalFC")
+    val user = twig.createNode("hashtagText", 1, 1, "containsArsenal")
 //    val cnt = twig.createNode("numOfCountries", 1, 1, "gtgtgtgt1")
     val list = twig.createNode("listOfCountries", 1, 1, "")
     val element = twig.createNode("element", 1, 1, "containsEngland")

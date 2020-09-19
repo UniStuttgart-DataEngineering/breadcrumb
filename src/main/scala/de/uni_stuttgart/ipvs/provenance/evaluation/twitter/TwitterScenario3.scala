@@ -18,11 +18,10 @@ class TwitterScenario3(spark: SparkSession, testConfiguration: TestConfiguration
     val media = mentioned.withColumn("medias", explode($"entities.media")) // SA: media -> urls
     val extracted_mentioned_users = media.select($"id".alias("tid"), $"created_at", $"text",
       $"mentioned_user.id".alias("uid"), $"mentioned_user.name".alias("name"), $"mentioned_user.screen_name".alias("screen_name"),
-//      $"entities.urls".alias("media"))
-      $"medias.url".alias("murl"))
+      $"medias.url".alias("murl"), $"user.friends_count".alias("cntFriends"))
 //    val extracted_mentioned_users_with_media = extracted_mentioned_users.filter($"murl".contains("http"))
     val restructured_users = extracted_mentioned_users.select(
-      $"uid", $"name", $"screen_name", $"murl",
+      $"uid", $"name", $"screen_name", $"cntFriends", $"murl",
       struct($"created_at", $"text", $"tid").alias("tweet"))
     var res = restructured_users.groupBy($"uid", $"name", $"screen_name").agg(count($"tweet").alias("numOfTweets"),
         countDistinct($"murl").alias("numOfUrls"))
