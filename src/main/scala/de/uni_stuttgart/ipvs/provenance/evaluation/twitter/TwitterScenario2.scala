@@ -26,7 +26,7 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
 //    val year = tw_select.withColumn("createdYear", $"created_at".substr(length($"created_at")-4, length($"created_at")))
     val tw_bts = tw_select.filter($"text".contains("BTS"))
     var res = tw_bts.filter($"country".contains("United States"))
-//    res = res.groupBy($"day", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
+//    res = res.distinct().groupBy($"day", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
 //    res.printSchema()
     res
   }

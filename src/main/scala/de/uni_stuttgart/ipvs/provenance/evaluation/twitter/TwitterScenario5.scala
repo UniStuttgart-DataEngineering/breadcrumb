@@ -30,6 +30,7 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
     res = res.filter($"location".contains("CA"))
 //    res = res.groupBy($"day", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
+//    res.printSchema()
     res
   }
 
@@ -45,11 +46,13 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 //    twig = twig.createEdge(root, list2, false)
 //    twig = twig.createEdge(list2, element2, false)
     val name = twig.createNode("pname", 1, 1, "containsSan Diego")
-    val list = twig.createNode("listOfTweets", 1, 1, "")
-    val element = twig.createNode("element", 1, 1, "contains1027608724662185984")
+//    val list = twig.createNode("listOfTweets", 1, 1, "")
+//    val element = twig.createNode("element", 1, 1, "contains1027608724662185984")
+    val id = twig.createNode("id_str", 1, 1, "contains1027608724662185984")
     twig = twig.createEdge(root, name, false)
-    twig = twig.createEdge(root, list, false)
-    twig = twig.createEdge(list, element, false)
+//    twig = twig.createEdge(root, list, false)
+//    twig = twig.createEdge(list, element, false)
+    twig = twig.createEdge(root, id, false)
     twig.validate.get
   }
 

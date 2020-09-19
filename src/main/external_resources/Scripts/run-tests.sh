@@ -12,8 +12,8 @@ for testSuite in "twitter"; do
     else
         dataPath=$dblpPath
     fi
-    for reference in "3"; do
-        for size in "200" "300" "400" "500"; do
+    for reference in "0" "3"; do
+        for size in "100" "200" "300" "400" "500"; do
             for iteration in "1"; do
                 ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
             done
