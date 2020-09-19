@@ -19,11 +19,13 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
 //    var tw_select = tw.withColumn("sizeOfHashtags", size($"entities.hashtags"))
 //    tw_select = tw_select.withColumn("uLocation", $"user.location")
 //    tw_select = tw_select.withColumn("uName", $"user.name")
-    val tw_select = tw.select(size($"entities.hashtags").alias("sizeOfHashtags"), $"user.location".alias("uLocation"),
-        $"user.name".alias("uName"), $"text", $"place.country".alias("country")) // SA: place.country -> user.location
+    val tw_select = tw.select(size($"entities.hashtags").alias("sizeOfHashtags"), $"user.location".alias("uLocation"), //$"user.created_at",
+        $"user.name".alias("uName"), $"text", $"place.country".alias("country"), $"user.lang".alias("lang"),
+        $"user.followers_count".alias("cntFollowers")) // SA: place.country -> user.location
+//    val year = tw_select.withColumn("createdYear", $"created_at".substr(length($"created_at")-4, length($"created_at")))
     val tw_bts = tw_select.filter($"text".contains("BTS"))
     var res = tw_bts.filter($"country".contains("United States"))
-    res = res.groupBy($"uLocation", $"sizeOfHashtags").agg(collect_list($"uName").alias("listOfNames"))
+    res = res.groupBy($"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
     res
   }
 

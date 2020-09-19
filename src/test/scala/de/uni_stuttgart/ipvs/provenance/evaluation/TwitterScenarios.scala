@@ -1,8 +1,10 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
+import de.uni_stuttgart.ipvs.provenance.evaluation.dblp.DBLPScenario1
 import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5, TwitterScenario6}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
+import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.apache.spark.sql.functions.explode
 import org.scalatest.FunSuite
 
@@ -12,6 +14,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   val pathToData = "src/main/external_resources/TwitterData/"
   val testConfiguration1 = TestConfiguration.local(pathToData)
 
+  def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
+    df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)
+    df.explain()
+  }
 
 //  SCENARIO 1
   test("[Reference] Scenario 1"){
@@ -48,6 +54,18 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }
+
+  test("[RewriteWithPreparedSAMSR] Scenario 1") {
+    val scenario = new TwitterScenario1(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+
 
 
 //  SCENARIO 2
@@ -86,6 +104,17 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }
+
+  test("[RewriteWithPreparedSAMSR] Scenario 2") {
+    val scenario = new TwitterScenario2(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 
 // SCENARIO 3
@@ -150,6 +179,16 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(null)
   }
 
+  test("[RewriteWithPreparedSAMSR] Scenario 3") {
+    val scenario = new TwitterScenario6(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 
 
@@ -191,6 +230,18 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(null)
   }
 
+  test("[RewriteWithPreparedSAMSR] Scenario 4") {
+    val scenario = new TwitterScenario4(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+
+
 
   // SCENARIO 5
   test("[Reference] Scenario 5"){
@@ -228,6 +279,15 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(null)
   }
 
+  test("[RewriteWithPreparedSAMSR] Scenario 5") {
+    val scenario = new TwitterScenario5(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
 
 
 //  test("[Reference] Scenario 6"){
