@@ -5,6 +5,7 @@ import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubset
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
@@ -25,9 +26,9 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 ////    res = res.filter($"pname".contains("Los Angeles"))
 
 //    var res = tw.withColumn("pname", $"place.name")
-    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"), $"user.name".alias("uname"), $"created_at".alias("time"))  // SA: user.location -> place.full_name
+    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"), $"user.name".alias("uname"), dayofmonth(to_date(from_unixtime($"timestamp_ms".cast(LongType) / 1000))).alias("day"))  // SA: user.location -> place.full_name
     res = res.filter($"location".contains("CA"))
-    res = res.groupBy($"time", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
+    res = res.groupBy($"day", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
     res
   }

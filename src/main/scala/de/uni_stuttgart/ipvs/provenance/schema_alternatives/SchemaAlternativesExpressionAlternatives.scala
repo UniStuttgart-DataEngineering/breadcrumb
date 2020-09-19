@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, EqualNullSafe, EqualTo, Expression, ExtractValue, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, Size}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, ParseToDate, Size}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.StringType
@@ -70,6 +70,19 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     (aggregatedExpression, alternativeExpressions)
   }
 
+  def forwardTracDayOfMonth(d: DayOfMonth): Seq[Expression] = {
+    val alternativeExpressions = forwardTraceExpression(d.child)
+    alternativeExpressions.map(DayOfMonth(_))
+  }
+
+  def forwardTraceParseToDate(p: ParseToDate): Seq[Expression] = {
+    val alternativeChildren = forwardTraceExpression(p.child)
+    //val alternativeLeft = forwardTraceExpression(p.left)
+    alternativeChildren map {
+      case child => ParseToDate(child, p.format, child)
+    }
+  }
+
   def forwardTraceExpression(expression: Expression): Seq[Expression] = {
     expression match {
 
@@ -106,6 +119,13 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       case not: Not => {
         forwardTraceNot(not)
       }
+      case d: DayOfMonth => {
+        forwardTracDayOfMonth(d)
+      }
+      case p: ParseToDate => {
+        forwardTraceParseToDate(p)
+      }
+
     }
 
   }
@@ -310,6 +330,21 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
           case (left, right) => And(left, right)
         }
       }
+      case f: FromUnixTime => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => {
+            left.resolved
+            right.resolved
+            FromUnixTime(left, right, f.timeZoneId)
+          }
+        }
+      }
+      case _: Divide => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Divide(left, right)
+        }
+      }
+
 
     }
     assert(currentNode == currentInputNode)

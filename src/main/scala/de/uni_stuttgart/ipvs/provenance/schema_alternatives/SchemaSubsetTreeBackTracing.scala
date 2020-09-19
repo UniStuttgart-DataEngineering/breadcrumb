@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, CreateNamedStruct, Expression, ExtractValue, GetStructField, Literal, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryArithmetic, Cast, CreateNamedStruct, Expression, ExtractValue, FromUnixTime, GetStructField, Literal, UnaryExpression}
 import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -41,6 +41,14 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     backtraceExpression(function.child)
   }
 
+  def backtraceFromUnixTime(function: FromUnixTime): Boolean = {
+    backtraceExpression(function.sec)
+  }
+
+  def backtraceBinaryArithmetic(b: BinaryArithmetic): Boolean = {
+    backtraceExpression(b.left) || backtraceExpression(b.right)
+  }
+
   def backtraceExpression(expression: Expression): Boolean = {
     expression match {
       case a: Alias => {
@@ -63,6 +71,12 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
       }
       case func: UnaryExpression => {
         backtraceFunction(func)
+      }
+      case f: FromUnixTime => {
+        backtraceFromUnixTime(f)
+      }
+      case b: BinaryArithmetic => {
+        backtraceBinaryArithmetic(b)
       }
     }
 

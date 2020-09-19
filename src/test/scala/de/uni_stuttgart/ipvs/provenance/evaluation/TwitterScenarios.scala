@@ -4,8 +4,10 @@ import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.evaluation.dblp.DBLPScenario1
 import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5, TwitterScenario6}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.apache.spark.sql.functions.{explode, typedLit, count}
+import org.apache.spark.sql.functions.{count, explode, to_date, typedLit, from_unixtime, dayofmonth}
+import org.apache.spark.sql.types.{DateType, LongType}
 import org.scalatest.FunSuite
 
 class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
@@ -314,8 +316,24 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   test("exploration") {
     val tweets = loadTweets()
-    val res = tweets.select("created_at").groupBy("created_at").agg(count(typedLit(1)).alias("cnt"))
-    res.orderBy($"cnt").show(20, false)
+    var res = tweets.select("created_at").groupBy("created_at").agg(count(typedLit(1)).alias("cnt"))
+    res = tweets.select(to_date($"created_at", "EEE MMM d hh:mm:ss '+0000' yyyy").alias("date"), $"created_at", dayofmonth(to_date(from_unixtime($"timestamp_ms".cast(LongType) / 1000))).alias("day"))
+
+    //res.orderBy($"cnt")
+    res.show(20, false)
+  }
+
+  test("exploration2") {
+    import java.text.SimpleDateFormat
+    val value = "Thu Aug 09 17:00:00 +0000 2018"
+
+    val pattern = "EEE MMM d hh:mm:ss '+0000' yyyy"
+    val formatter = new SimpleDateFormat(pattern)
+    val format = DateTimeUtils.newDateFormat("EEE MMM d hh:mm:ss '+0000' yyyy", DateTimeUtils.getTimeZone("UTC"))
+
+    val output = formatter.parse(value)
+
+    System.out.println(pattern + " " + output)
   }
 
 }

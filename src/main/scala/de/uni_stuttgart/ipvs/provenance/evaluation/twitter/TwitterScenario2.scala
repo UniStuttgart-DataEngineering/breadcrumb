@@ -6,6 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.LongType
 
 class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration) extends TwitterScenario (spark, testConfiguration) {
   override def getName(): String = "T2"
@@ -21,11 +22,11 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
 //    tw_select = tw_select.withColumn("uName", $"user.name")
     val tw_select = tw.select(size($"entities.hashtags").alias("sizeOfHashtags"), $"user.location".alias("uLocation"), //$"user.created_at",
         $"user.name".alias("uName"), $"text", $"place.country".alias("country"), $"user.lang".alias("lang"),
-        $"user.followers_count".alias("cntFollowers"), $"created_at".alias("time")) // SA: place.country -> user.location
+        $"user.followers_count".alias("cntFollowers"), dayofmonth(to_date(from_unixtime($"timestamp_ms".cast(LongType) / 1000))).alias("day")) // SA: place.country -> user.location
 //    val year = tw_select.withColumn("createdYear", $"created_at".substr(length($"created_at")-4, length($"created_at")))
     val tw_bts = tw_select.filter($"text".contains("BTS"))
     var res = tw_bts.filter($"country".contains("United States"))
-    res = res.groupBy($"time", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
+    res = res.groupBy($"day", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
     res
   }
 

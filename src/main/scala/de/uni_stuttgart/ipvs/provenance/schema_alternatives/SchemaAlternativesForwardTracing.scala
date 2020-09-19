@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, Expression, GetStructField, IsNotNull, Literal, Size}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, DayOfMonth, Divide, Expression, FromUnixTime, GetStructField, IsNotNull, Literal, ParseToDate, Size}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 import scala.collection.mutable
@@ -138,12 +138,42 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
       case ag: AggregateExpression => {
         forwardTraceAggregateExpression(ag)
       }
+      case d: DayOfMonth => {
+        forwardTraceDayOfMonth(d)
+      }
+      case d: Divide => {
+        forwardTraceDevide(d)
+      }
+      case ut: FromUnixTime => {
+        forwardTraceFromUnixTime(ut)
+      }
+      case d: ParseToDate => {
+        forwardTraceParseToDate(d)
+      }
+
     }
   }
 
   def forwardTraceSize(size: Size): Unit = {
     forwardTraceExpression(size.child)
   }
+
+  def forwardTraceDayOfMonth(day: DayOfMonth): Unit = {
+    forwardTraceExpression(day.child)
+  }
+
+  def forwardTraceDevide(d: Divide): Unit = {
+    forwardTraceExpression(d.left)
+  }
+
+  def forwardTraceFromUnixTime(f: FromUnixTime): Unit = {
+    forwardTraceExpression(f.sec)
+  }
+
+  def forwardTraceParseToDate(p: ParseToDate): Unit = {
+    forwardTraceExpression(p.child)
+  }
+
 
 
   def forwardTraceAlias(a: Alias) : Unit = {
