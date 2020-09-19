@@ -18,7 +18,7 @@ class TwitterScenario6(spark: SparkSession, testConfiguration: TestConfiguration
 
     var res = tw.select($"user.id".alias("uid"), $"user.name".alias("name"), $"entities.media".alias("medias")) //SA: entities.media -> extended_entities.media
     res = res.withColumn("moreMedia", explode($"medias"))
-    res = res.groupBy($"uid", $"name").agg(count($"moreMedia").alias("numOfMedia"))
+    res = res.groupBy($"uid", $"name").agg(countDistinct($"moreMedia").alias("numOfMedia"))
     res = res.filter($"numOfMedia" > 2)
 //    res.filter($"name".contains("Coca cola"))
     res

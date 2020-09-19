@@ -26,7 +26,8 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
 //    val year = tw_select.withColumn("createdYear", $"created_at".substr(length($"created_at")-4, length($"created_at")))
     val tw_bts = tw_select.filter($"text".contains("BTS"))
     var res = tw_bts.filter($"country".contains("United States"))
-    res = res.groupBy($"day", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
+//    res = res.groupBy($"day", $"uLocation", $"lang", $"sizeOfHashtags", $"cntFollowers").agg(collect_list($"uName").alias("listOfNames"))
+//    res.printSchema()
     res
   }
 
@@ -34,11 +35,13 @@ class TwitterScenario2(spark: SparkSession, testConfiguration: TestConfiguration
     var twig = new Twig()
     val root = twig.createNode("root")
 //    val country = twig.createNode("loc", 1, 1, "United States")
-    val list = twig.createNode("listOfNames", 1, 1, "")
-    val element = twig.createNode("element", 1, 1, "containsCindy")
+//    val list = twig.createNode("listOfNames", 1, 1, "")
+//    val element = twig.createNode("element", 1, 1, "containsCindy")
+    val name = twig.createNode("uName", 1, 1, "containsCindy")
 //    twig = twig.createEdge(root, country, false)
-    twig = twig.createEdge(root, list, false)
-    twig = twig.createEdge(list, element, false)
+//    twig = twig.createEdge(root, list, false)
+//    twig = twig.createEdge(list, element, false)
+    twig = twig.createEdge(root, name, false)
     twig.validate.get
   }
 

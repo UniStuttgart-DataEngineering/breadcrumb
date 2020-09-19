@@ -28,7 +28,7 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 //    var res = tw.withColumn("pname", $"place.name")
     var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"), $"user.name".alias("uname"), dayofmonth(to_date(from_unixtime($"timestamp_ms".cast(LongType) / 1000))).alias("day"))  // SA: user.location -> place.full_name
     res = res.filter($"location".contains("CA"))
-    res = res.groupBy($"day", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
+//    res = res.groupBy($"day", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
     res
   }
