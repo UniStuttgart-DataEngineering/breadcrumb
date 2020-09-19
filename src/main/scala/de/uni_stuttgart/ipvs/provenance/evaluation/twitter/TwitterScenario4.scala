@@ -21,7 +21,7 @@ class TwitterScenario4(spark: SparkSession, testConfiguration: TestConfiguration
     res = res.filter($"text".contains("UEFA"))
 //    res = res.groupBy($"hashtagText").agg(count($"country").alias("numOfCountries"))
 //    res = res.filter($"numOfCountries" > 0)
-    res = res.groupBy($"hashtagText").agg(collect_list($"country").alias("listOfCountries"))
+    res = res.groupBy($"hashtagText", $"created").agg(collect_list($"country").alias("listOfCountries"))
     res = res.filter(size($"listOfCountries") > 0)
     res
   }
