@@ -25,9 +25,9 @@ class TwitterScenario5(spark: SparkSession, testConfiguration: TestConfiguration
 ////    res = res.filter($"pname".contains("Los Angeles"))
 
 //    var res = tw.withColumn("pname", $"place.name")
-    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"), $"user.name".alias("uname"))  // SA: user.location -> place.full_name
+    var res = tw.select($"id_str", $"place.name".alias("pname"), $"user.location".alias("location"), $"user.name".alias("uname"), $"created_at".alias("time"))  // SA: user.location -> place.full_name
     res = res.filter($"location".contains("CA"))
-    res = res.groupBy($"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
+    res = res.groupBy($"time", $"pname", $"uname").agg(collect_list($"id_str").alias("listOfTweets"))
 //    res = res.filter($"pname".contains("San Diego"))
     res
   }
