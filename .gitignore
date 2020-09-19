@@ -3,6 +3,16 @@
 /.idea/
 /src/main/external_resources/DBLP/
 /src/main/external_resources/TwitterData/08_09_17_00_stream000000.log
+/src/main/external_resources/DBLP/article.json
+/src/main/external_resources/DBLP/book.json
+/src/main/external_resources/DBLP/data.json
+/src/main/external_resources/DBLP/incollection.json
+/src/main/external_resources/DBLP/inproceedings.json
+/src/main/external_resources/DBLP/mastersthesis.json
+/src/main/external_resources/DBLP/person.json
+/src/main/external_resources/DBLP/phdthesis.json
+/src/main/external_resources/DBLP/proceedings.json
+/src/main/external_resources/DBLP/www.json
 /src/main/external_resources/DBLPData/article.json
 /src/main/external_resources/DBLPData/book.json
 /src/main/external_resources/DBLPData/data.json
