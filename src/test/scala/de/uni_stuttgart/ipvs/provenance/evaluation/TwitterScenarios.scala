@@ -5,7 +5,7 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.dblp.DBLPScenario1
 import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5, TwitterScenario6}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.apache.spark.sql.functions.explode
+import org.apache.spark.sql.functions.{explode, typedLit, count}
 import org.scalatest.FunSuite
 
 class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
@@ -306,5 +306,16 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    scenario.extendedScenarioWithSA.filter($"name".contains("Vanessa Tuqueque")).show(20)
 //    ProvenanceContext.setTestScenario(null)
 //  }
+
+  def loadTweets(): DataFrame = {
+    val completePath = pathToData + "*" + ".log"
+    spark.read.json(completePath)
+  }
+
+  test("exploration") {
+    val tweets = loadTweets()
+    val res = tweets.select("created_at").groupBy("created_at").agg(count(typedLit(1)).alias("cnt"))
+    res.orderBy($"cnt").show(20, false)
+  }
 
 }
