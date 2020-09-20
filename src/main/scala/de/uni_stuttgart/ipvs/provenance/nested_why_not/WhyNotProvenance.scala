@@ -59,6 +59,7 @@ object WhyNotProvenance {
       plan,
       RowEncoder(outputStruct)
     )
+    println("Alternatives: " + rewrite.provenanceContext.primarySchemaAlternative.getAllAlternatives().size)
     (df, rewrite.provenanceContext)
 
   }

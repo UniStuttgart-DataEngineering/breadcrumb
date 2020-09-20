@@ -46,17 +46,17 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     val inproceedings = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("inproceedings")
     println(inproceedings)
     if (!inproceedings) {
-      val saSize = testConfiguration.schemaAlternativeSize * 3
+      val saSize = testConfiguration.schemaAlternativeSize // * 3
       createAlternatives(primaryTree, saSize)
 
       for (i <- 0 until saSize) {
-        if (math.abs(i % 6) == 0) {
+        if (math.abs(i % 3) == 0) {
           replace1(primaryTree.alternatives(i).rootNode)
         }
-        if (math.abs(i % 6) == 1) {
+        if (math.abs(i % 3) == 1) {
           replace2(primaryTree.alternatives(i).rootNode)
         }
-        if (math.abs(i % 6) == 2) {
+        if (math.abs(i % 3) == 2) {
           replace3(primaryTree.alternatives(i).rootNode)
         }
       }

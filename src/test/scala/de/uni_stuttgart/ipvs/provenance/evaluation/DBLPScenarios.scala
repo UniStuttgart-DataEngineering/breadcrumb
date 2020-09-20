@@ -12,7 +12,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   import spark.implicits._
   val pathToData = "src/main/external_resources/DBLP/"
-  val testConfiguration1 = TestConfiguration.local(pathToData)
+  val testConfiguration1 = TestConfiguration.local(pathToData, 0)
 
   def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)
@@ -50,7 +50,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(10)
+    //res.show(10)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -90,8 +90,8 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA.filter($"author".contains("Sudeepa Roy"))
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    //toBeDebugged.explain()
+    //toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -147,8 +147,8 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA.filter($"btitle".contains("HICSS") && $"iyear" === "2006")
-    toBeDebugged.explain()
-    toBeDebugged.show()
+    //toBeDebugged.explain()
+    //toBeDebugged.show()
     //toBeDebugged.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
@@ -249,10 +249,10 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
     val toBeDebugged = scenario.extendedScenarioWithSA
-    toBeDebugged.explain()
+//    toBeDebugged.explain()
 //    toBeDebugged.cache().show(20, false)
 //    println(toBeDebugged.count())
-    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    toBeDebugged.filter($"name".contains("Sinziana Mazilu")).show(false) //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 

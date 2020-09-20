@@ -68,12 +68,13 @@ object TestConfiguration {
     testConfiguration.build()
   }
 
-  def local(pathToData: String) = {
+  def local(pathToData: String, numSchemaAlternatives: Int = 1) = {
     val testConfiguration = new TestConfiguration()
     testConfiguration._pathToData = pathToData
     testConfiguration._dataSize = -1
     testConfiguration._testMask = 127
     testConfiguration._local = true
+    testConfiguration._schemaAlternativeSize = numSchemaAlternatives
     testConfiguration.build()
   }
 
@@ -226,6 +227,8 @@ class TestConfiguration {
     builder.append(";")
     builder.append(commitId)
     builder.append(";")
+    builder.append(schemaAlternativeSize  + 1)
+    builder.append(";")
     builder.toString()
   }
 
@@ -239,6 +242,7 @@ class TestConfiguration {
     builder.append("dataSize;")
     builder.append("testMask;")
     builder.append("commitId;")
+    builder.append("schemaAlternatives")
     builder.toString()
   }
 

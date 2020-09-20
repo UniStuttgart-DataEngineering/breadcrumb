@@ -14,7 +14,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   import spark.implicits._
   val pathToData = "src/main/external_resources/TwitterData/"
-  val testConfiguration1 = TestConfiguration.local(pathToData)
+  val testConfiguration1 = TestConfiguration.local(pathToData, 0)
 
   def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)
@@ -36,10 +36,10 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario1(spark, testConfiguration1)
 //    scenario.extendedScenarioWithSA.show(10)
     ProvenanceContext.setTestScenario(scenario)
-//    scenario.extendedScenarioWithSA
-    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"id_str".contains("1027612080084414464"))
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+    scenario.extendedScenarioWithSA
+//    val toBeDebugged = scenario.extendedScenarioWithSA.filter($"id_str".contains("1027612080084414464"))
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -88,8 +88,8 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 //    scenario.extendedScenarioWithSA
     var toBeDebugged = scenario.extendedScenarioWithSA
 //    toBeDebugged = toBeDebugged.withColumn("lname", explode($"listOfNames")).filter($"lname".contains("Cindy"))
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -177,8 +177,8 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario3(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(false)
-    res.explain()
+    //res.show(false)
+    //res.explain()
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -214,8 +214,8 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     ProvenanceContext.setTestScenario(scenario)
 //    scenario.extendedScenarioWithSA
     var toBeDebugged = scenario.extendedScenarioWithSA.filter($"hashtagText".contains("Arsenal"))
-    toBeDebugged.explain()
-    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
+//    toBeDebugged.explain()
+//    toBeDebugged.show() //.withColumn("prov", explode($"__PROVENANCE_COLLECTION_0001")).show(50)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -277,7 +277,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario5(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(false)
+//    res.show(false)
 //    res.explain()
     ProvenanceContext.setTestScenario(null)
   }
