@@ -149,8 +149,9 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 
 
   test("[Reference] Scenario 3"){
-    val scenario = new TwitterScenario6(spark, testConfiguration1)
-    scenario.referenceScenario.filter($"name".contains("Coca Cola")).show(50, false)
+    val scenario = new TwitterScenario3(spark, testConfiguration1)
+    scenario.referenceScenario.show(50, false)
+    //.filter($"name".contains("Coca Cola"))
   }
 
   test("[RewriteWithoutSA] Scenario 3"){
@@ -173,7 +174,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
   }
 
   test("[RewriteWithSAMSR] Scenario 3") {
-    val scenario = new TwitterScenario6(spark, testConfiguration1)
+    val scenario = new TwitterScenario3(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
     res.show(false)
