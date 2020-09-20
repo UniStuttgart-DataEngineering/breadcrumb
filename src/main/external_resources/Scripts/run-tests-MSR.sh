@@ -6,7 +6,7 @@ dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 warmup="true"
 saSize="1"
 
-for testSuite in "dblp"; do
+for testSuite in "twitter"; do
     if [ $testSuite = "twitter" ]; then
         dataPath=$twitterPath
     else
