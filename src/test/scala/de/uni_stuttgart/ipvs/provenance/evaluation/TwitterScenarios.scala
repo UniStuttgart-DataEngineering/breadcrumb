@@ -14,7 +14,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   import spark.implicits._
   val pathToData = "src/main/external_resources/TwitterData/"
-  val testConfiguration1 = TestConfiguration.local(pathToData, 0)
+  val testConfiguration1 = TestConfiguration.local(pathToData, 1)
 
   def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)
@@ -177,7 +177,7 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new TwitterScenario3(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    //res.show(false)
+    res.show(false)
     //res.explain()
     ProvenanceContext.setTestScenario(null)
   }

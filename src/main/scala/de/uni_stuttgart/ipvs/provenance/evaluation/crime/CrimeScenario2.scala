@@ -19,7 +19,7 @@ class CrimeScenario2(spark: SparkSession, testConfiguration: TestConfiguration) 
     val sawperson = loadSawperson()
     val witness = loadWitness()
 
-    var res = crime.filter($"csector" > 97)
+    var res = crime//.filter($"csector" > 97)
     val filteredWitness1 = witness.filter($"wname" === "Susan")
     val filteredWitness2 = filteredWitness1.filter($"wsector" > 90)
     res = res.join(filteredWitness2, $"csector" === $"wsector")

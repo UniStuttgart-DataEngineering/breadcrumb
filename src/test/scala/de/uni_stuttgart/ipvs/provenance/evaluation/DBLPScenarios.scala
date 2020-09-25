@@ -12,7 +12,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
 
   import spark.implicits._
   val pathToData = "src/main/external_resources/DBLP/"
-  val testConfiguration1 = TestConfiguration.local(pathToData, 0)
+  val testConfiguration1 = TestConfiguration.local(pathToData, 3)
 
   def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)
@@ -50,7 +50,7 @@ class DBLPScenarios extends FunSuite with SharedSparkTestDataFrames {
     val scenario = new DBLPScenario1(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    //res.show(10)
+    res.show(10)
     ProvenanceContext.setTestScenario(null)
   }
 

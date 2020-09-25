@@ -54,6 +54,7 @@ class RelationRewrite(relation: LeafNode, oid: Int) extends InputTransformationR
   def replaceAddress2(node: SchemaNode): Unit ={
     if (node.name == "address2") {
       node.name = "address1"
+      node.modified = true
       return
     }
     for (child <- node.children){

@@ -5,7 +5,7 @@ import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubset
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
-import org.apache.spark.sql.functions.{collect_list, explode}
+import org.apache.spark.sql.functions.{collect_list, explode, count, typedLit}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) extends DBLPScenario (spark, testConfiguration) {
@@ -25,7 +25,7 @@ class DBLPScenario4(spark: SparkSession, testConfiguration: TestConfiguration) e
     val proceedings_tenyears = proceedings_acm.filter($"publication_year".contains("2015")) // SA: _mdate
     val proceedings_with_inproceedings = proceedings_tenyears.join(inproceedings_selected, $"_key" === $"crf")
     val proceedings_with_inproceedingsRenamed = proceedings_with_inproceedings.withColumnRenamed("ipauthor", "author")
-    val res = proceedings_with_inproceedingsRenamed.groupBy($"author").agg(collect_list($"ititle").alias("ititleList"))
+    val res = proceedings_with_inproceedingsRenamed.groupBy($"author").agg(collect_list($"ititle").alias("ititleList"), count(typedLit(1)))
     res
   }
 

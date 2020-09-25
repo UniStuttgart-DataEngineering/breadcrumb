@@ -12,12 +12,13 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 //  protected val pathToExampleData = baseDir + "exampleData.json"
 
   def getExampleDataFrame(): DataFrame = getDataFrame(pathToExampleData)
+  def getExampleDataFrameFromPaper(): DataFrame = getDataFrame(pathToExampleDataPaper)
 
   import spark.implicits._
 
-  def runningExample(): DataFrame = {
-    var exampleData = getExampleDataFrame()
-    exampleData.show(false)
+  def runningExample(input: DataFrame = getExampleDataFrame()): DataFrame = {
+    var exampleData = input
+    //exampleData.show(false)
     exampleData = exampleData.withColumn("address", explode($"address2"))
     exampleData = exampleData.filter($"address.year" >= 2019)
     exampleData = exampleData.select($"name", $"address.city")
@@ -30,8 +31,8 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     exampleData.withColumn("address", explode($"address2"))
   }
 
-  def runningExampleShortened2(): DataFrame = {
-    var exampleData = getExampleDataFrame()
+  def runningExampleShortened2(input: DataFrame = getExampleDataFrame()): DataFrame = {
+    var exampleData = input
     exampleData.show(false)
     exampleData = exampleData.withColumn("address", explode($"address2"))
     exampleData = exampleData.filter($"address.year" >= 2019)
@@ -85,6 +86,14 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     val exampleData = runningExample()
     exampleData.show()
     exampleData.explain(true)
+  }
+
+  test("Running example paper with schema Alternative MSR") {
+    val exampleData = runningExample(getExampleDataFrameFromPaper())
+    val wnTuple = exampleWhyNotTuple()
+    val rewrittenData = WhyNotProvenance.computeMSRsWithAlternatives(exampleData, wnTuple)
+    rewrittenData.show(false)
+    rewrittenData.explain()
   }
 
   test("Running example with rewrite") {
@@ -158,7 +167,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
     rewrittenData.printSchema()
   }
 
-  test("Running example with schema Alternative MSR") {
+  test("Running example shortened with schema Alternative MSR") {
     val exampleData = runningExampleShortened2()
     val wnTuple = exampleWhyNotTupleShortened2()
     val rewrittenData = WhyNotProvenance.MSRsWithAlternatives(exampleData, wnTuple)
@@ -170,6 +179,7 @@ class RunningExample extends FunSuite with SharedSparkTestDataFrames {
 
   test("Running example full with schema Alternative MSR") {
     val exampleData = runningExample()
+    exampleData.explain(true)
     val wnTuple = exampleWhyNotTuple()
     val rewrittenData = WhyNotProvenance.computeMSRsWithAlternatives(exampleData, wnTuple)
     rewrittenData.show(false)
