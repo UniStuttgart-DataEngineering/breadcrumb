@@ -103,21 +103,21 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
 
   def loadNation(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nation*.tbl"
-    spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
+    spark.read.schema(nationSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val orderSchema = Seq(Order(0L, 0L, "", 0.0, "", "", "", 0L, "")).toDF().schema
 
   def loadOrder(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/order*.tbl"
-    spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
+    spark.read.schema(orderSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val partSchema = Seq(Part(0L, "", "", "", "", 0L, "", 0.0, "")).toDF().schema
 
   def loadPart(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/partx*.tbl"
-    spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
+    spark.read.schema(partSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val partsuppSchema = Seq(Partsupp(0L, 0L, 0L, 0.0, "")).toDF().schema
@@ -131,14 +131,14 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
 
   def loadRegion(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/region*.tbl"
-    spark.read.schema(partsuppSchema).option("header", false).option("delimiter", "|").csv(completePath)
+    spark.read.schema(regionSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val supplierSchema = Seq(Supplier(0L, "", "", 0L, "", 0.0, "")).toDF().schema
 
   def loadSupplier(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/supplier*.tbl"
-    spark.read.schema(partsuppSchema).option("header", false).option("delimiter", "|").csv(completePath)
+    spark.read.schema(supplierSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
 

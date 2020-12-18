@@ -13,5 +13,5 @@ class TPCHSuite (spark: SparkSession, testConfiguration: TestConfiguration) exte
   override def getName(): String = "TPC-H"
   lazy override val  logger = LoggerFactory.getLogger(getClass)
 
-
+  
 }
