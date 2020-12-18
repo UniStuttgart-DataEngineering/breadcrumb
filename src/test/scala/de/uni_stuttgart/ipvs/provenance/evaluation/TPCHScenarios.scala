@@ -15,6 +15,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   test("[Reference] TPCH 00"){
     val scenario = new TPCHScenario00(spark, testConfiguration1)
     val res = scenario.referenceScenario
+
     res.printSchema()
     res.count()
     res.show(10, false)

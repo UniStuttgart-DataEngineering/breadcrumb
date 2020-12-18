@@ -1,6 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.tpch
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.{TestConfiguration, TestScenario}
+import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 case class Lineitem(
@@ -141,10 +142,12 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     spark.read.schema(supplierSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
+  lazy val nestedLineItemList = ArrayType(lineitemSchema, true)
+  lazy val nestedOrdersSchema = orderSchema.add("o_lineitems", nestedLineItemList)
 
-
-
-
-
+  def loadNestedOrders(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders*.json"
+    spark.read.schema(nestedOrdersSchema).json(completePath)
+  }
 
 }
