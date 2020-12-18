@@ -1,6 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.dblp.DBLPSuite
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.TPCHSuite
 import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.TwitterSuite
 import org.apache.spark.sql.SparkSession
 
@@ -18,7 +19,8 @@ object TestExecution extends App {
     args(0) match {
       case "twitter" => TwitterSuite(spark, testConfiguration)
       case "dblp" => DBLPSuite(spark, testConfiguration)
-      case _ => throw new MatchError("Testcase is neither \"twitter\"nor \"dblp\"")
+      case "tpch" => TPCHSuite(spark, testConfiguration)
+      case _ => throw new MatchError("Testcase is not \"twitter\", \"dblp\" or \"tpch\"")
     }
   }
 
