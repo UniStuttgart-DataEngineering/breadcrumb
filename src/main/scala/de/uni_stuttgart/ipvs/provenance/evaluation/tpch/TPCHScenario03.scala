@@ -37,7 +37,7 @@ class TPCHScenario03(spark: SparkSession, testConfiguration: TestConfiguration) 
     var twig = new Twig()
     val root = twig.createNode("root")
     val key = twig.createNode("o_orderkey", 1, 1, "2007047")
-    val rev = twig.createNode("revenue", 1, 1, "gtgtgtgt150000")
+    val rev = twig.createNode("revenue", 1, 1, "ltltltlt150000")
     twig = twig.createEdge(root, key, false)
     twig = twig.createEdge(root, rev, false)
     twig.validate.get
