@@ -22,7 +22,7 @@ class TPCHScenario12(spark: SparkSession, testConfiguration: TestConfiguration) 
     val filter_shipmode = flattened_no.filter($"lineitem.l_shipmode" ===  "AIR" || $"lineitem.l_shipmode" ===  "TRUCK")
     val filter_comm_receipt = filter_shipmode.filter($"lineitem.l_commitdate" < $"lineitem.l_receiptdate")
     val filter_ship_comm = filter_comm_receipt.filter($"lineitem.l_shipdate" < $"lineitem.l_commitdate")
-    val filter_receipt = filter_ship_comm.filter($"lineitem.l_commitdate".between("1994-01-01", "1994-12-31"))
+    val filter_receipt = filter_ship_comm.filter($"lineitem.l_receiptdate".between("1995-01-01", "1995-12-31"))
     val res = filter_receipt.groupBy($"lineitem.l_shipmode")
       .agg(sum(when($"o_orderpriority" === "1-URGENT" || $"o_orderpriority" === "2-HIGH", 1).otherwise(0)).alias("high_line_count"),
         sum(when($"o_orderpriority" =!= "1-URGENT" && $"o_orderpriority" =!= "2-HIGH", 1).otherwise(0)).alias("low_line_count"))
