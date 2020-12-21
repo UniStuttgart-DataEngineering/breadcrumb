@@ -89,56 +89,56 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val customerSchema = Seq(Customer(0L, "", "", 0L, "", 0.0, "", "")).toDF().schema
 
   def loadCustomer(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/customer*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/customer*.tbl*"
     spark.read.schema(customerSchema).option("delimiter", "|").csv(completePath)
   }
 
   lazy val lineitemSchema = Seq(Lineitem(0L, 0L, 0L, 0L, 0.0, 0.0, 0.0, 0.0, "", "", "", "", "", "", "", "")).toDF().schema
 
   def loadLineItem(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem.tbl*"
     spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val nationSchema = Seq(Nation(0L, "", 0L, "")).toDF().schema
 
   def loadNation(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nation*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nation.tbl*"
     spark.read.schema(nationSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val orderSchema = Seq(Order(0L, 0L, "", 0.0, "", "", "", 0L, "")).toDF().schema
 
   def loadOrder(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/order*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/order.tbl*"
     spark.read.schema(orderSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val partSchema = Seq(Part(0L, "", "", "", "", 0L, "", 0.0, "")).toDF().schema
 
   def loadPart(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/partx*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/part.tbl*"
     spark.read.schema(partSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val partsuppSchema = Seq(Partsupp(0L, 0L, 0L, 0.0, "")).toDF().schema
 
   def loadPartSupp(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/partsupp*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/partsupp.tbl*"
     spark.read.schema(partsuppSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val regionSchema = Seq(Region(0L, "", "")).toDF().schema
 
   def loadRegion(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/region*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/region.tbl*"
     spark.read.schema(regionSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
   lazy val supplierSchema = Seq(Supplier(0L, "", "", 0L, "", 0.0, "")).toDF().schema
 
   def loadSupplier(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/supplier*.tbl"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/supplier.tbl*"
     spark.read.schema(supplierSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
@@ -146,7 +146,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val nestedOrdersSchema = orderSchema.add("o_lineitems", nestedLineItemList)
 
   def loadNestedOrders(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders*.json"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders.json*"
     spark.read.schema(nestedOrdersSchema).json(completePath)
   }
 
