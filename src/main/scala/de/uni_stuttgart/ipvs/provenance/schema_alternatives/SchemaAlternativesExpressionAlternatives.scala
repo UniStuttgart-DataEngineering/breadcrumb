@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, ParseToDate, Size}
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, Multiply, NamedExpression, Not, Or, ParseToDate, Size, Subtract}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.StringType
@@ -83,6 +83,15 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     }
   }
 
+  def forwardTraceMultiply(m: Multiply): Seq[Expression] = {
+    val leftAlternativeExpressions = forwardTraceExpression(m.left)
+    val rightAlternativeExpressions = forwardTraceExpression(m.right)
+
+    leftAlternativeExpressions zip rightAlternativeExpressions map {
+      case (left, right) => Multiply(left, right)
+    }
+  }
+
   def forwardTraceExpression(expression: Expression): Seq[Expression] = {
     expression match {
 
@@ -124,6 +133,10 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       }
       case p: ParseToDate => {
         forwardTraceParseToDate(p)
+      }
+      // TODO: Multiply cannot be cast to NamedExpression
+      case m: Multiply => {
+        forwardTraceMultiply(m)
       }
 
     }
@@ -344,7 +357,21 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
           case (left, right) => Divide(left, right)
         }
       }
-
+      case _: Multiply => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Multiply(left, right)
+        }
+      }
+      case _: Subtract => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Subtract(left, right)
+        }
+      }
+      case _: Add => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Add(left, right)
+        }
+      }
 
     }
     assert(currentNode == currentInputNode)

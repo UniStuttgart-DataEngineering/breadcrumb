@@ -29,6 +29,6 @@
 /src/main/external_resources/TPCH/nation.tbl
 /src/main/external_resources/TPCH/orders.tbl
 /src/main/external_resources/TPCH/partsupp.tbl
-/src/main/external_resources/TPCH/partx.tbl
+/src/main/external_resources/TPCH/part.tbl
 /src/main/external_resources/TPCH/region.tbl
 /src/main/external_resources/TPCH/supplier.tbl
