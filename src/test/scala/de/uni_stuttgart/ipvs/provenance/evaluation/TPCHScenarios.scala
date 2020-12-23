@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
-import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario12}
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario12}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.scalatest.FunSuite
@@ -198,10 +198,98 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
 
 
 
+  //  SCENARIO 7
+  test("[Reference] TPCH 07"){
+    val scenario = new TPCHScenario07(spark, testConfiguration1)
+    scenario.referenceScenario.show(10, false)
+  }
+
+  test("[RewriteWithoutSA] TPCH 07"){
+    val scenario = new TPCHScenario07(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSAMSR] TPCH 07") {
+    val scenario = new TPCHScenario07(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10,false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithPreparedSAMSR] TPCH 07") {
+    val scenario = new TPCHScenario07(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+
+
+  //  SCENARIO 10
+  test("[Reference] TPCH 10"){
+    val scenario = new TPCHScenario10(spark, testConfiguration1)
+    scenario.referenceScenario.show(10, false)
+  }
+
+  test("[RewriteWithoutSA] TPCH 10"){
+    val scenario = new TPCHScenario10(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSAMSR] TPCH 10") {
+    val scenario = new TPCHScenario10(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10,false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithPreparedSAMSR] TPCH 10") {
+    val scenario = new TPCHScenario10(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+
+
   //  SCENARIO 12
   test("[Reference] TPCH 12"){
     val scenario = new TPCHScenario12(spark, testConfiguration1)
     scenario.referenceScenario.show(10, false)
+  }
+
+  test("[RewriteWithoutSA] TPCH 12"){
+    val scenario = new TPCHScenario12(spark, testConfiguration1)
+    scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSAMSR] TPCH 12") {
+    val scenario = new TPCHScenario12(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10,false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithPreparedSAMSR] TPCH 12") {
+    val scenario = new TPCHScenario12(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.prepareScenarioForMSRComputation()
+    collectDataFrameLocal(res, scenario.getName + "intermediate")
+    res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
   }
 
 }
