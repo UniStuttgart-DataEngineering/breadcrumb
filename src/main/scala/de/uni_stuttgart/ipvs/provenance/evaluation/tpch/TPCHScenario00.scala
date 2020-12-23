@@ -14,6 +14,7 @@ class TPCHScenario00 (spark: SparkSession, testConfiguration: TestConfiguration)
   override def referenceScenario(): DataFrame = {
     val lineitem = loadLineItem()
     val order = loadOrder()
+    val customer = loadCustomer()
     /*
     val nestedOrders = loadNestedOrders()
     nestedOrders.show(10, false)
@@ -21,6 +22,8 @@ class TPCHScenario00 (spark: SparkSession, testConfiguration: TestConfiguration)
     nestedOrders
      */
 
+//      val joined = customer.join(order, $"c_custkey" === $"o_custkey", "left_outer")
+//      val nested = joined.filter($"o_orderkey".isNull)
 
     val joined = order.join(lineitem, $"o_orderkey" === $"l_orderkey")
     val nested = joined.groupBy(order.schema.fieldNames.head, order.schema.fieldNames.tail: _*)

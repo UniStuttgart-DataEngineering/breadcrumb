@@ -83,6 +83,15 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
     }
   }
 
+  def forwardTraceMultiply(m: Multiply): Seq[Expression] = {
+    val leftAlternativeExpressions = forwardTraceExpression(m.left)
+    val rightAlternativeExpressions = forwardTraceExpression(m.right)
+
+    leftAlternativeExpressions zip rightAlternativeExpressions map {
+      case (left, right) => Multiply(left, right)
+    }
+  }
+
   def forwardTraceExpression(expression: Expression): Seq[Expression] = {
     expression match {
 
@@ -124,6 +133,10 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       }
       case p: ParseToDate => {
         forwardTraceParseToDate(p)
+      }
+      // TODO: Multiply cannot be cast to NamedExpression
+      case m: Multiply => {
+        forwardTraceMultiply(m)
       }
 
     }
