@@ -34,6 +34,15 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     scenario.referenceScenario.show(10, false)
   }
 
+  test("[RewriteWithSA] TPCH 01"){
+    val scenario = new TPCHScenario01(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSA()
+    res.explain()
+    res.show(10,false)
+    ProvenanceContext.setTestScenario(null)
+  }
+
   //  SCENARIO 3
   test("[Reference] TPCH 03"){
     val scenario = new TPCHScenario03(spark, testConfiguration1)

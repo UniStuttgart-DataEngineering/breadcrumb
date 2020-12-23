@@ -94,7 +94,7 @@ class ProjectRewrite(project: Project, oid: Int) extends UnaryTransformationRewr
     //val projectList = addressAttributes ++ alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
 
     //TODO: create alternative renames --> should be done now
-    val projectList = alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
+    val projectList = (alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)).distinct
     //val projectList = addressAttributes ++ alternativeExpressions ++ provenanceContext.getExpressionFromAllProvenanceAttributes(rewrittenChild.output)
     val rewrittenProjection = Project(projectList, rewrittenChild)
     //TODO: update alternative schema trees --> should be done now, too

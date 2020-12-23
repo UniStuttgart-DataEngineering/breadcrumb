@@ -190,6 +190,18 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     Alias(CaseWhen(branches, falseCase), newName)()
   }
 
+  /*
+  There exist two problems with the grouping:
+  1) When attributes occur multiple times in the grouping set, the plan will have them multiple times in the result with the same name, which causes ambiguity problems
+  2) When the grouping attributes are the same, the query still creates a grouping set for them (obvious optimization)
+   */
+
+  /*
+  Two things need to be done to fix the problem:
+  a) grouping attributes need to be renamed
+  b) provenance trees need an update
+   */
+
   def getProjections(context: ProvenanceContext, aggregateExpressions: Seq[NamedExpression], groupingExpressions: Seq[NamedExpression]): (Seq[Seq[Expression]], Seq[Attribute]) = {
     val extendedAggregateExpressions = aggregateExpressions :+ AttributeReference(getExpandAttributeName, IntegerType, false)()
     val groupedAggregateExpressions = mutable.ListBuffer.empty[Seq[Expression]]
@@ -214,7 +226,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     output ++= newGroupingExpressions
     output ++= extendedAggregateExpressions.map{expr => expr.asInstanceOf[Attribute]}
     output --= groupingExpressions
-    (groupedAggregateExpressions.toList, output.map{expr => expr.asInstanceOf[Attribute]})
+    (groupedAggregateExpressions.distinct.toList, output.distinct.map{expr => expr.asInstanceOf[Attribute]})
   }
 
   def getAlternativeDependentProvenanceCollection(provenanceContext: ProvenanceContext, provenanceCollection: NamedExpression, validColumns: Seq[NamedExpression]) : Seq[NamedExpression] = {

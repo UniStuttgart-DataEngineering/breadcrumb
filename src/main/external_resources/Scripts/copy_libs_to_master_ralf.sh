@@ -8,5 +8,6 @@ scp -i /Users/ralf/.ssh/id_rsa ${PROV_LIB} hadoop@bigmaster:/data/diesterf/libs
 scp -i /Users/ralf/.ssh/id_rsa ${RESOURCE_DIR}/Scripts/submit.sh hadoop@bigmaster:/data/diesterf/libs
 scp -i /Users/ralf/.ssh/id_rsa ${RESOURCE_DIR}/Scripts/run-tests* hadoop@bigmaster:/data/diesterf/libs
 scp -i /Users/ralf/.ssh/id_rsa ${RESOURCE_DIR}/Scripts/get_results.sh hadoop@bigmaster:/data/diesterf/libs
+scp -i /Users/ralf/.ssh/id_rsa ${RESOURCE_DIR}/Scripts/rename_nested_orders.sh hadoop@bigmaster:/data/diesterf/libs
 
 echo "done"

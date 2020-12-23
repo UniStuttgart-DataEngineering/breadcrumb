@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, ParseToDate, Size}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, NamedExpression, Not, Or, ParseToDate, Size, Subtract, Add, Multiply}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.StringType
@@ -330,6 +330,26 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
           case (left, right) => And(left, right)
         }
       }
+      case _: Subtract => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Subtract(left, right)
+        }
+      }
+      case _: Add => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Add(left, right)
+        }
+      }
+      case _: Divide => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Divide(left, right)
+        }
+      }
+      case _: Multiply => {
+        leftAlternativeExpressions zip rightAlternativeExpressions map {
+          case (left, right) => Multiply(left, right)
+        }
+      }
       case f: FromUnixTime => {
         leftAlternativeExpressions zip rightAlternativeExpressions map {
           case (left, right) => {
@@ -339,13 +359,6 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
           }
         }
       }
-      case _: Divide => {
-        leftAlternativeExpressions zip rightAlternativeExpressions map {
-          case (left, right) => Divide(left, right)
-        }
-      }
-
-
     }
     assert(currentNode == currentInputNode)
     outputExpressions
