@@ -86,10 +86,8 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
     res
   }
 
-  override def referenceScenario: DataFrame = {
-    //return minimalScenario
+  def unmodifiedReferenceScenario: DataFrame = {
     loadLineItem()
-    // loadNestedOrders().withColumn("l_lineitem", explode($"o_lineitem"))
       .filter($"l_shipdate" <= "1998-09-02")
       .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
       .withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)-$"l_tax"))
@@ -104,7 +102,32 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
         avg($"l_discount").as("AVG_DISC"),
         count($"l_quantity").as("COUNT_ORDER")
       )
-      //.sort($"l_returnflag", $"l_linestatus")
+  }
+
+  def scenarioWithTaxAndDiscountInterchanged: DataFrame = {
+    loadLineItem()
+      .filter($"l_shipdate" <= "1998-09-02")
+      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
+      .withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)-$"l_tax"))
+      .groupBy($"l_returnflag", $"l_linestatus")
+      .agg(
+        sum($"l_quantity").as("SUM_QTY"),
+        sum($"l_extendedprice").as("SUM_BASE_PRICE"),
+        sum($"disc_price").as("SUM_DISC_PRICE"),
+        sum($"charge").as("SUM_CHARGE"),
+        avg($"l_quantity").as("AVG_QTY"),
+        avg($"l_extendedprice").as("AVG_PRICE"),
+        avg($"l_tax").as("AVG_DISC"),
+        count($"l_quantity").as("COUNT_ORDER")
+      )
+  }
+
+
+
+  override def referenceScenario: DataFrame = {
+    //return minimalScenario
+    //return unmodifiedReferenceScenario
+    return scenarioWithTaxAndDiscountInterchanged
   }
 
   def minimalScenario: DataFrame = {
@@ -122,7 +145,7 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val avg_disc = twig.createNode("SUM_QTY", 1, 1, "ltltltlt0.09")
+    val avg_disc = twig.createNode("AVG_DISC", 1, 1, "gtgtgtgt0.045")
     twig = twig.createEdge(root, avg_disc, false)
     twig.validate.get
   }
