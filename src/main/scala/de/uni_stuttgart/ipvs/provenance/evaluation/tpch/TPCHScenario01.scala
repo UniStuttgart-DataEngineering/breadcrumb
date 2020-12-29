@@ -87,7 +87,7 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
   }
 
   override def referenceScenario: DataFrame = {
-    return minimalScenario
+    //return minimalScenario
     loadLineItem()
     // loadNestedOrders().withColumn("l_lineitem", explode($"o_lineitem"))
       .filter($"l_shipdate" <= "1998-09-02")
@@ -112,21 +112,22 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
       .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
       .groupBy($"l_returnflag", $"l_linestatus")
       .agg(
-        sum($"l_quantity").as("SUM_QTY"),
-        sum($"disc_price").as("SUM_DISC_PRICE"))
+        sum($"l_quantity").as("SUM_QTY")
+       ,sum($"disc_price").as("SUM_DISC_PRICE")
+      )
   }
 
   override def getName(): String = "TPCH01"
 
-  def whyNotQuestion1: Twig = {
+  override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val avg_disc = twig.createNode("SUM_DISC_PRICE", 1, 1, "ltltltlt0.09")
+    val avg_disc = twig.createNode("SUM_QTY", 1, 1, "ltltltlt0.09")
     twig = twig.createEdge(root, avg_disc, false)
     twig.validate.get
   }
 
-  override def whyNotQuestion: Twig = {
+   def whyNotQuestion1: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
     val rf = twig.createNode("returnflag", 1, 1, "N")
@@ -140,6 +141,7 @@ ERROR: org.apache.spark.sql.catalyst.expressions.Multiply cannot be cast to org.
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    //return primaryTree
     val nestedOrders = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedorders")
     if (!nestedOrders) {
       val saSize = testConfiguration.schemaAlternativeSize

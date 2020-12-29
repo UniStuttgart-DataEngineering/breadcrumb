@@ -7,7 +7,7 @@ object SharedSparkTestInstance {
   lazy val spark =
     SparkSession.builder
       .appName("SharedSparkTestInstance")
-      .config("spark.driver.memory", "10g")
+      .config("spark.driver.memory", "12g")
       .master("local[4]")
       .getOrCreate()
   Logger.getLogger("org").setLevel(Level.WARN)

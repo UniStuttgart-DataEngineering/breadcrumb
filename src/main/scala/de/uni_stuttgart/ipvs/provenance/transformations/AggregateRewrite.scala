@@ -6,7 +6,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, First, Max, Min}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, GroupingSets, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.analysis
+import org.apache.spark.sql.catalyst.{analysis, expressions}
 import org.apache.spark.sql.types.{BooleanType, IntegerType}
 
 import scala.collection.mutable
@@ -202,7 +202,45 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
   b) provenance trees need an update
    */
 
+  def getOptimizedProjections(context: ProvenanceContext, provenanceProjection: Project, provenanceColumns: Seq[Attribute]): (Seq[Seq[Expression]], Seq[Attribute]) = {
+    var groupingExpressions = SchemaAlternativesExpressionAlternatives(context.primarySchemaAlternative, provenanceProjection, aggregate.groupingExpressions).forwardTraceNamedExpressions()
+    var aggregateExpressionWithoutAggregate = SchemaAlternativesExpressionAlternatives(context.primarySchemaAlternative, provenanceProjection, aggregate.aggregateExpressions).isForGroupingSets().forwardTraceNamedExpressions()
+    val distinctAggregateExpressionWithoutAggregate = aggregateExpressionWithoutAggregate.distinct
+    val distinctGroupingExpressions = groupingExpressions.distinct
+
+    val groupedAggregateExpressions = mutable.ListBuffer.empty[Seq[Expression]]
+    for ((alternative, altIdx) <- context.primarySchemaAlternative.getAllAlternatives().zipWithIndex){
+
+      val outputAggregateAttributes = mutable.ListBuffer.empty[Expression]
+      val relevantAttributes = mutable.ListBuffer.empty[NamedExpression]
+
+      for(idx <- altIdx until aggregateExpressionWithoutAggregate.size by (context.primarySchemaAlternative.alternatives.size + 1)){
+        relevantAttributes += aggregateExpressionWithoutAggregate(idx)
+      }
+      for(attribute <- distinctAggregateExpressionWithoutAggregate){
+        if (relevantAttributes.contains(attribute) || !distinctGroupingExpressions.contains(attribute)){
+          outputAggregateAttributes += attribute
+        } else {
+          outputAggregateAttributes += Literal(null, attribute.dataType)
+        }
+      }
+      outputAggregateAttributes ++= provenanceColumns
+      outputAggregateAttributes += Literal(alternative.id, IntegerType)
+      groupedAggregateExpressions += outputAggregateAttributes.toList
+    }
+
+    val output = mutable.ListBuffer.empty[Attribute]
+    output ++= distinctAggregateExpressionWithoutAggregate.map {
+      case groupingAttribute:Attribute if (distinctGroupingExpressions.contains(groupingAttribute)) => {groupingAttribute.newInstance()}
+      case aggregationAttribute:Attribute if (distinctAggregateExpressionWithoutAggregate.contains(aggregationAttribute)) => {aggregationAttribute}
+    }
+    output ++= provenanceColumns
+    output += AttributeReference(getExpandAttributeName, IntegerType, false)()
+    (groupedAggregateExpressions.toList, output.toList)
+  }
+
   def getProjections(context: ProvenanceContext, aggregateExpressions: Seq[NamedExpression], groupingExpressions: Seq[NamedExpression]): (Seq[Seq[Expression]], Seq[Attribute]) = {
+
     val extendedAggregateExpressions = aggregateExpressions :+ AttributeReference(getExpandAttributeName, IntegerType, false)()
     val groupedAggregateExpressions = mutable.ListBuffer.empty[Seq[Expression]]
     val moduloFactor = context.primarySchemaAlternative.getAllAlternatives().size
@@ -263,13 +301,17 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     var aggregateExpressionWithoutAggregate = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, provenanceProjection, aggregate.aggregateExpressions).isForGroupingSets().forwardTraceNamedExpressions()
     aggregateExpressionWithoutAggregate = aggregateExpressionWithoutAggregate ++ provenanceColumns
 
-    val (projections, output) = getProjections(provenanceContext, aggregateExpressionWithoutAggregate, groupingExpressions)
 
+
+    //val (projections, output) = getProjections(provenanceContext, aggregateExpressionWithoutAggregate, groupingExpressions)
+    val (projections, output) = getOptimizedProjections(provenanceContext, provenanceProjection,provenanceColumns.map {case (a: Attribute) => a} )
+
+    //create a group for each schema alternative
     val expand = Expand(projections, output, provenanceProjection)
 
 
     val provenanceCollection = getNestedProvenanceCollection(expand)
-    var aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressions()//.filterNot(ne => ne.name == "sum")
+    var aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressions().distinct//.filterNot(ne => ne.name == "sum")
     val (validColumnsAfterRewrite, validNames) = getValidAggregations(expand, provenanceContext)
     val originalColumnsAfterRewrite = getOriginalAggregations(expand, provenanceContext)
 
@@ -277,6 +319,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val extendedAggregateExpressionAfterExpand = aggregateExpressionAfterExpand ++ groupingColumn ++ validColumnsAfterRewrite ++ originalColumnsAfterRewrite :+ provenanceCollection
     val groupingExpressionsAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.groupingExpressions).forwardTraceNamedExpressions().distinct
     val groupingExpressionsAfterExpandWithGroupingColumn = groupingExpressionsAfterExpand ++ groupingColumn
+    //aggregate values for each group
     val rewrittenAggregate = Aggregate(groupingExpressionsAfterExpandWithGroupingColumn, extendedAggregateExpressionAfterExpand, expand)
 
 
@@ -296,15 +339,26 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     intermediateOutput --= groupingColumn
     intermediateOutput ++= newValidColumns
     //TODO multiply provenanceCollection
+    //Add new valid columns
     val intermediateProjection = Project(intermediateOutput.toList, rewrittenAggregate)
 
     val intermediateValidColumns : Seq[NamedExpression] = aggregateContext.getExpressionsFromProvenanceAttributes(provenanceContext.getValidAttributes(), intermediateProjection.output)
     val provenanceAttributeAggregateNames = mutable.ListBuffer.empty[String]
     val secondGroupingExpressions = mutable.ListBuffer.empty[NamedExpression]
-    for(alternatives <- groupingExpressionsAfterExpand.grouped(provenanceContext.primarySchemaAlternative.getAllAlternatives().size)){
-      val aggregateAttributeName = Constants.getGroupingFieldNameWithAggregatePostfix(alternatives(0).name)
+    // assumes distinct grouping attributes, otherwise it does not work correctly,
+    // in the initial implementation, the grouping attributes are distinct for each alternative,
+    // Each genuine attribute is followed by all alternatives, before the next attribute
+    //for(alternatives <- groupingExpressionsAfterExpand.grouped(provenanceContext.primarySchemaAlternative.getAllAlternatives().size)){
+    for(groupingAttribute <- aggregate.groupingExpressions){
+      val groupingAttributeName = groupingAttribute match {
+        case attribute : NamedExpression => attribute.name
+      }
+      val aggregateAttributeName = Constants.getGroupingFieldNameWithAggregatePostfix(groupingAttributeName)
       provenanceAttributeAggregateNames += aggregateAttributeName
-      secondGroupingExpressions += createFilledGroupingAttribute(alternatives, intermediateValidColumns, aggregateAttributeName)
+      //secondGroupingExpressions += createFilledGroupingAttribute(alternatives, intermediateValidColumns, aggregateAttributeName)
+      val attributeSeq = getAttributeByName(intermediateProjection.output, groupingAttributeName).toSeq
+      val alternatives = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, intermediateProjection, attributeSeq).forwardTraceNamedExpressions() //must not be distinct
+      secondGroupingExpressions +=createFilledGroupingAttribute(alternatives, intermediateValidColumns, aggregateAttributeName)
     }
 
     val initialAggregateNames = mutable.ListBuffer[NamedExpression](aggregate.aggregateExpressions: _*)
@@ -315,6 +369,8 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val aggregateManipulationExpressions = getAttributesByName( intermediateProjection.output, aggregateNames.toList)
     val resultAggregateExpressions = SchemaAlternativesExpressionAlternatives(aggregateContext.primarySchemaAlternative, intermediateProjection, aggregateManipulationExpressions).forwardTraceNamedExpressions()
     val secondAggregateExpressions = mutable.ListBuffer.empty[NamedExpression]
+
+    //fix needed here, as well?
     for(alternatives <- resultAggregateExpressions.grouped(aggregateContext.primarySchemaAlternative.getAllAlternatives().size)){
       secondAggregateExpressions ++= nullInvalidValues(alternatives, intermediateValidColumns)
     }
@@ -334,6 +390,7 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     finalOutput --= originalAttributes
     finalOutput -= nestedProvenanceColumn
     finalOutput ++= secondAggregateExpressions
+    // null all values for invalid fields
     val rewrittenExpression = Project(finalOutput.toList, intermediateProjection)
 
 
@@ -342,11 +399,12 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val formerGroupingAttributes = groupingExpressionsAfterExpand.map(getFirstAggregation)
     val secondGroupExpressionsAfterProjection = getAttributesByName(rewrittenExpression.output, secondGroupingExpressions.map(expr => expr.name))
 
-
+    //group by old values, pick first non-null value
     val secondAggregation = Aggregate(secondGroupExpressionsAfterProjection, formerGroupingAttributes ++ secondAggregateExpressionsAfterProjection ++ secondValidFields, rewrittenExpression)
 
 
     val newCompatibleColumns = compatibleColumns(secondAggregation, aggregateContext)
+    //add new compatible field
     val finalProjection = Project(secondAggregation.output ++ newCompatibleColumns, secondAggregation)
 
 
