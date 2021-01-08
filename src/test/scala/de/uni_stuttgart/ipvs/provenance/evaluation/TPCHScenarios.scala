@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
-import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario12}
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario12}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.scalatest.FunSuite
@@ -18,9 +18,29 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   }
 
 
-  //  SCENARIO 0 nestInputData
+  //  SCENARIO 0 nestOrders
   test("[Reference] TPCH 00"){
     val scenario = new TPCHScenario00(spark, testConfiguration1)
+    val res = scenario.referenceScenario
+
+    //res.printSchema()
+    //res.count()
+    res.show(10, false)
+  }
+
+  //  SCENARIO 000 nestCustomers
+  test("[Reference] TPCH 000"){
+    val scenario = new TPCHScenario000(spark, testConfiguration1)
+    val res = scenario.referenceScenario
+
+//    res.printSchema()
+    println(res.count())
+    res.show(10, false)
+  }
+
+  //  SCENARIO 001 sampleInputData
+  test("[Reference] TPCH 001"){
+    val scenario = new TPCHScenario001(spark, testConfiguration1)
     val res = scenario.referenceScenario
 
     //res.printSchema()
@@ -32,7 +52,9 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   //  SCENARIO 1
   test("[Reference] TPCH 01"){
     val scenario = new TPCHScenario01(spark, testConfiguration1)
-    scenario.referenceScenario.show(10, false)
+    val res = scenario.referenceScenario
+    res.explain()
+    res.show(10, false)
   }
 
   test("[RewriteWithSA] TPCH 01"){
@@ -90,12 +112,22 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     res.explain()
   }
 
+  test("[RewriteWithSA] TPCH 03"){
+    val scenario = new TPCHScenario03(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.extendedScenarioWithSA()
+    res = res.filter($"l_orderkey" === 4016674)
+    res.show(10)
+    res.explain(true)
+    ProvenanceContext.setTestScenario(null)
+  }
+
   test("[RewriteWithSAMSR] TPCH 03") {
     val scenario = new TPCHScenario03(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
-    val res = scenario.extendedScenarioWithSAandMSR()
+    var res = scenario.extendedScenarioWithSAandMSR()
     res.show(10,false)
-    res.explain()
+    res.explain(true)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -121,12 +153,21 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     scenario.extendedScenarioWithoutSA.show(10)
   }
 
+  test("[RewriteWithSA] TPCH 04"){
+    val scenario = new TPCHScenario04(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSA()
+    res.show(10)
+    res.explain(true)
+    ProvenanceContext.setTestScenario(null)
+  }
+
   test("[RewriteWithSAMSR] TPCH 04") {
     val scenario = new TPCHScenario04(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
     res.show(10,false)
-    res.explain()
+    res.explain(true)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -183,6 +224,15 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   test("[RewriteWithoutSA] TPCH 06"){
     val scenario = new TPCHScenario06(spark, testConfiguration1)
     scenario.extendedScenarioWithoutSA.show(10)
+  }
+
+  test("[RewriteWithSA] TPCH 06"){
+    val scenario = new TPCHScenario06(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSA()
+    res.show(10)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
   }
 
   test("[RewriteWithSAMSR] TPCH 06") {
