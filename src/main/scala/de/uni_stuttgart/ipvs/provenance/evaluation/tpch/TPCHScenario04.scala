@@ -57,9 +57,9 @@ TODO: no explanation is retured
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedReferenceScenario
-//    return flatScenarioWithShipAndCommitDateInterchanged
+//    return flatScenarioWithShipToCommitDate
     return unmodifiedNestedReferenceScenario
-//    return nestedScenarioWithShipAndCommitDateInterchanged
+//    return nestedScenarioWithShipToCommitDate
   }
 
   def unmodifiedReferenceScenario: DataFrame = {
@@ -76,7 +76,7 @@ TODO: no explanation is retured
     res
   }
 
-  def flatScenarioWithShipAndCommitDateInterchanged: DataFrame = {
+  def flatScenarioWithShipToCommitDate: DataFrame = {
     val orders = loadOrder001()
     val lineitem = loadLineItem001()
 
@@ -100,7 +100,7 @@ TODO: no explanation is retured
     res
   }
 
-  def nestedScenarioWithShipAndCommitDateInterchanged: DataFrame = {
+  def nestedScenarioWithShipToCommitDate: DataFrame = {
     val nestedOrders = loadNestedOrders001()
 
     // TODO: Exist through left semi join

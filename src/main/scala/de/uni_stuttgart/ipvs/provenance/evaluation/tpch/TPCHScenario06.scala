@@ -44,9 +44,9 @@ TODO: no explanation is retured
 
   override def referenceScenario: DataFrame = {
 //        return unmodifiedReferenceScenario
-//      return flatScenarioWithTaxAndDiscountInterchanged
+//      return flatScenarioWithTaxToDiscount
 //        return unmodifiedNestedReferenceScenario
-    return nestedScenarioWithTaxAndDiscountInterchanged
+    return nestedScenarioWithTaxToDiscount
   }
 
   def unmodifiedReferenceScenario: DataFrame = {
@@ -61,7 +61,7 @@ TODO: no explanation is retured
     res
   }
 
-  def flatScenarioWithTaxAndDiscountInterchanged: DataFrame = {
+  def flatScenarioWithTaxToDiscount: DataFrame = {
     val lineitem = loadLineItem001()
 
     val filterShipDate = lineitem.filter($"l_shipdate".between("1994-01-01", "1994-12-31"))
@@ -86,7 +86,7 @@ TODO: no explanation is retured
     res
   }
 
-  def nestedScenarioWithTaxAndDiscountInterchanged: DataFrame = {
+  def nestedScenarioWithTaxToDiscount: DataFrame = {
     val nestedOrders = loadNestedOrders001()
 
     val flattenOrd = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
