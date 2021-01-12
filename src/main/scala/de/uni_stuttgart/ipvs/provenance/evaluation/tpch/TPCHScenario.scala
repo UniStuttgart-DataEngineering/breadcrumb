@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.tpch
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.{TestConfiguration, TestScenario}
-import org.apache.spark.sql.types.ArrayType
+import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 case class Lineitem(
@@ -150,4 +150,47 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     spark.read.schema(nestedOrdersSchema).json(completePath)
   }
 
+  def loadNestedOrders001(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders001.json*"
+    spark.read.schema(nestedOrdersSchema).json(completePath)
+  }
+
+  lazy val nestedOrdersList = ArrayType(nestedOrdersSchema, true)
+  lazy val nestedCustomerSchema = customerSchema.add("c_orders", nestedOrdersList)
+
+  def loadNestedCustomer(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedcustomer.json*"
+    spark.read.schema(nestedCustomerSchema).json(completePath)
+  }
+
+  def loadNestedCustomer001(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedcustomer001.json*"
+    spark.read.schema(nestedCustomerSchema).json(completePath)
+  }
+
+  def getLineItem001Schema() : StructType = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem001.json*"
+    val l = spark.read.json(completePath)
+    l.schema
+  }
+
+  val lineitem001Schema = getLineItem001Schema()
+
+  def loadLineItem001(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem001.json*"
+    spark.read.schema(lineitem001Schema).json(completePath)
+  }
+
+  def getOrders001Schema() : StructType = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/orders001.json*"
+    val l = spark.read.json(completePath)
+    l.schema
+  }
+
+  val orders001Schema = getOrders001Schema()
+
+  def loadOrder001(): DataFrame = {
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/orders001.json*"
+    spark.read.schema(orders001Schema).json(completePath)
+  }
 }
