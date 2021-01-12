@@ -21,7 +21,7 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
   2) The query contains selection over aggregation.
  */
 
-  override def referenceScenario: DataFrame = {
+  def referenceScenarioModified: DataFrame = {
     val part = loadPart()
     val supplier = loadSupplier()
     val partsupp = loadPartSupp()
@@ -51,8 +51,50 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
     res
   }
 
+  override def referenceScenario(): DataFrame = {
+    val part = loadPart()
+    val supplier = loadSupplier()
+    val partsupp = loadPartSupp()
+    val nation = loadNation()
+    val region = loadRegion()
+
+    val europe = region.filter($"r_name" === "EUROPE")
+      .join(nation, $"r_regionkey" === nation("n_regionkey"))
+      .join(supplier, $"n_nationkey" === supplier("s_nationkey"))
+      .join(partsupp, supplier("s_suppkey") === partsupp("ps_suppkey"))
+
+    val brass = part
+      .filter(part("p_size") === 15)
+      .filter(part("p_type").contains("BRASS"))
+      .join(europe, europe("ps_partkey") === $"p_partkey")
+
+    val minCost = brass.groupBy(brass("ps_partkey"))
+      .agg(min("ps_supplycost").as("min"))
+        .select($"ps_partkey".as("min_partkey"), $"min")
+
+
+    brass.join(minCost, $"ps_partkey" === $"min_partkey")
+      .filter(brass("ps_supplycost") === minCost("min"))
+      .select("s_acctbal", "s_name", "n_name", "p_partkey", "p_mfgr", "s_address", "s_phone", "s_comment")
+      //.sort($"s_acctbal".desc, $"n_name", $"s_name", $"p_partkey")
+      //.limit(100)
+  }
+
   override def getName(): String = "TPCH02"
 
-  override def whyNotQuestion: Twig = null
+  override def whyNotQuestion: Twig =   {
+    var twig = new Twig()
+    val root = twig.createNode("root")
+    val key = twig.createNode("n_name", 1, 1, "CHINA")
+    val rev = twig.createNode("p_partkey", 1, 1, "249")
+    twig = twig.createEdge(root, key, false)
+    twig = twig.createEdge(root, rev, false)
+    twig.validate.get
+  }
+
+  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
+
+    super.computeAlternatives(backtracedWhyNotQuestion, input)
+  }
 
 }

@@ -25,14 +25,16 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
 
     //res.printSchema()
     //res.count()
-    res.show(10, false)
+    res.show(100, false)
   }
 
 
   //  SCENARIO 1
   test("[Reference] TPCH 01"){
     val scenario = new TPCHScenario01(spark, testConfiguration1)
-    scenario.referenceScenario.show(10, false)
+    val res = scenario.referenceScenario
+    res.explain()
+    res.show(10, false)
   }
 
   test("[RewriteWithSA] TPCH 01"){
@@ -72,7 +74,30 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   //  SCENARIO 2
   test("[Reference] TPCH 02"){
     val scenario = new TPCHScenario02(spark, testConfiguration1)
-    scenario.referenceScenario.show(10, false)
+    val res = scenario.referenceScenario
+    //res.explain()
+    //val plan = res.queryExecution.analyzed
+    //println(plan)
+    res.printSchema()
+    res.show(10, false)
+  }
+
+  test("[RewriteWithSA] TPCH 02"){
+    val scenario = new TPCHScenario02(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSA
+    res.show(10)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithSAMSAR] TPCH 02"){
+    val scenario = new TPCHScenario02(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
   }
 
   //  SCENARIO 3

@@ -2,11 +2,11 @@ package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestDataFrames
 import de.uni_stuttgart.ipvs.provenance.evaluation.dblp.DBLPScenario1
-import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5, TwitterScenario6}
+import de.uni_stuttgart.ipvs.provenance.evaluation.twitter.{TwitterScenario1, TwitterScenario2, TwitterScenario3, TwitterScenario4, TwitterScenario5, TwitterScenario6, TwitterScenario99}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.apache.spark.sql.functions.{count, explode, to_date, typedLit, from_unixtime, dayofmonth}
+import org.apache.spark.sql.functions.{count, dayofmonth, explode, from_unixtime, to_date, typedLit}
 import org.apache.spark.sql.types.{DateType, LongType}
 import org.scalatest.FunSuite
 
@@ -290,6 +290,20 @@ class TwitterScenarios extends FunSuite with SharedSparkTestDataFrames {
     res = scenario.extendedScenarioWithPreparedSAandMSR()
     res.show(10)
     ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[Reference] Scenario 99") {
+    val scenario = new TwitterScenario99(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.referenceScenario()
+    res.show(100, false)
+  }
+
+  test("[RewriteWithSAMSR] Scenario 99") {
+    val scenario = new TwitterScenario99(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(100, false)
   }
 
 
