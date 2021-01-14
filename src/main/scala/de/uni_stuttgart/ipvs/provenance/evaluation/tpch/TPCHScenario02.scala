@@ -21,37 +21,7 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
   2) The query contains selection over aggregation.
  */
 
-  def referenceScenarioModified: DataFrame = {
-    val part = loadPart()
-    val supplier = loadSupplier()
-    val partsupp = loadPartSupp()
-    val nation = loadNation()
-    val region = loadRegion()
-
-    val filterSize = part.filter($"p_size" === 15)
-    val filterType = filterSize.filter($"p_type".contains("BRASS"))
-    val filterRegion = region.filter($"r_name" === "EUROPE")
-    val nationJoinRegion = nation.join(filterRegion, $"n_regionkey" === $"r_regionkey")
-
-    val partsuppJoinPart = partsupp.join(filterType, $"ps_partkey" === $"p_partkey")
-    val partsuppJoinSupp = partsuppJoinPart.join(supplier, $"ps_suppkey" === $"s_suppkey")
-    val suppJoinNationRegion = partsuppJoinSupp.join(nationJoinRegion, $"s_nationkey" === $"n_nationkey")
-//    val joinRegion = joinNation.join(filterRegion, $"n_regionkey" === $"r_regionkey")
-
-    // subquery
-//    val subJoinPart = partsupp.join(part,$"ps_partkey" === $"p_partkey")
-//    val subJoinSupp = subJoinPart.join(supplier, $"ps_suppkey" === $"s_suppkey")
-//    val subJoinNation = subJoinSupp.join(nationJoinRegion, $"s_nationkey" === $"n_nationkey")
-    val minCost = suppJoinNationRegion.agg(min($"ps_supplycost").alias("minCost"))
-
-    val filterCost = suppJoinNationRegion.join(minCost, $"ps_supplycost" === $"minCost")
-    val res = filterCost.select($"s_acctbal", $"s_name", $"n_name", $"p_partkey", $"p_mfgr", $"s_address", $"s_phone", $"s_comment")
-//        .sort($"s_acctbal".desc, $"s_name", $"n_name", $"p_partkey")
-
-    res
-  }
-
-  override def referenceScenario(): DataFrame = {
+  def unmodifiedReferenceScenario: DataFrame = {
     val part = loadPart()
     val supplier = loadSupplier()
     val partsupp = loadPartSupp()
@@ -70,7 +40,7 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
 
     val minCost = brass.groupBy(brass("ps_partkey"))
       .agg(min("ps_supplycost").as("min"))
-        .select($"ps_partkey".as("min_partkey"), $"min")
+      .select($"ps_partkey".as("min_partkey"), $"min")
 
 
     brass.join(minCost, $"ps_partkey" === $"min_partkey")
@@ -78,6 +48,44 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
       .select("s_acctbal", "s_name", "n_name", "p_partkey", "p_mfgr", "s_address", "s_phone", "s_comment")
       //.sort($"s_acctbal".desc, $"n_name", $"s_name", $"p_partkey")
       //.limit(100)
+//      .filter($"s_name" === "Supplier#000005359")
+  }
+
+  def referenceScenarioModified: DataFrame = {
+    val part = loadPart()
+    val supplier = loadSupplier()
+    val partsupp = loadPartSupp()
+    val nation = loadNation()
+    val region = loadRegion()
+
+    val filterSize = part.filter($"p_size" === 15)
+    val filterType = filterSize.filter($"p_type".contains("BRASS")) //TODO: SA: p_name -> p_type
+    val filterRegion = region.filter($"r_name" === "EUROPE")
+    val nationJoinRegion = nation.join(filterRegion, $"n_regionkey" === $"r_regionkey")
+
+    val partsuppJoinPart = partsupp.join(filterType, $"ps_partkey" === $"p_partkey")
+    val partsuppJoinSupp = partsuppJoinPart.join(supplier, $"ps_suppkey" === $"s_suppkey")
+    val suppJoinNationRegion = partsuppJoinSupp.join(nationJoinRegion, $"s_nationkey" === $"n_nationkey")
+//    val joinRegion = joinNation.join(filterRegion, $"n_regionkey" === $"r_regionkey")
+
+    // subquery
+//    val subJoinPart = partsupp.join(part,$"ps_partkey" === $"p_partkey")
+//    val subJoinSupp = subJoinPart.join(supplier, $"ps_suppkey" === $"s_suppkey")
+//    val subJoinNation = subJoinSupp.join(nationJoinRegion, $"s_nationkey" === $"n_nationkey")
+    val minCost = suppJoinNationRegion.agg(min($"ps_supplycost").alias("minCost"))
+
+    val filterCost = suppJoinNationRegion.join(minCost, $"ps_supplycost" === $"minCost")
+    val res = filterCost.select($"s_acctbal", $"s_name", $"n_name", $"p_partkey", $"p_mfgr", $"s_address", $"s_phone", $"s_comment")
+//        .sort($"s_acctbal".desc, $"s_name", $"n_name", $"p_partkey")
+
+//    res.filter($"s_name" === "Supplier#000005359")
+    res
+  }
+
+
+  override def referenceScenario(): DataFrame = {
+//    return unmodifiedReferenceScenario
+    return referenceScenarioModified
   }
 
   override def getName(): String = "TPCH02"
@@ -94,7 +102,27 @@ class TPCHScenario02(spark: SparkSession, testConfiguration: TestConfiguration) 
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
 
-    super.computeAlternatives(backtracedWhyNotQuestion, input)
+    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+//    val saSize = testConfiguration.schemaAlternativeSize
+//    createAlternatives(primaryTree, saSize)
+//
+//    for (i <- 0 until saSize) {
+//      replaceName(primaryTree.alternatives(i).rootNode)
+//    }
+
+    primaryTree
   }
+
+  def replaceName(node: SchemaNode): Unit ={
+    if (node.name == "p_name" && node.children.isEmpty) {
+      node.name = "p_type"
+      node.modified = true
+      return
+    }
+    for (child <- node.children){
+      replaceName(child)
+    }
+  }
+
 
 }

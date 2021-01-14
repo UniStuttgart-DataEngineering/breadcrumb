@@ -4,11 +4,10 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
-import org.apache.spark.sql.functions.{avg, count, explode, max, min, sum, udf, countDistinct}
+import org.apache.spark.sql.functions.{countDistinct, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class TPCHScenario04(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
+class TPCHScenario104(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
 
 
   import spark.implicits._
@@ -46,45 +45,41 @@ over sample
 
 TODO:
  1) Distinct & countDistinct not supported yet
- 2) No explanation is retured with "left semi join"
-  - The order count is computed with ignoring order data condition at least
 */
 
+  def unmodifiedNestedReferenceScenario: DataFrame = {
+    val nestedOrders = loadNestedOrders()
 
-  def unmodifiedReferenceScenario: DataFrame = {
-    val orders = loadOrder()
-    val lineitem = loadLineItem()
-
-    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30"))
-    val filterLine = lineitem.filter($"l_commitdate" < $"l_receiptdate")
+    val filterOrderDate = nestedOrders.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01")
+    val flattenOrd = filterOrderDate.withColumn("lineitem", explode($"o_lineitems"))
 //    val projectOrdKey = filterLine.select($"l_orderkey").distinct()
 //    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment"))
-    val joinOrdLine = filterOrdDate.join(filterLine, $"o_orderkey" === $"l_orderkey", "left_semi")
-    val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
+    val filterCommitShipDate = flattenOrd.filter($"lineitem.l_commitdate" < $"lineitem.l_receiptdate")
+    val res = filterCommitShipDate.groupBy($"o_orderpriority").agg(countDistinct($"o_orderkey").alias("order_count"))
 
     res
   }
 
-  def flatScenarioWithShipToCommitDate: DataFrame = {
-    val orders = loadOrder()
-    val lineitem = loadLineItem()
+  def nestedScenarioWithShipToCommitDate: DataFrame = {
+    val nestedOrders = loadNestedOrders()
 
-    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30"))
-    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate") // SA l_shipdate -> l_commitdate
-//    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
-//    val projectOrdKey = filterLine.groupBy($"l_orderkey").count() // Not supported
-    val joinOrdLine = filterOrdDate.join(filterLine, $"o_orderkey" === $"l_orderkey", "left_semi")
-    val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
+    val filterOrderDate = nestedOrders.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01")
+    val flattenOrd = filterOrderDate.withColumn("lineitem", explode($"o_lineitems"))
+    //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
+    //    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment"))  // Not supported
+    val filterCommitShipDate = flattenOrd.filter($"lineitem.l_shipdate" < $"lineitem.l_receiptdate") // SA: l_shipdate -> l_commitdate
+    val res = filterCommitShipDate.groupBy($"o_orderpriority").agg(countDistinct($"o_orderkey").alias("order_count"))
 
     res
   }
+
 
   override def referenceScenario: DataFrame = {
-//        return unmodifiedReferenceScenario
-        return flatScenarioWithShipToCommitDate
+//    return unmodifiedNestedReferenceScenario
+        return nestedScenarioWithShipToCommitDate
   }
 
-  override def getName(): String = "TPCH04"
+  override def getName(): String = "TPCH104"
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()

@@ -4,11 +4,10 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
-import org.apache.spark.sql.functions.{count, countDistinct, explode, expr, lit, sum, udf}
+import org.apache.spark.sql.functions.{explode, lit, sum}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class TPCHScenario03(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
+class TPCHScenario103(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
 
 
   import spark.implicits._
@@ -35,7 +34,7 @@ over sample:
 |5331399   |1995-01-18 |0             |128197.82250000001|  -> 39946.4
 +----------+-----------+--------------+------------------+
 
-Explanations:
+Explanations (over sample):
 +------------------+---------------+-----------+
 |pickyOperators    |compatibleCount|alternative|
 +------------------+---------------+-----------+
@@ -67,44 +66,46 @@ Explanations:
 */
 
 
-  def unmodifiedReferenceScenario: DataFrame = {
-    val customer = loadCustomer()
-    val orders = loadOrder()
-    val lineitem = loadLineItem()
+  def unmodifiedNestedReferenceScenario: DataFrame = {
+    val nestedCustomer = loadNestedCustomer()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
-    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
-    val filterShipDate = lineitem.filter($"l_shipdate" > "1995-03-15")
-    val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
-    val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
-    val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
+    val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
+    val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
+    val projectCols = flattenLineItem.select($"lineitem.l_shipdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"),
+      $"lineitem.l_extendedprice".alias("l_extendedprice"), $"lineitem.l_discount".alias("l_discount"),
+      $"order.o_custkey".alias("o_custkey"), $"order.o_orderdate".alias("o_orderdate"), $"order.o_shippriority".alias("o_shippriority"))
+    val filterOrd = projectCols.filter($"o_orderdate" < "1995-03-15")
+    val filterLine = filterOrd.filter($"l_shipdate" > "1995-03-15")
+    val filterMktSeg = filterLine.filter($"c_mktsegment" === "BUILDING")
+    val projectExpr = filterMktSeg.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
-//    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
+//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
     res
   }
 
-  def flatScenarioWithCommitToShipDate: DataFrame = {
-    val customer = loadCustomer()
-    val orders = loadOrder()
-    val lineitem = loadLineItem()
+  def nestedScenarioWithCommitToShipDate: DataFrame = {
+    val nestedCustomer = loadNestedCustomer()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
-    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
-    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate
-    val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
-    val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
-    val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
+    val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
+    val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
+    val projectCols = flattenLineItem.select($"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"), //SA: l_commitdate -> l_shipdate
+      $"lineitem.l_extendedprice".alias("l_extendedprice"), $"lineitem.l_discount".alias("l_discount"),
+      $"order.o_custkey".alias("o_custkey"), $"order.o_orderdate".alias("o_orderdate"), $"order.o_shippriority".alias("o_shippriority"))
+    val filterOrd = projectCols.filter($"o_orderdate" < "1995-03-15")
+    val filterLine = filterOrd.filter($"l_shipdate" > "1995-03-15")
+    val filterMktSeg = filterLine.filter($"c_mktsegment" === "BUILDING")
+    val projectExpr = filterMktSeg.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
-//    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
+//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
     res
   }
 
   override def referenceScenario: DataFrame = {
-    //    return unmodifiedReferenceScenario
-    return flatScenarioWithCommitToShipDate
+    //    return unmodifiedNestedReferenceScenario
+    return nestedScenarioWithCommitToShipDate
   }
 
-  override def getName(): String = "TPCH03"
+  override def getName(): String = "TPCH103"
 
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()

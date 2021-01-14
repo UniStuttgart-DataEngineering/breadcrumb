@@ -39,16 +39,11 @@ Explanations:
 
 */
 
-  override def referenceScenario: DataFrame = {
-//    return unmodifiedReferenceScenario
-    return flatScenarioWithCommitToShipDate
-  }
 
   def unmodifiedReferenceScenario: DataFrame = {
     val customer = loadCustomer()
     val order = loadOrder()
 
-    // Original query
     val ordComment = order.filter(!$"o_comment".like("%special%requests%"))
 //    val ordComment = order.filter(!$"o_comment".contains("special") || !$"o_comment".contains("requests"))
     val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey", "left_outer")
@@ -77,6 +72,10 @@ Explanations:
     res
   }
 
+  override def referenceScenario: DataFrame = {
+    //    return unmodifiedReferenceScenario
+    return flatScenarioWithCommitToShipDate
+  }
 
   override def getName(): String = "TPCH13"
 
