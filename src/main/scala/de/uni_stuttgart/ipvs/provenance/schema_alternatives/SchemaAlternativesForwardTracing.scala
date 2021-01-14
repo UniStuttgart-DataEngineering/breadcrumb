@@ -2,7 +2,7 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Add, Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, DayOfMonth, Divide, Expression, FromUnixTime, GetStructField, IsNotNull, Literal, Multiply, ParseToDate, Size, Subtract}
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, Attribute, AttributeReference, BinaryExpression, Cast, CreateNamedStruct, DayOfMonth, Divide, Expression, FromUnixTime, GetStructField, IsNotNull, Like, Literal, Multiply, ParseToDate, Size, Subtract}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 import scala.collection.mutable
@@ -171,24 +171,29 @@ class SchemaAlternativesForwardTracing(inputWhyNotQuestion: PrimarySchemaSubsetT
     forwardTraceExpression(day.child)
   }
 
+  def forwardTraceLike(like: Like): Unit = {
+    forwardTraceExpression(like.left)
+    //forwardTraceExpression(like.right)
+  }
+
   def forwardTraceDevide(d: Divide): Unit = {
-    forwardTraceExpression(d.left)
-    forwardTraceExpression(d.right)
+    //forwardTraceExpression(d.left)
+    //forwardTraceExpression(d.right)
   }
 
   def forwardTraceMultiply(m: Multiply): Unit = {
-    forwardTraceExpression(m.left)
-    forwardTraceExpression(m.right)
+    //forwardTraceExpression(m.left)
+    //forwardTraceExpression(m.right)
   }
 
   def forwardTraceSubtract(m: Subtract): Unit = {
-    forwardTraceExpression(m.left)
-    forwardTraceExpression(m.right)
+    //forwardTraceExpression(m.left)
+    //forwardTraceExpression(m.right)
   }
 
   def forwardTraceAdd(a: Add): Unit = {
-    forwardTraceExpression(a.left)
-    forwardTraceExpression(a.right)
+    //forwardTraceExpression(a.left)
+    //forwardTraceExpression(a.right)
   }
 
   def forwardTraceFromUnixTime(f: FromUnixTime): Unit = {

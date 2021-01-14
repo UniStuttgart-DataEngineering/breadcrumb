@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryArithmetic, Cast, CreateNamedStruct, Expression, ExtractValue, FromUnixTime, GetStructField, Literal, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryArithmetic, Cast, CreateNamedStruct, Expression, ExtractValue, FromUnixTime, GetStructField, Like, Literal, UnaryExpression}
 import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -49,6 +49,10 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     backtraceExpression(b.left) || backtraceExpression(b.right)
   }
 
+  def backtraceLikeExpression(l: Like): Boolean = {
+    backtraceExpression(l.left) || backtraceExpression(l.right)
+  }
+
   def backtraceExpression(expression: Expression): Boolean = {
     expression match {
       case a: Alias => {
@@ -77,6 +81,10 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
       }
       case b: BinaryArithmetic => {
         backtraceBinaryArithmetic(b)
+      }
+      case l: Like => {
+        backtraceLikeExpression(l)
+
       }
     }
 
