@@ -24,15 +24,7 @@ Original result:
 |57040    |Customer#000057040|632.87   |22-895-641-3466|JAPAN |Eioyzjf4pp|sits. slyly regular requests sleep alongside of the regular inst|734235.2455000001|
 +---------+------------------+---------+---------------+------+----------+----------------------------------------------------------------+-----------------+
 
-Rewrite without SA:
-
-Rewrite with SA + MSR:
 */
-
-  override def referenceScenario: DataFrame = {
-//    return unmodifiedReferenceScenario
-    return flatScenarioWithLinestatusToReturnflag
-  }
 
   def unmodifiedReferenceScenario: DataFrame = {
     val lineitem = loadLineItem()
@@ -40,7 +32,6 @@ Rewrite with SA + MSR:
     val customer = loadCustomer()
     val nation = loadNation()
 
-    // Original query
     val filterLine = lineitem.filter($"l_returnflag" === "R")
     val filterOrd = order.filter($"o_orderdate".between("1993-10-01", "1993-12-31"))
     val joinCustOrd = customer.join(filterOrd, $"c_custkey" === $"o_custkey")
@@ -59,16 +50,22 @@ Rewrite with SA + MSR:
     val customer = loadCustomer()
     val nation = loadNation()
 
-    val filterLine = lineitem.filter($"l_linestatus" === "R") //SA: l_linestatus -> l_returnflag
+    val filterLine = lineitem.filter($"l_returnflag" === "R")
     val filterOrd = order.filter($"o_orderdate".between("1993-10-01", "1993-12-31"))
     val joinCustOrd = customer.join(filterOrd, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterLine, $"o_orderkey" === $"l_orderkey")
     val joinNation = joinOrdLine.join(nation, $"c_nationkey" === $"n_nationkey")
-    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
+    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"c_custkey" === 57040)
     res
+  }
+
+
+  override def referenceScenario: DataFrame = {
+//    return unmodifiedReferenceScenario
+    return flatScenarioWithLinestatusToReturnflag
   }
 
   override def getName(): String = "TPCH10"
@@ -77,11 +74,9 @@ Rewrite with SA + MSR:
     var twig = new Twig()
     val root = twig.createNode("root")
     val custkey = twig.createNode("c_custkey", 1, 1, "57040")
-//    val nation = twig.createNode("n_name", 1, 1, "JAPAN")
-//    val revenue = twig.createNode("revenue", 1, 1, "") //TODO: add condition
+    val revenue = twig.createNode("revenue", 1, 1, "ltltltlt740000")
     twig = twig.createEdge(root, custkey, false)
-//    twig = twig.createEdge(root, nation, false)
-//    twig = twig.createEdge(root, revenue, false)
+    twig = twig.createEdge(root, revenue, false)
     twig.validate.get
   }
 
@@ -90,7 +85,7 @@ Rewrite with SA + MSR:
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 
-    for (i <- 0 until saSize by 2) {
+    for (i <- 0 until saSize) {
       replaceDate(primaryTree.alternatives(i).rootNode)
     }
 
@@ -98,8 +93,8 @@ Rewrite with SA + MSR:
   }
 
   def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_linestatus" && node.children.isEmpty) {
-      node.name = "l_returnflag"
+    if (node.name == "l_tax" && node.children.isEmpty) {
+      node.name = "l_discount"
       node.modified = true
       return
     }
