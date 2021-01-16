@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.apache.spark.sql.functions.{count, explode, explode_outer}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class TPCHScenario213(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
+class TPCHScenario113(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
 
 
   import spark.implicits._
@@ -39,10 +39,6 @@ Explanations:
 
 */
 
-  override def referenceScenario: DataFrame = {
-//    return unmodifiedNestedReferenceScenario
-    return nestedScenarioWithCommitToShipDate
-  }
 
   def unmodifiedNestedReferenceScenario: DataFrame = {
     val nestedCust = loadNestedCustomer()
@@ -64,17 +60,21 @@ Explanations:
     val flattenOrd = nestedCust.withColumn("order", explode($"c_orders")) // explode -> explode_outer
 //    val ordComment = flattenOrd.filter(!$"order.o_comment".like("%special%requests%"))
 //    val ordComment = flattenOrd.filter(!$"order.o_comment".contains("special") || !$"order.o_comment".contains("requests"))
-    val addId = flattenOrd.withColumn("id", $"order.o_comment".contains("special") && $"order.o_comment".contains("requests"))
-    val filter1 = addId.filter($"id" === false)
-    val countOrd = filter1.groupBy($"c_custkey").agg(count($"order.o_orderkey").as("c_count"))
+//    val addId = flattenOrd.withColumn("id", $"order.o_comment".contains("special") && $"order.o_comment".contains("requests"))
+//    val filter1 = addId.filter($"id" === false)
+    val countOrd = flattenOrd.groupBy($"c_custkey").agg(count($"order.o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
 //    res.sort($"custdist".desc, $"c_count".desc)
 //    res.filter($"c_count" === 0)
     res
   }
 
+  override def referenceScenario: DataFrame = {
+    //    return unmodifiedNestedReferenceScenario
+    return nestedScenarioWithCommitToShipDate
+  }
 
-  override def getName(): String = "TPCH213"
+  override def getName(): String = "TPCH113"
 
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
@@ -84,27 +84,28 @@ Explanations:
     twig.validate.get
   }
 
-//  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
-//    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
+    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
 //    val saSize = testConfiguration.schemaAlternativeSize
 //    createAlternatives(primaryTree, saSize)
 //
-////    for (i <- 0 until saSize) {
-////      replaceDate(primaryTree.alternatives(i).rootNode)
-////    }
-//
-//    primaryTree
-//  }
-//
-//  def replaceDate(node: SchemaNode): Unit ={
-//    if (node.name == "l_commitdate" && node.children.isEmpty) {
-//      node.name = "l_shipdate"
-//      node.modified = true
-//      return
+//    for (i <- 0 until saSize) {
+//      replaceDate(primaryTree.alternatives(i).rootNode)
 //    }
-//    for (child <- node.children){
-//      replaceDate(child)
-//    }
-//  }
+
+    primaryTree
+  }
+
+  //TODO: find SA
+  def replaceDate(node: SchemaNode): Unit ={
+    if (node.name == "l_commitdate" && node.children.isEmpty) {
+      node.name = "l_shipdate"
+      node.modified = true
+      return
+    }
+    for (child <- node.children){
+      replaceDate(child)
+    }
+  }
 
 }

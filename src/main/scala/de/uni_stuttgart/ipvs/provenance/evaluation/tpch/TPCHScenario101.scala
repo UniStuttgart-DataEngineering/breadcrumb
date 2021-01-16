@@ -4,11 +4,10 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{avg, count, lit, sum, udf, explode, expr}
 
-class TPCHScenario01(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
+class TPCHScenario101(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
 
   import spark.implicits._
 
@@ -27,6 +26,7 @@ class TPCHScenario01(spark: SparkSession, testConfiguration: TestConfiguration) 
 //       .sort($"l_returnflag", $"l_linestatus")
 //  }
 
+
 /*
 This query reports the amount of business that was billed, shipped, and returned.
 Alternatives: 1) l_tax -> l_discount, l_discount -> l_tax
@@ -36,14 +36,14 @@ Assumed possible answers: filter, aggregation (through alternative), combination
 Compared to other solutions: aggregation
 
 Original result:
-+----------+----------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
-|returnflag|linestatus|sum_qty    |sum_base_price       |sum_disc_price       |sum_charge           |avg_qty           |avg_price         |avg_disc            |count_order|
-+----------+----------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
-|N         |F         |991417.0   |1.4875047103799994E9 |1.4130821680541003E9 |1.469649223194375E9  |25.516471920522985|38284.46776084829 |0.050093426674216304|38854      |
-|A         |F         |3.7734107E7|5.658655440072991E10 |5.3758257134870094E10|5.590906522282768E10 |25.522005853257337|38273.129734621616|0.04998529583841114 |1478493    |
-|N         |O         |7.447604E7 |1.1170172969774011E11|1.0611823030760521E11|1.1036704387249742E11|25.50222676958499 |38249.11798890831 |0.04999658605375758 |2920374    |
-|R         |F         |3.7719753E7|5.656804138090003E10 |5.374129268460402E10 |5.588961911983207E10 |25.50579361269077 |38250.85462609968 |0.05000940583014063 |1478870    |
-+----------+----------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+|l_returnflag|l_linestatus|SUM_QTY    |SUM_BASE_PRICE       |SUM_DISC_PRICE       |SUM_CHARGE           |AVG_QTY           |AVG_PRICE         |AVG_DISC            |COUNT_ORDER|
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+|N           |F           |991417.0   |1.4875047103799994E9 |1.4279427833722003E9 |1.499370453830575E9  |25.516471920522985|38284.46776084829 |0.050093426674216304|38854      |
+|A           |F           |3.7734107E7|5.658655440072991E10 |5.432255150166577E10 |5.703765395641943E10 |25.522005853257337|38273.129734621616|0.04998529583841114 |1478493    |
+|N           |O           |7.479054E7 |1.1217210836557011E11|1.0768170353071333E11|1.1306501891517477E11|25.502037693233056|38248.3845639862  |0.05000032393053755 |2932728    |
+|R           |F           |3.7719753E7|5.656804138090003E10 |5.4306781776778824E10|5.702059730418179E10 |25.50579361269077 |38250.85462609968 |0.05000940583014063 |1478870    |
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
 
 over sample:
 +------------+------------+-------+--------------------+--------------------+--------------------+------------------+------------------+--------------------+-----------+
@@ -59,19 +59,26 @@ Result of new query
 +------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
 |l_returnflag|l_linestatus|SUM_QTY    |SUM_BASE_PRICE       |SUM_DISC_PRICE       |SUM_CHARGE           |AVG_QTY           |AVG_PRICE         |AVG_DISC            |COUNT_ORDER|
 +------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
-|N           |F           |991417.0   |1.4875047103800015E9 |1.4279427833722003E9 |1.4993704538305743E9 |25.516471920522985|38284.46776084835 |0.039976064240490355|38854      |
-|A           |F           |3.7734107E7|5.658655440073042E10 |5.4322551501665764E10|5.7037653956419395E10|25.522005853257337|38273.12973462196 |0.03999960770870729 |1478493    |
-|N           |O           |7.447604E7 |1.1170172969774013E11|1.0722943502365518E11|1.1258945330459906E11|25.50222676958499 |38249.117988908314|0.04003812867809482 |2920374    |
-|R           |F           |3.7719753E7|5.656804138089943E10 |5.4306781776778564E10|5.702059730418154E10 |25.50579361269077 |38250.85462609927 |0.03998597577885089 |1478870    |
+|N           |F           |991417.0   |1.4875047103799994E9 |1.4279427833722003E9 |1.499370453830575E9  |25.516471920522985|38284.46776084829 |0.03997606424049    |38854      |
+|A           |F           |3.7734107E7|5.658655440072991E10 |5.432255150166577E10 |5.703765395641943E10 |25.522005853257337|38273.129734621616|0.039999607708666965|1478493    |
+|N           |O           |7.479054E7 |1.1217210836557011E11|1.0768170353071333E11|1.1306501891517477E11|25.502037693233056|38248.3845639862  |0.040031803153958184|2932728    |
+|R           |F           |3.7719753E7|5.656804138090003E10 |5.4306781776778824E10|5.702059730418179E10 |25.50579361269077 |38250.85462609968 |0.03998597577881081 |1478870    |
 +------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
 */
 
-  def unmodifiedReferenceScenario: DataFrame = {
-    loadLineItem()
-      .filter($"l_shipdate" <= "1998-09-02")
-      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
-      .withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)+$"l_tax"))
-      .groupBy($"l_returnflag", $"l_linestatus")
+
+  def unmodifiedNestedReferenceScenario: DataFrame = {
+    val nestedOrders = loadNestedOrders()
+
+    val flattenItem = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
+    val projectItem = flattenItem.select($"lineitem.l_returnflag".alias("l_returnflag"), $"lineitem.l_linestatus".alias("l_linestatus"),
+      $"lineitem.l_quantity".alias("l_quantity"), $"lineitem.l_extendedprice".alias("l_extendedprice"),
+      $"lineitem.l_discount".alias("l_discount"), $"lineitem.l_tax".alias("l_tax"),
+      $"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"),
+      ($"lineitem.l_extendedprice"*(lit(1.0)-$"lineitem.l_tax")).alias("disc_price"),
+      ($"lineitem.l_extendedprice"*(lit(1.0)+$"lineitem.l_discount")*(lit(1.0)-$"lineitem.l_tax")).alias("charge"))
+    val filterShipdate = projectItem.filter($"l_shipdate" <= "1998-09-02")
+    val res = filterShipdate.groupBy($"l_returnflag", $"l_linestatus")
       .agg(
         sum($"l_quantity").as("SUM_QTY"),
         sum($"l_extendedprice").as("SUM_BASE_PRICE"),
@@ -82,14 +89,23 @@ Result of new query
         avg($"l_discount").as("AVG_DISC"),
         count($"l_quantity").as("COUNT_ORDER")
       )
+
+    res
   }
 
-  def scenarioWithTaxAndDiscountInterchanged: DataFrame = {
-    loadLineItem()
-      .filter($"l_shipdate" <= "1998-09-02")
-      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_tax")))
-      .withColumn("charge", $"l_extendedprice"*(lit(1.0)+$"l_discount")*(lit(1.0)-$"l_tax"))
-      .groupBy($"l_returnflag", $"l_linestatus")
+
+  def nestedScenarioWithTaxAndDiscountInterchanged: DataFrame = {
+    val nestedOrders = loadNestedOrders()
+
+    val flattenItem = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
+    val projectItem = flattenItem.select($"lineitem.l_returnflag".alias("l_returnflag"), $"lineitem.l_linestatus".alias("l_linestatus"),
+      $"lineitem.l_quantity".alias("l_quantity"), $"lineitem.l_extendedprice".alias("l_extendedprice"),
+      $"lineitem.l_tax".alias("l_discount"), $"lineitem.l_tax".alias("l_tax"),  //SA: l_tax -> l_discount
+      $"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"),
+      ($"lineitem.l_extendedprice"*(lit(1.0)-$"lineitem.l_tax")).alias("disc_price"),
+      ($"lineitem.l_extendedprice"*(lit(1.0)+$"lineitem.l_discount")*(lit(1.0)-$"lineitem.l_tax")).alias("charge"))
+    val filterShipdate = projectItem.filter($"l_shipdate" <= "1998-09-02")
+    val res = filterShipdate.groupBy($"l_returnflag", $"l_linestatus")
       .agg(
         sum($"l_quantity").as("SUM_QTY"),
         sum($"l_extendedprice").as("SUM_BASE_PRICE"),
@@ -97,50 +113,48 @@ Result of new query
         sum($"charge").as("SUM_CHARGE"),
         avg($"l_quantity").as("AVG_QTY"),
         avg($"l_extendedprice").as("AVG_PRICE"),
-        avg($"l_tax").as("AVG_DISC"),
+        avg($"l_discount").as("AVG_DISC"),
         count($"l_quantity").as("COUNT_ORDER")
       )
+
+    res
   }
 
 
-  def scenarioWithTaxAndDiscountInterchangedSmall: DataFrame = {
-    loadLineItem001()
-      .filter($"l_shipdate" <= "1998-09-02")
-      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
-      .withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)+$"l_tax"))
-      .groupBy($"l_returnflag", $"l_linestatus")
-      .agg(
-        sum($"l_quantity").as("SUM_QTY"),
-        sum($"l_extendedprice").as("SUM_BASE_PRICE"),
-        sum($"disc_price").as("SUM_DISC_PRICE"),
-        sum($"charge").as("SUM_CHARGE"),
-        avg($"l_quantity").as("AVG_QTY"),
-        avg($"l_extendedprice").as("AVG_PRICE"),
-        avg($"l_tax").as("AVG_DISC"),
-        count($"l_quantity").as("COUNT_ORDER")
-      )
-  }
-
-  def minimalScenario: DataFrame = {
-    loadLineItem()
-      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
-      .groupBy($"l_returnflag", $"l_linestatus")
-      .agg(
-        sum($"l_quantity").as("SUM_QTY")
-       ,sum($"disc_price").as("SUM_DISC_PRICE")
-      )
-  }
+//  def nestedScenario: DataFrame = {
+//    val nestedOrders = loadNestedOrders001()
+//    val flattened_no = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
+//    val project_fno = flattened_no.select($"lineitem.l_returnflag".alias("l_returnflag"), $"lineitem.l_linestatus".alias("l_linestatus"),
+//                      $"lineitem.l_quantity".alias("l_quantity"), $"lineitem.l_extendedprice".alias("l_extendedprice"),
+//                      $"lineitem.l_discount".alias("l_discount"), $"lineitem.l_tax".alias("l_tax"),
+//                      $"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey")) // SA: l_commitdate -> l_shipdate
+//    val project_disc = project_fno.withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
+//    val project_charge = project_disc.withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)+$"l_tax"))
+//    val filter_pfno = project_charge.filter($"l_shipdate" <= "1998-09-02")
+//    val res = filter_pfno.groupBy($"l_returnflag", $"l_linestatus")
+//        .agg(sum($"l_quantity").alias("sum_qty"),
+//        sum($"l_extendedprice").alias("sum_base_price"),
+////        sum(decrease($"l_extendedprice", $"l_discount")).alias("sum_disc_price"),
+////        sum(increase(decrease($"l_extendedprice", $"l_discount"), $"l_tax")).alias("sum_charge"),
+//        sum($"disc_price").alias("sum_disc_price"),
+//        sum($"charge").alias("sum_charge"),
+//        avg($"l_quantity").alias("avg_qty"),
+//        avg($"l_extendedprice").alias("avg_price"),
+//        avg($"l_discount").alias("avg_disc"),
+//        count($"l_orderkey").alias("count_order"))
+////      .sort($"returnflag", $"linestatus")
+//
+//    res
+//  }
 
 
   override def referenceScenario: DataFrame = {
-//    return minimalScenario
-//    return unmodifiedReferenceScenario
-    return scenarioWithTaxAndDiscountInterchanged
-//    return scenarioWithTaxAndDiscountInterchangedSmall
+//    return unmodifiedNestedReferenceScenario
+    return nestedScenarioWithTaxAndDiscountInterchanged
+//    return nestedScenario
   }
 
-
-  override def getName(): String = "TPCH01"
+  override def getName(): String = "TPCH101"
 
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
