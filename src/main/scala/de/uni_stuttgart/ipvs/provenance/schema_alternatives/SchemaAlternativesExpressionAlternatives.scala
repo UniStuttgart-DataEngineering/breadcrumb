@@ -2,10 +2,10 @@ package de.uni_stuttgart.ipvs.provenance.schema_alternatives
 
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.Constants
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, BinaryExpression, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Like, Literal, Multiply, NamedExpression, Not, Or, ParseToDate, Size, Subtract}
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, BinaryExpression, CaseWhen, Cast, Contains, CreateNamedStruct, DayOfMonth, Divide, EqualNullSafe, EqualTo, Expression, ExtractValue, FromUnixTime, GetStructField, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Like, Literal, Multiply, NamedExpression, Not, Or, ParseToDate, Size, Subtract}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, CollectList, Count, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.{BooleanType, StringType}
 
 import scala.collection.mutable
 
@@ -20,6 +20,9 @@ object SchemaAlternativesExpressionAlternatives{
 class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchemaSubsetTree, inputPlan: LogicalPlan, modificationExpressions: Seq[Expression]) {
 
   var currentInputNode = inputWhyNotQuestion.getRootNode
+
+  var currentValidColums = Seq.empty[NamedExpression]
+  var currentOriginalColumns = Seq.empty[NamedExpression]
 
   var directChildOfAlias = false
   var generateAccess = false
@@ -36,6 +39,18 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
       assert(currentInputNode == inputWhyNotQuestion.rootNode)
     }
     alternativeExpressions.toList
+  }
+
+  def forwardTraceNamedExpressionsWithValidAndOriginal(validColumns: Seq[NamedExpression], originalColumns: Seq[NamedExpression]): Seq[NamedExpression] = {
+    currentValidColums = validColumns
+    currentOriginalColumns = originalColumns
+
+    val res = forwardTraceNamedExpressions()
+
+    currentValidColums = Seq.empty[NamedExpression]
+    currentOriginalColumns = Seq.empty[NamedExpression]
+
+    res
   }
 
   def forwardTraceNamedExpressions(): Seq[NamedExpression] = {
@@ -243,25 +258,29 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   def forwardTraceAggregateExpression(expression: AggregateExpression): Seq[Expression] = {
     val alternativeChildExpressions = forwardTraceExpression(expression.aggregateFunction.children.head)
     if (forGroupingSets) return alternativeChildExpressions
-    alternativeChildExpressions.map {
-      child => getAggregateFunction(expression, child)
-        /*
-      {
-        val aggFunction = expression.aggregateFunction.withNewChildren(Seq(child))
-        val aggExpression = expression.withNewChildren(Seq(aggFunction))
-        aggExpression
-      } */
+    (alternativeChildExpressions, currentValidColums, currentOriginalColumns).zipped.map {
+      (child, validColumn, originalColumn) => getAggregateFunction(expression, child, validColumn, originalColumn)
     }
   }
 
-  def getAggregateFunction(expression: AggregateExpression, alternative: Expression): AggregateExpression = {
+  def nullNonOrigialValuesInAggregateExpressions(targetColumn: Expression, validColumn: NamedExpression, originalColumn: NamedExpression): Expression = {
+    val valid = EqualTo(validColumn, Literal(true, BooleanType))
+    val original = EqualTo(originalColumn, Literal(true, BooleanType))
+    val condition = And(valid, original)
+    val trueCase = targetColumn
+    val falseCase = Some(Literal(null, targetColumn.dataType))
+    val branches = Seq(Tuple2(condition, trueCase))
+    CaseWhen(branches, falseCase)
+  }
+
+  def getAggregateFunction(expression: AggregateExpression, alternative: Expression, validColumn: NamedExpression, originalColumn: NamedExpression): AggregateExpression = {
     val function = expression.aggregateFunction match {
-      case _: Sum => Sum(alternative)
-      case _: Max => Max(alternative)
-      case _: Min => Min(alternative)
-      case _: Count => Count(alternative)
+      case _: Sum => Sum(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
+      case _: Max => Max(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
+      case _: Min => Min(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
+      case _: Count => Count(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
       case _: CollectList => CollectList(alternative)
-      case _: Average => Average(alternative)
+      case _: Average => Average(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
     }
     val expr = AggregateExpression(function, expression.mode, expression.isDistinct)
     expr

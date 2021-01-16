@@ -4,7 +4,7 @@ import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAtt
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
 import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not}
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, First, Max, Min}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, First, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, GroupingSets, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.{analysis, expressions}
 import org.apache.spark.sql.types.{BooleanType, IntegerType}
@@ -311,7 +311,9 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
 
 
     val provenanceCollection = getNestedProvenanceCollection(expand)
-    var aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressions().distinct//.filterNot(ne => ne.name == "sum")
+
+    var aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressionsWithValidAndOriginal(getValidColumns(expand, provenanceContext), getOriginalColumns(expand, provenanceContext)).distinct//.filterNot(ne => ne.name == "sum")
+
     val (validColumnsAfterRewrite, validNames) = getValidAggregations(expand, provenanceContext)
     val originalColumnsAfterRewrite = getOriginalAggregations(expand, provenanceContext)
 
@@ -321,6 +323,9 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val groupingExpressionsAfterExpandWithGroupingColumn = groupingExpressionsAfterExpand ++ groupingColumn
     //aggregate values for each group
     val rewrittenAggregate = Aggregate(groupingExpressionsAfterExpandWithGroupingColumn, extendedAggregateExpressionAfterExpand, expand)
+
+    val aggregatesOnly = mutable.ListBuffer[NamedExpression](aggregateExpressionAfterExpand: _*)
+    aggregatesOnly --= groupingExpressionsAfterExpand
 
 
 

@@ -8,7 +8,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, Generate}
 import org.scalatest.FunSuite
-import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first, count}
+import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first, count, avg}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 
 class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer {
@@ -393,6 +393,14 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
     res.show()
   }
 
+  test("[RewriteWithAlternatives] Aggregate with grouping sets 1.5") {
+    val df = getDataFrame(pathToJoinDocWithAlternative)
+    val otherDf = df.groupBy($"jkey").agg(sum("JValue").alias("sum"), count("JValue").alias("cnt"))
+    val res = WhyNotProvenance.rewriteWithAlternatives(otherDf, alternativeWhyNotQuestion())
+    res.explain(true)
+    res.show()
+  }
+
   def alternativeWhyNotQuestion2(): Twig = {
     var twig = new Twig()
     val root = twig.createNode("root", 1, 1, "")
@@ -416,11 +424,12 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
   test("[Exploration] First Aggregation works with null values") {
     val tuples: Seq[(Integer, Option[String], Option[Long])] = Seq(
       (1, Some("test"), None),
-      (1, None, Some(1L))
+      (1, None, Some(1L)),
+      (1, None, Some(2L))
     )
 
     val df = tuples.toDF("a", "b", "c")
-    val res = df.groupBy("a").agg(first($"b", true), first($"c", true))
+    val res = df.groupBy("a").agg(first($"b", true), first($"c", true), sum($"c"), count($"c"), avg($"c"))
     df.show()
     res.show()
 

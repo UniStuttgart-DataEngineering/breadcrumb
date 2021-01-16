@@ -70,6 +70,13 @@ trait TransformationRewrite {
     Project(projectList, child)
   }
 
+  def getValidColumns(plan: LogicalPlan, provenanceContext: ProvenanceContext): Seq[NamedExpression] = {
+    provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getValidAttributes(), plan.output)
+  }
+
+  def getOriginalColumns(plan: LogicalPlan, provenanceContext: ProvenanceContext): Seq[NamedExpression] = {
+    provenanceContext.getExpressionsFromProvenanceAttributes(provenanceContext.getOriginalAttributes(), plan.output)
+  }
 
 
 

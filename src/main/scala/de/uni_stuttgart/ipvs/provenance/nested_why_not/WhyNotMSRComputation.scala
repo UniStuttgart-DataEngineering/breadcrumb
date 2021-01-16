@@ -166,12 +166,12 @@ object WhyNotMSRComputation {
       provenanceContext.getMostRecentCompatibilityAttribute(alternativeId).get.attributeName
     }
     var filterCondition = resultDataFrame.col(filterAttribute) === true
+    val validAttribute = provenanceContext.getValidAttribute(alternativeId).get.attributeName
     if (alternativeId > 0) {
-      val validAttribute = provenanceContext.getValidAttribute(alternativeId).get.attributeName
       filterCondition = filterCondition && resultDataFrame.col(validAttribute) === true
     }
     resultDataFrame = resultDataFrame.filter(filterCondition)
-    resultDataFrame = resultDataFrame.drop(filterAttribute)
+    resultDataFrame = resultDataFrame.drop(filterAttribute).drop(validAttribute)
     if (alternativeId < 0) {
       flattenNestedProvenanceCollections(resultDataFrame, provenanceContext)
     } else {
