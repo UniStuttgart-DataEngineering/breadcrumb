@@ -96,7 +96,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val lineitemSchema = Seq(Lineitem(0L, 0L, 0L, 0L, 0.0, 0.0, 0.0, 0.0, "", "", "", "", "", "", "", "")).toDF().schema
 
   def loadLineItem(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem.tbl*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem3.tbl*"
     spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
@@ -174,7 +174,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     l.schema
   }
 
-  val lineitem001Schema = getLineItem001Schema()
+  lazy val lineitem001Schema = getLineItem001Schema()
 
   def loadLineItem001(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem001.json*"
@@ -187,7 +187,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     l.schema
   }
 
-  val orders001Schema = getOrders001Schema()
+  lazy val orders001Schema = getOrders001Schema()
 
   def loadOrder001(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/orders001.json*"
