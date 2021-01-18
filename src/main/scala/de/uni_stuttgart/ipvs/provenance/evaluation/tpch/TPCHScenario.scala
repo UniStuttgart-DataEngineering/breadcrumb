@@ -96,7 +96,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val lineitemSchema = Seq(Lineitem(0L, 0L, 0L, 0L, 0.0, 0.0, 0.0, 0.0, "", "", "", "", "", "", "", "")).toDF().schema
 
   def loadLineItem(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem3.tbl*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/lineitem.tbl*"
     spark.read.schema(lineitemSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 

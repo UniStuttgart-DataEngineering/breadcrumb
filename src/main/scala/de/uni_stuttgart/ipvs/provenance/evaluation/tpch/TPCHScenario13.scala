@@ -61,9 +61,9 @@ Explanations:
     val customer = loadCustomer()
     val order = loadOrder()
 
-//    val ordComment = order.filter(!$"o_comment".like("%special%requests%"))
+    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // remove not
 //    val ordComment = flattenOrd.filter(!$"order.o_comment".contains("special") || !$"order.o_comment".contains("requests"))
-    val joinCustOrd = order.join(customer, $"c_custkey" === $"o_custkey", "left_outer") // table order for the join is switched
+    val joinCustOrd = order.join(customer, $"c_custkey" === $"o_custkey", "left_outer") //
     val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
 //    res.sort($"custdist".desc, $"c_count".desc)
