@@ -13,6 +13,8 @@ class TwitterScenario99 (spark: SparkSession, testConfiguration: TestConfigurati
 
   import spark.implicits._
 
+
+
   override def referenceScenario(): DataFrame = {
     return referenceScenario1()
       /*
@@ -166,11 +168,12 @@ class TwitterScenario99 (spark: SparkSession, testConfiguration: TestConfigurati
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = 2 //testConfiguration.schemaAlternativeSize
+    val saSize = 3 //testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 
     replace1(primaryTree.alternatives(0).rootNode)
-    replace21(primaryTree.alternatives(1).rootNode)
+    replace2(primaryTree.alternatives(1).rootNode)
+    replace21(primaryTree.alternatives(2).rootNode)
     primaryTree
   }
 
@@ -182,6 +185,21 @@ class TwitterScenario99 (spark: SparkSession, testConfiguration: TestConfigurati
     }
     for (child <- node.children){
       replace1(child)
+    }
+  }
+
+  def replace2(node:SchemaNode): Unit = {
+    if (node.name == "retweeted_status" && node.parent.name == "root") {
+      for (child <- node.children){
+        if (child.name == "retweet_count"){
+          child.name = "quote_count"
+          child.modified = true
+        }
+      }
+      return
+    }
+    for (child <- node.children){
+      replace2(child)
     }
   }
 

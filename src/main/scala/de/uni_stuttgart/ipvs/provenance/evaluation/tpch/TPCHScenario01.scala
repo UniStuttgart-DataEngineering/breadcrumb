@@ -166,8 +166,8 @@ Result of new query
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
 
-    //LineItemAlternatives.createAlternatives1(primaryTree, Seq("l_discount", "l_tax"))
-    LineItemAlternatives.createAlternatives3(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+    //LineItemAlternatives().createAlternatives1(primaryTree, Seq("l_discount", "l_tax"))
+    LineItemAlternatives().createAlternatives3(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
 
     /*

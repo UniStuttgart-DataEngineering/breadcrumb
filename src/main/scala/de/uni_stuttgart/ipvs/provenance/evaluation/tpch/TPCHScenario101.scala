@@ -178,7 +178,11 @@ Result of new query
 //  }
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
+
+
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    NestedOrdersAlternatives.createAlternatives3(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+    /*
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 
@@ -190,7 +194,7 @@ Result of new query
 //      for (i <- 0 until saSize by 2) {
 //        replaceDate(primaryTree.alternatives(i).rootNode)
 //      }
-
+    */
     primaryTree
   }
 

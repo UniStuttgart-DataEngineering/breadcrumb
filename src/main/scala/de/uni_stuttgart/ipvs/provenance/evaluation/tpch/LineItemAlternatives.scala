@@ -2,7 +2,11 @@ package de.uni_stuttgart.ipvs.provenance.evaluation.tpch
 
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 
-object LineItemAlternatives extends TPCHAlternatives {
+object LineItemAlternatives {
+  def apply() = new LineItemAlternatives()
+}
+
+class LineItemAlternatives extends TPCHAlternatives {
 
   implicit class Crossable(xs: List[Seq[String]]) {
     def cross(ys: List[Seq[String]]) = for { x <- xs; y <- ys } yield (x.toList ++ y.toList)
