@@ -19,8 +19,8 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
     val nested = joined.groupBy(customer.schema.fieldNames.head, customer.schema.fieldNames.tail: _*)
       .agg(collect_list(struct(nestedOrders.schema.fieldNames.head, nestedOrders.schema.fieldNames.tail: _*)).as("c_orders"))
     //spark.sparkContext.hadoopConfiguration.set("dfs.client.read.shortcircuit.skip.checksum", "true")
-//    nested.coalesce(100).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
-//      .json("/user/hadoop/diesterf/data/tpch/nestedOrders/")
+    nested.coalesce(100).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
+      .json("/user/hadoop/diesterf/data/tpch/nestedCustomers/")
 //      //.option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")"
 
     //nested.schema

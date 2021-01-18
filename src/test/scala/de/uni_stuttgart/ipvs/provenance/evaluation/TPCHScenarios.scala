@@ -229,7 +229,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     val scenario = new TPCHScenario103(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     var res = scenario.extendedScenarioWithSAandMSR()
-    res.show(50,false)
+//    res.show(50,false)
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }

@@ -85,8 +85,8 @@ Explanations:
 
   def flatScenarioWithCommitToShipDate: DataFrame = {
     val customer = loadCustomer()
-    val orders = loadOrder()
-    val lineitem = loadLineItem()
+    val orders = loadOrder001()
+    val lineitem = loadLineItem001()
 
     val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
     val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
@@ -109,10 +109,10 @@ Explanations:
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
+//    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt9000")
     // Only for sample data
-//    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
+    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
     twig = twig.createEdge(root, key, false)
 //    twig = twig.createEdge(root, rev, false)
@@ -121,11 +121,20 @@ Explanations:
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = testConfiguration.schemaAlternativeSize
-    createAlternatives(primaryTree, saSize)
+    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
+    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
 
-    for (i <- 0 until saSize) {
-      replaceDate(primaryTree.alternatives(i).rootNode)
+    if(order) {
+      OrdersAlternatives.createAllAlternatives(primaryTree)
+    }
+
+    if(lineitem) {
+      val saSize = testConfiguration.schemaAlternativeSize
+      createAlternatives(primaryTree, saSize)
+
+      for (i <- 0 until saSize) {
+        replaceDate(primaryTree.alternatives(i).rootNode)
+      }
     }
 
     primaryTree
