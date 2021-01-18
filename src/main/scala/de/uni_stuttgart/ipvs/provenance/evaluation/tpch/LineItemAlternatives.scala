@@ -22,7 +22,7 @@ class LineItemAlternatives extends TPCHAlternatives {
     primaryTree
   }
 
-  def createAlternatives2(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String] ): PrimarySchemaSubsetTree = {
+  def createAlternativesWith3Permutations(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String] ): PrimarySchemaSubsetTree = {
     val altPerms1 = attributeAlternativeSet1.permutations.toList
     val altPerms2 = attributeAlternativeSet2.permutations.toList
     val totalAlternatives = altPerms1.size * altPerms2.size - 1
@@ -35,7 +35,20 @@ class LineItemAlternatives extends TPCHAlternatives {
     primaryTree
   }
 
-  def createAlternatives3(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String]): PrimarySchemaSubsetTree = {
+  def createAlternativesWith2Permutations(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String] ): PrimarySchemaSubsetTree = {
+    val altPerms1 = attributeAlternativeSet1.permutations.toList
+    val altPerms2 = attributeAlternativeSet2.combinations(2).toList
+    val totalAlternatives = altPerms1.size * altPerms2.size - 1
+    val allPerms : List[List[String]] = altPerms1 cross altPerms2
+    val original : List[String] = allPerms.head
+    val primaryTree = createAlternatives(primarySchemaSubsetTree, totalAlternatives)
+    for ((tree, combination) <- primaryTree.alternatives zip allPerms.tail) {
+      createAlternative(tree, original, combination)
+    }
+    primaryTree
+  }
+
+  def createAlternativesWith1Permutations(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String]): PrimarySchemaSubsetTree = {
     val altPerms1 = attributeAlternativeSet1.permutations.toList
     val altPerms2 = attributeAlternativeSet2.map { x => List(x)}.toList
     val totalAlternatives = altPerms1.size * altPerms2.size - 1
@@ -61,5 +74,5 @@ class LineItemAlternatives extends TPCHAlternatives {
     }
   }
 
-  override def createAllAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree): PrimarySchemaSubsetTree = createAlternatives2(primarySchemaSubsetTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+  override def createAllAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree): PrimarySchemaSubsetTree = createAlternativesWith3Permutations(primarySchemaSubsetTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 }

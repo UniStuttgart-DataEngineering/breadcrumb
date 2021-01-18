@@ -167,7 +167,7 @@ Result of new query
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
 
     //LineItemAlternatives().createAlternatives1(primaryTree, Seq("l_discount", "l_tax"))
-    LineItemAlternatives().createAlternatives3(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+    LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
 
     /*

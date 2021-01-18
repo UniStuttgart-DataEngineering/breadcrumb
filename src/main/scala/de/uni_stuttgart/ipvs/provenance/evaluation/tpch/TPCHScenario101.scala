@@ -181,7 +181,7 @@ Result of new query
 
 
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    NestedOrdersAlternatives.createAlternatives3(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+    NestedOrdersAlternatives.createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
     /*
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
