@@ -38,8 +38,9 @@ class LineItemAlternatives extends TPCHAlternatives {
   def createAlternativesWith2Permutations(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSet1: Seq[String], attributeAlternativeSet2: Seq[String] ): PrimarySchemaSubsetTree = {
     val altPerms1 = attributeAlternativeSet1.permutations.toList
     val altPerms2 = attributeAlternativeSet2.combinations(2).toList
-    val totalAlternatives = altPerms1.size * altPerms2.size - 1
-    val allPerms : List[List[String]] = altPerms1 cross altPerms2
+    val altPerms3 = altPerms2.flatMap(x => x.permutations.toList).toList
+    val totalAlternatives = altPerms1.size * altPerms3.size - 1
+    val allPerms : List[List[String]] = altPerms1 cross altPerms3
     val original : List[String] = allPerms.head
     val primaryTree = createAlternatives(primarySchemaSubsetTree, totalAlternatives)
     for ((tree, combination) <- primaryTree.alternatives zip allPerms.tail) {
