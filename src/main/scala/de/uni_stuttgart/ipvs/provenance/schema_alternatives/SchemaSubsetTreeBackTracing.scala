@@ -300,6 +300,7 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     currentInputNode = currentInputNode.children.find(node => node.name == field.name.get).getOrElse(SchemaNode(field.name.get, Constraint(""), currentInputNode))
     currentInputNode.parent.addChild(currentInputNode)
 
+    /*
     // TODO: need an additional check if the current node has children
     for (grandChild <- field.childSchema) {
       if (grandChild.name.equals(currentInputNode.name)) {
@@ -324,7 +325,7 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
           }
         }
       }
-    }
+    } */
     true
   }
 
@@ -336,6 +337,7 @@ class SchemaSubsetTreeBackTracing(outputWhyNotQuestion: SchemaSubsetTree, inputA
     }
     directChildOfAlias = false
     this.currentInputNode.constraint = currentOutputNode.constraint.deepCopy()
+    copyChildrenOfOutputAttributeToInputAttribute()
     this.currentInputNode = currentInputNode
     currentOutputNode = currentOutputNode.parent
     res
