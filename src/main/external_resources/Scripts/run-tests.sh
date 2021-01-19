@@ -7,7 +7,7 @@ tpchPath="/user/hadoop/diesterf/data/tpch/"
 warmup="true"
 #saSize="1"
 for saSize in "1"; do #"1" "2" "3" "4"
-  for testSuite in "tpch" "twitter" ; do #"dblp" "twitter"
+  for testSuite in "tpch"; do #"dblp" "twitter"
       if [ $testSuite = "twitter" ]; then
           dataPath=$twitterPath
       fi
@@ -17,7 +17,7 @@ for saSize in "1"; do #"1" "2" "3" "4"
       if [ $testSuite = "tpch" ]; then
           dataPath=$tpchPath
       fi
-      for reference in "0" "4" ; do #"3" "5"
+      for reference in "0"; do #"3" "5"
           for size in "100"; do
                 ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
           done

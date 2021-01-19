@@ -21,7 +21,8 @@ Original result:
 +-------+--------+
 |c_count|custdist|
 +-------+--------+
-|9      |6641    |
+|0      |50005   |
+|9      |6641    | --> disappear for mq1
 |10     |6532    |
 |11     |6014    |
 |8      |5937    |
@@ -30,13 +31,43 @@ Original result:
 |19     |4793    |
 |7      |4687    |
 |17     |4587    |
-|18     |4529    |
 +-------+--------+
 
-over sample:
+Result of modified query 1 (NOT LIKE -> LIKE):
++-------+--------+
+|c_count|custdist|
++-------+--------+
+|1      |13503   |
+|2      |1177    |
+|3      |68      |
+|4      |4       |
+|5      |1       |
++-------+--------+
+
+Result of modified query 2 (NOT LIKE -> NOT CONTAINS):
++-------+--------+
+|c_count|custdist|
++-------+--------+
+|10     |6577    |
+|9      |6538    | --> custdist is smaller than original result
+|11     |6021    |
+|8      |5761    |
+|12     |5645    |
+|13     |5018    |
+|19     |4753    |
+|20     |4541    |
+|7      |4512    |
+|17     |4484    |
++-------+--------+
+
 
 Explanations:
-
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0003]        |1              |000017     |
+|[0005]        |1              |000017     |
++--------------+---------------+-----------+
 */
 
 
@@ -50,31 +81,31 @@ Explanations:
 //      && !special(order("o_comment")), "left_outer")
     val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
-//      res.sort($"custdist".desc, $"c_count".desc)
-    res.filter($"c_count" === 9)
+//    res.sort($"custdist".desc, $"c_count".desc)
+//    res.filter($"c_count" === 9)
 //    res
+    joinCustOrd.filter($"o_orderkey".isNull)
   }
 
 
-  // TODO: Error: Reference '__VALID_0000_0015' is ambiguous, could be: __VALID_0000_0015, __VALID_0000_0015.;
-  def flatScenarioWithCommitToShipDate: DataFrame = {
+  def flatScenarioModified: DataFrame = {
     val customer = loadCustomer()
     val order = loadOrder()
 
-    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // remove not
-//    val ordComment = flattenOrd.filter(!$"order.o_comment".contains("special") || !$"order.o_comment".contains("requests"))
-    val joinCustOrd = order.join(customer, $"c_custkey" === $"o_custkey", "left_outer") //
+    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // NOT LIKE -> LIKE // oid=5
+//    val ordComment = order.filter(!$"o_comment".contains("%special%requests%")) // NOT LIKE -> NOT CONTAINS
+    val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey") // LEFT_OUTER_JOIN -> NATURAL_JOIN
     val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
 //    res.sort($"custdist".desc, $"c_count".desc)
-//    res.sort($"custdist", $"c_count")
-//    res.filter($"c_count" === 0)
+//    res.filter($"c_count" === 9)
+//    countOrd
     res
   }
 
   override def referenceScenario: DataFrame = {
-    //    return unmodifiedReferenceScenario
-    return flatScenarioWithCommitToShipDate
+//    return unmodifiedReferenceScenario
+    return flatScenarioModified
   }
 
   override def getName(): String = "TPCH13"
@@ -82,32 +113,36 @@ Explanations:
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
     val root = twig.createNode("root")
+//    val key = twig.createNode("c_count", 1, 1, "9")
+//    val value = twig.createNode("custdist", 1, 1, "gtgtgtgt6600")
+//    val key = twig.createNode("c_custkey", 1, 1, "474")
     val key = twig.createNode("c_count", 1, 1, "0")
     twig = twig.createEdge(root, key, false)
+//    twig = twig.createEdge(root, value, false)
     twig.validate.get
   }
 
-//  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
-//    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+  override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
+    val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
 //    val saSize = testConfiguration.schemaAlternativeSize
 //    createAlternatives(primaryTree, saSize)
 //
 //    for (i <- 0 until saSize) {
 //      replaceDate(primaryTree.alternatives(i).rootNode)
 //    }
-//
-//    primaryTree
-//  }
-//
-//  def replaceDate(node: SchemaNode): Unit ={
-//    if (node.name == "l_commitdate" && node.children.isEmpty) {
-//      node.name = "l_shipdate"
-//      node.modified = true
-//      return
-//    }
-//    for (child <- node.children){
-//      replaceDate(child)
-//    }
-//  }
+
+    primaryTree
+  }
+
+  def replaceDate(node: SchemaNode): Unit ={
+    if (node.name == "l_commitdate" && node.children.isEmpty) {
+      node.name = "l_shipdate"
+      node.modified = true
+      return
+    }
+    for (child <- node.children){
+      replaceDate(child)
+    }
+  }
 
 }

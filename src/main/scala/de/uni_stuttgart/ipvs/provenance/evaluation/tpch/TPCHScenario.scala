@@ -146,7 +146,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val nestedOrdersSchema = orderSchema.add("o_lineitems", nestedLineItemList)
 
   def loadNestedOrders(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedOrders.json*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders.json*"
     spark.read.schema(nestedOrdersSchema).json(completePath)
   }
 

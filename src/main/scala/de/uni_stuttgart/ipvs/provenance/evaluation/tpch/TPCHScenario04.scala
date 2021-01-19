@@ -33,7 +33,18 @@ Original result:
 |2-HIGH         |10476      |
 +---------------+-----------+
 
-over sample
+Result for mq:
++---------------+-----------+
+|o_orderpriority|order_count|
++---------------+-----------+
+|5-LOW          |11398      |
+|3-MEDIUM       |11343      |
+|1-URGENT       |11522      |
+|4-NOT SPECIFIED|11495      |
+|2-HIGH         |11460      |
++---------------+-----------+
+
+Result over sample:
 +---------------+-----------+
 |o_orderpriority|order_count|
 +---------------+-----------+
@@ -43,6 +54,35 @@ over sample
 |4-NOT SPECIFIED|4          |
 |2-HIGH         |10         |
 +---------------+-----------+
+
+Result over sample for mq:
++---------------+-----------+
+|o_orderpriority|order_count|
++---------------+-----------+
+|5-LOW          |68         |
+|3-MEDIUM       |16         |
+|1-URGENT       |61         |
+|4-NOT SPECIFIED|21         |
+|2-HIGH         |45         |
++---------------+-----------+
+
++---------------+-----------+
+|o_orderpriority|order_count|
++---------------+-----------+
+|5-LOW          |18         |
+|3-MEDIUM       |7          |
+|1-URGENT       |14         |
+|4-NOT SPECIFIED|4          |
+|2-HIGH         |11         |
++---------------+-----------+
+
+Explanation over sample for mq:
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0003, 0006]  |1              |000022     |
+|[0006]        |1              |000022     |
++--------------+---------------+-----------+
 
 TODO:
  1) Distinct & countDistinct not supported yet
@@ -69,11 +109,11 @@ TODO:
     val orders = loadOrder()
     val lineitem = loadLineItem()
 
-    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30"))
-    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate") // SA l_shipdate -> l_commitdate
+    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30")) // oid=3
+    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate") // SA l_shipdate -> l_commitdate // oid=6
 //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
-//    val projectOrdKey = filterLine.groupBy($"l_orderkey").count() // Not supported
-    val joinOrdLine = filterOrdDate.join(filterLine, $"o_orderkey" === $"l_orderkey", "left_semi")
+    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
+    val joinOrdLine = filterOrdDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey") // left_semi -> natural join
     val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
 
     res
@@ -81,7 +121,7 @@ TODO:
 
   override def referenceScenario: DataFrame = {
 //        return unmodifiedReferenceScenario
-        return flatScenarioWithShipToCommitDate
+    return flatScenarioWithShipToCommitDate
   }
 
   override def getName(): String = "TPCH04"
@@ -89,11 +129,9 @@ TODO:
   override def whyNotQuestion: Twig = {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val priority = twig.createNode("o_orderpriority", 1, 1, "1-URGENT")
+    val priority = twig.createNode("o_orderpriority", 1, 1, "3-MEDIUM")
     val count = twig.createNode("order_count", 1, 1, "ltltltlt11000")
-    // Only for sample data
-//    val priority = twig.createNode("o_orderpriority", 1, 1, "3-MEDIUM")
-//    val count = twig.createNode("order_count", 1, 1, "ltltltlt6")
+//    val count = twig.createNode("order_count", 1, 1, "ltltltlt6") // for sample data
     twig = twig.createEdge(root, priority, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get
@@ -102,11 +140,22 @@ TODO:
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = testConfiguration.schemaAlternativeSize
-    createAlternatives(primaryTree, saSize)
+    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
+    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
 
-    for (i <- 0 until saSize by 2) {
-      replaceDate(primaryTree.alternatives(i).rootNode)
+    if(order) {
+      OrdersAlternatives.createAllAlternatives(primaryTree)
+    }
+
+    if(lineitem) {
+//      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+
+      val saSize = testConfiguration.schemaAlternativeSize
+      createAlternatives(primaryTree, saSize)
+
+      for (i <- 0 until saSize) {
+        replaceDate(primaryTree.alternatives(i).rootNode)
+      }
     }
 
     primaryTree

@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
-import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario106, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18, TPCHScenario110}
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario104, TPCHScenario106, TPCHScenario110, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.scalatest.FunSuite
@@ -285,6 +285,23 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   }
 
 
+  //  SCENARIO 4 - Nested
+  test("[Reference] TPCH 104"){
+    val scenario = new TPCHScenario104(spark, testConfiguration1)
+    val res = scenario.referenceScenario
+    res.show(10, false)
+    res.explain()
+  }
+
+  test("[RewriteWithSAMSR] TPCH 104") {
+    val scenario = new TPCHScenario104(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10,false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
+
 
 //  //  SCENARIO 5
 //  test("[Reference] TPCH 05"){
@@ -427,7 +444,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
   //  SCENARIO 10
   test("[Reference] TPCH 10"){
     val scenario = new TPCHScenario10(spark, testConfiguration1)
-    scenario.referenceScenario.show(10, false)
+    scenario.referenceScenario.show(50, false)
   }
 
   test("[RewriteWithoutSA] TPCH 10"){

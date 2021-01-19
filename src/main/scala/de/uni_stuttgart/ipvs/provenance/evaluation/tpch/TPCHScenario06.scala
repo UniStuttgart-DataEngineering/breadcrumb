@@ -31,8 +31,25 @@ over sample:
 |115092.73550000002|
 +------------------+
 
-TODO: no explanation is retured
-  - The revenue is computed with ignoring all the conditions even for SA
+Result of modified query over sample:
++------------------+
+|revenue           |
++------------------+
+|133977.07929999992|
++------------------+
+
+Why-not question:
+Why revenue is not less than 120000
+
+Explanation over sample:
++------------------------+---------------+-----------+
+|pickyOperators          |compatibleCount|alternative|
++------------------------+---------------+-----------+
+|[0002, 0004, 0005]      |1              |000015     |
+|[0002, 0003, 0004, 0005]|1              |000015     |
+|[0002, 0004]            |1              |000015     |
+|[0002, 0003, 0004]      |1              |000015     |
++------------------------+---------------+-----------+
 */
 
 
@@ -76,11 +93,17 @@ TODO: no explanation is retured
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val saSize = testConfiguration.schemaAlternativeSize
-    createAlternatives(primaryTree, saSize)
+    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
 
-    for (i <- 0 until saSize by 2) {
-      replaceDate(primaryTree.alternatives(i).rootNode)
+    if(lineitem) {
+      LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+
+//      val saSize = testConfiguration.schemaAlternativeSize
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
     }
 
     primaryTree
