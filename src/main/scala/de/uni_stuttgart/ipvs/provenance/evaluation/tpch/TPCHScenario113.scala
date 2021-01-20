@@ -103,16 +103,15 @@ Explanations:
     primaryTree
   }
 
-  //TODO: find SA
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
 
 }

@@ -122,14 +122,15 @@ TODO:
     val nesteOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedorders")
 
     if(nesteOrder) {
-//      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      // TODO: how to include SA for orderPriority
+      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
-      val saSize = testConfiguration.schemaAlternativeSize
-      createAlternatives(primaryTree, saSize)
-
-      for (i <- 0 until saSize) {
-        replaceDate(primaryTree.alternatives(i).rootNode)
-      }
+//      val saSize = testConfiguration.schemaAlternativeSize
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
     }
 
     primaryTree

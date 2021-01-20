@@ -67,7 +67,7 @@ Explanations (over sample):
 
 
   def unmodifiedNestedReferenceScenario: DataFrame = {
-    val nestedCustomer = loadNestedCustomer()
+    val nestedCustomer = loadNestedCustomer001()
 
     val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
     val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
@@ -80,7 +80,7 @@ Explanations (over sample):
     val projectExpr = filterMktSeg.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
-    res
+    res.filter($"l_orderkey" === 4986467)
   }
 
   def nestedScenarioWithCommitToShipDate: DataFrame = {
@@ -98,11 +98,11 @@ Explanations (over sample):
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority")
       .agg(sum($"disc_price").alias("revenue"), count($"l_discount").alias("disc"))
 //    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
-    res
+    res.filter($"l_orderkey" === 4986467)
   }
 
   override def referenceScenario: DataFrame = {
-    //    return unmodifiedNestedReferenceScenario
+//    return unmodifiedNestedReferenceScenario
     return nestedScenarioWithCommitToShipDate
   }
 
@@ -123,6 +123,7 @@ Explanations (over sample):
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
+    // TODO: applying new implementation for SA
     val saSize = testConfiguration.schemaAlternativeSize
     createAlternatives(primaryTree, saSize)
 

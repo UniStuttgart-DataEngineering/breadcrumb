@@ -36,34 +36,14 @@ over sample:
 +----------+-----------+--------------+------------------+
 
 Explanations:
-+------------------+---------------+-----------+
-|pickyOperators    |compatibleCount|alternative|
-+------------------+---------------+-----------+
-|[0004, 0009]      |1              |000028     |
-|[]                |15             |000028     |  --> shouldn't it be 000029?
-|[0004, 0005]      |544            |000028     |
-|[0004, 0006]      |693            |000028     |
-|[0006]            |168            |000028     |
-|[0004]            |41             |000028     |
-|[0009]            |1              |000028     |
-|[0005]            |170            |000028     |
-|[0004, 0005, 0007]|555            |000029     |
-|[0005, 0007]      |171            |000029     |
-|[0006, 0007]      |168            |000029     |
-|[0007]            |20             |000029     |
-|[0004, 0006, 0007]|693            |000029     |
-|[0004, 0007, 0009]|1              |000029     |
-|[0007, 0009]      |1              |000029     |
-|[0004, 0007]      |52             |000029     |
-+------------------+---------------+-----------+
-0004 - project
-0005 - filter(orderdate)
-0006 - filter(shipdate)
-0007 - filter(mktsegment)
-0009 - aggregate
-
-000028 - l_commitdate
-000029 - l_shipdate
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0009]        |1              |000031     |
+|[0002, 0009]  |1              |000032     |
+|[0002, 0009]  |1              |000034     |
+|[0002, 0009]  |1              |000033     |
++--------------+---------------+-----------+
 */
 
 
@@ -85,12 +65,12 @@ Explanations:
 
   def flatScenarioWithCommitToShipDate: DataFrame = {
     val customer = loadCustomer()
-    val orders = loadOrder001()
-    val lineitem = loadLineItem001()
+    val orders = loadOrder()
+    val lineitem = loadLineItem()
 
     val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
     val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
-    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate
+    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate // oid = 9
     val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
@@ -109,11 +89,11 @@ Explanations:
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
     val root = twig.createNode("root")
-//    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
+    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt9000")
     // Only for sample data
-    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
-//    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
+//    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
+////    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
     twig = twig.createEdge(root, key, false)
 //    twig = twig.createEdge(root, rev, false)
     twig.validate.get
@@ -129,25 +109,29 @@ Explanations:
     }
 
     if(lineitem) {
-      val saSize = testConfiguration.schemaAlternativeSize
-      createAlternatives(primaryTree, saSize)
+      LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
 
-      for (i <- 0 until saSize) {
-        replaceDate(primaryTree.alternatives(i).rootNode)
-      }
+////      val saSize = testConfiguration.schemaAlternativeSize
+//      val saSize = 1
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
     }
 
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
+
 }

@@ -97,7 +97,6 @@ Explanation over sample for md2:
     val nestedOrders = loadNestedOrders()
 
     val flattenOrd = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
-    // TODO: Adding this projection with l_discount yields same result as flat query, but it is not with l_tax.
     val projectOrdLine = flattenOrd.select($"lineitem.l_tax".alias("l_discount"), // SA: l_tax -> l_discount
                   $"lineitem.l_shipdate".alias("l_shipdate"), $"lineitem.l_quantity".alias("l_quantity"),
                   ($"lineitem.l_extendedprice" * $"lineitem.l_discount").alias("disc_price"))

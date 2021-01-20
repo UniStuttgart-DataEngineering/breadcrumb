@@ -92,8 +92,7 @@ Explanations:
     val customer = loadCustomer()
     val order = loadOrder()
 
-    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // NOT LIKE -> LIKE // oid=5
-//    val ordComment = order.filter(!$"o_comment".contains("%special%requests%")) // NOT LIKE -> NOT CONTAINS
+    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // oid=5
     val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey") // LEFT_OUTER_JOIN -> NATURAL_JOIN
     val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
@@ -134,15 +133,15 @@ Explanations:
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
 
 }

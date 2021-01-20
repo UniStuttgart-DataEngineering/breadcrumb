@@ -148,14 +148,14 @@ TODO:
     }
 
     if(lineitem) {
-//      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
-      val saSize = testConfiguration.schemaAlternativeSize
-      createAlternatives(primaryTree, saSize)
-
-      for (i <- 0 until saSize) {
-        replaceDate(primaryTree.alternatives(i).rootNode)
-      }
+//      val saSize = testConfiguration.schemaAlternativeSize
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
     }
 
     primaryTree
