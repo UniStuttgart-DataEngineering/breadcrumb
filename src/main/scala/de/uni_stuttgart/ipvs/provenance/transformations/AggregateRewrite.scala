@@ -3,8 +3,8 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
-import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not}
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, Complete, Count, First, Max, Min, Sum}
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not, Or}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet, Complete, Count, First, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, GroupingSets, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.{analysis, expressions}
 import org.apache.spark.sql.types.{BooleanType, IntegerType}
@@ -64,8 +64,12 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
   }
 
   def getProvenanceTuple(rewrite: Rewrite): NamedExpression = {
+    val tuple = CreateStruct(rewrite.provenanceContext.getExpressionFromAllProvenanceAttributes(rewrite.plan.output))
+    val validColumns = getValidColumns(rewrite.plan, rewrite.provenanceContext)
+    val compatibleColumns = getPreviousCompatibles(rewrite)
+    val reducedTuple = validAndCompatibleConditions(tuple, validColumns, compatibleColumns)
     Alias(
-      CreateStruct(rewrite.provenanceContext.getExpressionFromAllProvenanceAttributes(rewrite.plan.output)),
+      reducedTuple,
       Constants.getProvenanceTupleFieldName(oid))()
   }
 
@@ -73,6 +77,15 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     Alias(
       AggregateExpression(
         CollectList(getExpressionFromName(child,
+          Constants.getProvenanceTupleFieldName(oid)).get),
+        Complete, false),
+      Constants.getProvenanceCollectionFieldName(oid))()
+  }
+
+  def getOptimizedProvenanceCollection(child: LogicalPlan, provenanceContext: ProvenanceContext): NamedExpression = {
+    Alias(
+      AggregateExpression(
+        CollectSet(getExpressionFromName(child,
           Constants.getProvenanceTupleFieldName(oid)).get),
         Complete, false),
       Constants.getProvenanceCollectionFieldName(oid))()
@@ -87,7 +100,6 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     var inputTree = SchemaSubsetTreeBackTracing(schemaSubsetTree, child.plan.output, aggregate.output, aggregate.aggregateExpressions).getInputTree()
     inputTree = SchemaSubsetTreeAccessAdder(inputTree, aggregate.aggregateExpressions).traceAttributeAccess()
     inputTree
-
   }
 
   def getExpandAttributeName: String = {
@@ -165,6 +177,23 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val condition = EqualTo(validColumn, Literal(true, BooleanType))
     val trueCase = alternativeExpression
     (condition, trueCase)
+  }
+
+  def validAndCompatibleConditions(targetColumn: Expression, validColumns: Seq[NamedExpression], compatibleColumns: Seq[NamedExpression]): Expression = {
+    val conditions : Seq[Expression] = (compatibleColumns zip validColumns).map {
+      case (compatibleColumn, validColumn) => validAndCompatibleCondition(compatibleColumn, validColumn)
+    }
+    val condition = conditions.tail.foldLeft(conditions.head)((agg, expr) => Or(agg, expr))
+    val trueCase = targetColumn
+    val falseCase = Some(Literal(null, targetColumn.dataType))
+    val branches = Seq(Tuple2(condition, trueCase))
+    CaseWhen(branches, falseCase)
+  }
+
+  def validAndCompatibleCondition(validColumn: NamedExpression, compatibleColumn: NamedExpression): Expression = {
+    val condition1 = EqualTo(validColumn, Literal(true, BooleanType))
+    val condition2 = EqualTo(compatibleColumn, Literal(true, BooleanType))
+    And(condition1, condition2)
   }
 
   def createFilledGroupingAttribute(alternativeGroupingExpressions: Seq[NamedExpression], validColumns: Seq[NamedExpression], targetName: String): NamedExpression = {
@@ -310,7 +339,8 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val expand = Expand(projections, output, provenanceProjection)
 
 
-    val provenanceCollection = getNestedProvenanceCollection(expand)
+    //val provenanceCollection = getNestedProvenanceCollection(expand)
+    val provenanceCollection = getOptimizedProvenanceCollection(expand, provenanceContext)
 
     var aggregateExpressionAfterExpand = SchemaAlternativesExpressionAlternatives(provenanceContext.primarySchemaAlternative, expand, aggregate.aggregateExpressions).forwardTraceNamedExpressionsWithValidAndOriginal(getValidColumns(expand, provenanceContext), getOriginalColumns(expand, provenanceContext)).distinct//.filterNot(ne => ne.name == "sum")
 

@@ -8,7 +8,7 @@ import de.uni_stuttgart.ipvs.provenance.why_not_question.{Schema, Twig}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, Generate}
 import org.scalatest.FunSuite
-import org.apache.spark.sql.functions.{collect_list, max, min, rand, struct, sum, first, count, avg}
+import org.apache.spark.sql.functions.{collect_list, collect_set, max, min, rand, struct, sum, first, count, avg}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 
 class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataFrameComparer with ColumnComparer {
@@ -273,6 +273,13 @@ class AggregationTest extends FunSuite with SharedSparkTestDataFrames with DataF
   test("[Exploration] ListCollection ") {
     val df = getDataFrame(pathToAggregationDoc0)
     val otherDf = df.groupBy($"key").agg(collect_list($"value").alias("list"))
+    otherDf.explain(true)
+  }
+
+  test("[Exploration] SetCollection ") {
+    val df = getDataFrame(pathToAggregationDoc0)
+    val otherDf = df.groupBy($"key").agg(collect_set($"value").alias("list"))
+    val plan = otherDf.queryExecution.analyzed
     otherDf.explain(true)
   }
 
