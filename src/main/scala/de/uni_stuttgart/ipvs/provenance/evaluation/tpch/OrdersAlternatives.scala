@@ -7,13 +7,17 @@ object OrdersAlternatives extends TPCHAlternatives {
   override def createAllAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree): PrimarySchemaSubsetTree = {
     val tree = primarySchemaSubsetTree
     val alternatives = createAlternatives(tree, 1)
-    replaceOrderPriorityTMP(tree.alternatives(0).rootNode)
-    replaceShipPriorityTMP(tree.alternatives(0).rootNode)
-    replaceShipPriorityWithOrderPriority(tree.alternatives(0).rootNode)
-    replaceOrderPriorityWithShipPriority(tree.alternatives(0).rootNode)
+    replaceAlternative(alternatives.alternatives(0).rootNode)
     tree
   }
 
+
+  def replaceAlternative(node: SchemaNode): Unit = {
+    replaceOrderPriorityTMP(node)
+    replaceShipPriorityTMP(node)
+    replaceShipPriorityWithOrderPriority(node)
+    replaceOrderPriorityWithShipPriority(node)
+  }
 
   def replaceOrderPriorityTMP(node: SchemaNode): Unit ={
     replaceWithTMP(node, "o_orderpriority")
