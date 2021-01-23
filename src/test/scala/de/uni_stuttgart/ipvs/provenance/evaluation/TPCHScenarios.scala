@@ -229,7 +229,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     val scenario = new TPCHScenario103(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     var res = scenario.extendedScenarioWithSAandMSR()
-//    res.show(50,false)
+    res.show(10,false)
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }
@@ -261,7 +261,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSA()
     res.show(10)
-    res.explain(true)
+    res.explain()
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -269,8 +269,8 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     val scenario = new TPCHScenario04(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
+    res.explain()
     res.show(10,false)
-    res.explain(true)
     ProvenanceContext.setTestScenario(null)
   }
 
@@ -393,7 +393,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     val scenario = new TPCHScenario106(spark, testConfiguration1)
     ProvenanceContext.setTestScenario(scenario)
     val res = scenario.extendedScenarioWithSAandMSR()
-    res.show(10,false)
+    res.show(10, false)
     res.explain()
     ProvenanceContext.setTestScenario(null)
   }

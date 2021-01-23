@@ -39,11 +39,27 @@ Explanations:
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
-|[0009]        |1              |000031     |
-|[0002, 0009]  |1              |000032     |
-|[0002, 0009]  |1              |000034     |
-|[0002, 0009]  |1              |000033     |
+|[0009]        |1              |000035     |
+|[0002, 0009]  |1              |000042     |
+|[0002, 0009]  |1              |000037     |
+|[0002, 0009]  |1              |000046     |
+|[0002, 0009]  |1              |000038     |
+|[0002, 0009]  |1              |000041     |
+|[0002, 0009]  |1              |000045     |
+|[0002, 0009]  |1              |000044     |
+|[0002, 0009]  |1              |000039     |
+|[0002, 0009]  |1              |000043     |
+|[0002, 0009]  |1              |000040     |
+|[0002, 0009]  |1              |000036     |
 +--------------+---------------+-----------+
+
+000036: (o_shippriority, l_discount, l_shipdate)
+000042: (o_orderpriority,  l_discount, l_shipdate)
+a tuple containing follow fragment for 000042:
+(c_mktsegment = BUILDING,
+o_orderdate = 1994-12-21,
+l_shipdate = 1995-03-31,
+o_orderpriority = 3-MEDIUM)
 */
 
 
@@ -79,9 +95,24 @@ Explanations:
     res
   }
 
+  def orderKey: DataFrame = {
+    val customer = loadCustomer()
+    val orders = loadOrder001()
+    val lineitem = loadLineItem001()
+
+//    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
+//    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
+//    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15")
+    val joinCustOrd = customer.join(orders, $"c_custkey" === $"o_custkey")
+    val joinOrdLine = joinCustOrd.join(lineitem, $"o_orderkey" === $"l_orderkey")
+    val res = joinOrdLine.filter($"o_orderkey" === 4986467)
+    res
+  }
+
   override def referenceScenario: DataFrame = {
     //    return unmodifiedReferenceScenario
-    return flatScenarioWithCommitToShipDate
+//    return flatScenarioWithCommitToShipDate
+    return orderKey
   }
 
   override def getName(): String = "TPCH03"
@@ -91,8 +122,7 @@ Explanations:
     val root = twig.createNode("root")
     val key = twig.createNode("l_orderkey", 1, 1, "1468993")
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt9000")
-    // Only for sample data
-//    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
+//    val key = twig.createNode("l_orderkey", 1, 1, "4986467") // For sample data
 ////    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
     twig = twig.createEdge(root, key, false)
 //    twig = twig.createEdge(root, rev, false)

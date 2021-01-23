@@ -151,7 +151,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   }
 
   def loadNestedOrders001(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedorders001.json*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedOrders001.json*"
     spark.read.schema(nestedOrdersSchema).json(completePath)
   }
 
@@ -159,12 +159,12 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
   lazy val nestedCustomerSchema = customerSchema.add("c_orders", nestedOrdersList)
 
   def loadNestedCustomer(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedcustomer.json*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedCustomers.json*"
     spark.read.schema(nestedCustomerSchema).json(completePath)
   }
 
   def loadNestedCustomer001(): DataFrame = {
-    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedcustomer001.json*"
+    val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/nestedCustomers001.json*"
     spark.read.schema(nestedCustomerSchema).json(completePath)
   }
 

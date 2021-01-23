@@ -45,10 +45,14 @@ Explanation over sample:
 +------------------------+---------------+-----------+
 |pickyOperators          |compatibleCount|alternative|
 +------------------------+---------------+-----------+
-|[0002, 0004, 0005]      |1              |000015     |
-|[0002, 0003, 0004, 0005]|1              |000015     |
-|[0002, 0004]            |1              |000015     |
-|[0002, 0003, 0004]      |1              |000015     |
+|[0002, 0003, 0004, 0005]|1              |000017     |
+|[0002, 0004, 0005]      |1              |000017     |
+|[0002, 0004]            |1              |000017     |
+|[0002, 0003, 0004]      |1              |000017     |
+|[0002, 0003, 0004, 0005]|1              |000018     |
+|[0002, 0004, 0005]      |1              |000018     |
+|[0002, 0003, 0004, 0005]|1              |000019     |
+|[0002, 0004, 0005]      |1              |000019     |
 +------------------------+---------------+-----------+
 */
 
@@ -75,9 +79,21 @@ Explanation over sample:
     res
   }
 
+  def flatScenarioWithTaxToDiscountWithSmall: DataFrame = {
+    val lineitem = loadLineItem001()
+
+    val filterShipDate = lineitem.filter($"l_shipdate".between("1994-01-01", "1994-12-31"))
+    val filterDisc = filterShipDate.filter($"l_tax".between("0.05", "0.07")) // SA: l_tax -> l_discount
+    val filterQty = filterDisc.filter($"l_quantity" < 24)
+    val projectExpr = filterQty.withColumn("disc_price", $"l_extendedprice" * $"l_discount")
+    val res = projectExpr.agg(sum($"disc_price").alias("revenue"))
+    res
+  }
+
   override def referenceScenario: DataFrame = {
 //    return unmodifiedReferenceScenario
     return flatScenarioWithTaxToDiscount
+//    return flatScenarioWithTaxToDiscountWithSmall
   }
 
   override def getName(): String = "TPCH06"
@@ -109,15 +125,15 @@ Explanation over sample:
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_tax" && node.children.isEmpty) {
-      node.name = "l_discount"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_tax" && node.children.isEmpty) {
+//      node.name = "l_discount"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
 
 }

@@ -64,6 +64,22 @@ Result of new query
 |N           |O           |7.479054E7 |1.1217210836557011E11|1.0768170353071333E11|1.1306501891517477E11|25.502037693233056|38248.3845639862  |0.040031803153958184|2932728    |
 |R           |F           |3.7719753E7|5.656804138090003E10 |5.4306781776778824E10|5.702059730418179E10 |25.50579361269077 |38250.85462609968 |0.03998597577881081 |1478870    |
 +------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+
+Explanation:
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0003]        |3              |000020     |
+|[0002, 0003]  |1              |000020     |
+|[0003]        |3              |000018     |
+|[0002, 0003]  |1              |000018     |
+|[0003]        |3              |000019     |
+|[0002, 0003]  |1              |000019     |
++--------------+---------------+-----------+
+
+000018: (l_discount, l_shipdate)
+000019: (l_discount, l_receiptdate)
+000020: (l_discount, l_commitdate)
 */
 
 
@@ -100,10 +116,10 @@ Result of new query
     val flattenItem = nestedOrders.withColumn("lineitem", explode($"o_lineitems"))
     val projectItem = flattenItem.select($"lineitem.l_returnflag".alias("l_returnflag"), $"lineitem.l_linestatus".alias("l_linestatus"),
       $"lineitem.l_quantity".alias("l_quantity"), $"lineitem.l_extendedprice".alias("l_extendedprice"),
-      $"lineitem.l_tax".alias("l_discount"), $"lineitem.l_tax".alias("l_tax"),  //SA: l_tax -> l_discount
+      $"lineitem.l_tax".alias("l_discount"), $"lineitem.l_tax".alias("l_tax"),
       $"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"),
-      ($"lineitem.l_extendedprice"*(lit(1.0)-$"lineitem.l_tax")).alias("disc_price"),
-      ($"lineitem.l_extendedprice"*(lit(1.0)+$"lineitem.l_discount")*(lit(1.0)-$"lineitem.l_tax")).alias("charge"))
+      ($"lineitem.l_extendedprice"*(lit(1.0) - $"lineitem.l_tax")).alias("disc_price"), //SA: l_tax -> l_discount
+      ($"lineitem.l_extendedprice"*(lit(1.0) + $"lineitem.l_discount") * (lit(1.0) - $"lineitem.l_tax")).alias("charge"))
     val filterShipdate = projectItem.filter($"l_shipdate" <= "1998-09-02")
     val res = filterShipdate.groupBy($"l_returnflag", $"l_linestatus")
       .agg(
@@ -179,7 +195,6 @@ Result of new query
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
 
-
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
     NestedOrdersAlternatives.createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
     /*
@@ -198,47 +213,47 @@ Result of new query
     primaryTree
   }
 
-  def replaceDiscount1(node: SchemaNode): Unit ={
-    if (node.name == "l_discount" && node.children.isEmpty) {
-      node.name = "l_discount_tmp"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-        replaceDiscount1(child)
-    }
-  }
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
-
-  def replaceDiscount2(node: SchemaNode): Unit ={
-    if (node.name == "l_discount_tmp" && node.children.isEmpty) {
-      node.name = "l_tax"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDiscount2(child)
-    }
-  }
-
-  def replaceTax(node: SchemaNode): Unit ={
-    if (node.name == "l_tax" && node.children.isEmpty) {
-      node.name = "l_discount"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceTax(child)
-    }
-  }
+//  def replaceDiscount1(node: SchemaNode): Unit ={
+//    if (node.name == "l_discount" && node.children.isEmpty) {
+//      node.name = "l_discount_tmp"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//        replaceDiscount1(child)
+//    }
+//  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
+//
+//  def replaceDiscount2(node: SchemaNode): Unit ={
+//    if (node.name == "l_discount_tmp" && node.children.isEmpty) {
+//      node.name = "l_tax"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDiscount2(child)
+//    }
+//  }
+//
+//  def replaceTax(node: SchemaNode): Unit ={
+//    if (node.name == "l_tax" && node.children.isEmpty) {
+//      node.name = "l_discount"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceTax(child)
+//    }
+//  }
 
 }

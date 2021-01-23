@@ -97,10 +97,26 @@ TODO:
     res
   }
 
+  def nestedScenarioWithShipToCommitDateWithSmall: DataFrame = {
+    val nestedOrders = loadNestedOrders001()
+
+    val filterOrderDate = nestedOrders.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01")
+    val flattenOrd = filterOrderDate.withColumn("lineitem", explode($"o_lineitems"))
+    //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
+    val filterCommitShipDate = flattenOrd.filter($"lineitem.l_shipdate" < $"lineitem.l_receiptdate") // SA: l_shipdate -> l_commitdate
+    val projectExpr = filterCommitShipDate.select($"lineitem.l_orderkey".alias("l_orderkey"), $"lineitem.l_comment".alias("l_comment"))
+    val projectOrdKey = projectExpr.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
+    val joinOrdLine = filterOrderDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey")
+    val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
+
+    res
+  }
+
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
     return nestedScenarioWithShipToCommitDate
+//    return nestedScenarioWithShipToCommitDateWithSmall
   }
 
   override def getName(): String = "TPCH104"
@@ -119,11 +135,12 @@ TODO:
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val nesteOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedorders")
+    val nesteOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
     if(nesteOrder) {
-      // TODO: how to include SA for orderPriority
-      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      //TODO: need to check
+      NestedOrdersAlternatives.createAlternativesWith2Permutations(primaryTree,
+        Seq("o_shippriority", "o_orderpriority"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
 //      val saSize = testConfiguration.schemaAlternativeSize
 //      createAlternatives(primaryTree, saSize)
@@ -136,14 +153,14 @@ TODO:
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_shipdate" && node.children.isEmpty) {
-      node.name = "l_commitdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_shipdate" && node.children.isEmpty) {
+//      node.name = "l_commitdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
 }

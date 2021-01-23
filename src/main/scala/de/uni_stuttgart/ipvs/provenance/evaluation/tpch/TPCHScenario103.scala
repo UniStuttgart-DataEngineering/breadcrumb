@@ -4,7 +4,8 @@ import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.functions.{explode, lit, sum, count}
+import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation}
+import org.apache.spark.sql.functions.{count, explode, lit, sum}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TPCHScenario103(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
@@ -84,7 +85,7 @@ Explanations (over sample):
   }
 
   def nestedScenarioWithCommitToShipDate: DataFrame = {
-    val nestedCustomer = loadNestedCustomer001()
+    val nestedCustomer = loadNestedCustomer()
 
     val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
     val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
@@ -98,12 +99,33 @@ Explanations (over sample):
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority")
       .agg(sum($"disc_price").alias("revenue"), count($"l_discount").alias("disc"))
 //    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
-    res.filter($"l_orderkey" === 4986467)
+//    res.filter($"l_orderkey" === 4986467)
+    res
+  }
+
+  def nestedScenarioWithCommitToShipDateWithSmall: DataFrame = {
+    val nestedCustomer = loadNestedCustomer001()
+
+    val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
+    val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
+    val projectCols = flattenLineItem.select($"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"), //SA: l_commitdate -> l_shipdate
+      $"lineitem.l_extendedprice".alias("l_extendedprice"), $"lineitem.l_discount".alias("l_discount"),
+      $"order.o_custkey".alias("o_custkey"), $"order.o_orderdate".alias("o_orderdate"), $"order.o_shippriority".alias("o_shippriority"))
+    val filterOrd = projectCols.filter($"o_orderdate" < "1995-03-15")
+    val filterLine = filterOrd.filter($"l_shipdate" > "1995-03-15")
+    val filterMktSeg = filterLine.filter($"c_mktsegment" === "BUILDING")
+    val projectExpr = filterMktSeg.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
+    val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority")
+      .agg(sum($"disc_price").alias("revenue"), count($"l_discount").alias("disc"))
+    //    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" === 1225089 || $"l_orderkey" === 5331399)
+    //    res.filter($"l_orderkey" === 4986467)
+    res
   }
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
     return nestedScenarioWithCommitToShipDate
+//    return nestedScenarioWithCommitToShipDateWithSmall
   }
 
   override def getName(): String = "TPCH103"
@@ -111,10 +133,9 @@ Explanations (over sample):
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
     val root = twig.createNode("root")
-//    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
+    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt9000")
-    // Only for sample data
-    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
+//    val key = twig.createNode("l_orderkey", 1, 1, "4986467") // for sample data
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
     twig = twig.createEdge(root, key, false)
 //    twig = twig.createEdge(root, rev, false)
@@ -123,25 +144,33 @@ Explanations (over sample):
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree =  {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    // TODO: applying new implementation for SA
-    val saSize = testConfiguration.schemaAlternativeSize
-    createAlternatives(primaryTree, saSize)
+    // TODO: used nestedCustomer instead
+//    val nestedCustomer = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedCustomers")
+//    val nesteOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
-    for (i <- 0 until saSize) {
-      replaceDate(primaryTree.alternatives(i).rootNode)
-    }
+//    if(nestedCustomer) {
+      NestedOrdersAlternatives.createAlternativesWithOrdersWith1Permutations(primaryTree,
+        Seq("o_shippriority", "o_orderpriority"), Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
+
+//      val saSize = testConfiguration.schemaAlternativeSize
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
+//    }
 
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
 }

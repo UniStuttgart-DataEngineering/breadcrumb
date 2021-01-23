@@ -64,6 +64,16 @@ Result of new query
 |N           |O           |7.447604E7 |1.1170172969774013E11|1.0722943502365518E11|1.1258945330459906E11|25.50222676958499 |38249.117988908314|0.04003812867809482 |2920374    |
 |R           |F           |3.7719753E7|5.656804138089943E10 |5.4306781776778564E10|5.702059730418154E10 |25.50579361269077 |38250.85462609927 |0.03998597577885089 |1478870    |
 +------------+------------+-----------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+
+Explanation:
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0003, 0004]  |3              |000017     |
+|[0003, 0004]  |3              |000016     |
+|[0003]        |3              |000015     |
+|[0003, 0004]  |1              |000015     |
++--------------+---------------+-----------+
 */
 
   def unmodifiedReferenceScenario: DataFrame = {
@@ -106,7 +116,7 @@ Result of new query
   def scenarioWithTaxAndDiscountInterchangedSmall: DataFrame = {
     loadLineItem001()
       .filter($"l_shipdate" <= "1998-09-02")
-      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_discount")))
+      .withColumn("disc_price", ($"l_extendedprice"*(lit(1.0)-$"l_tax")))
       .withColumn("charge", $"l_extendedprice"*(lit(1.0)-$"l_discount")*(lit(1.0)+$"l_tax"))
       .groupBy($"l_returnflag", $"l_linestatus")
       .agg(
@@ -186,47 +196,47 @@ Result of new query
     primaryTree
   }
 
-  def replaceDiscount1(node: SchemaNode): Unit ={
-    if (node.name == "l_discount" && node.children.isEmpty) {
-      node.name = "l_discount_tmp"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-        replaceDiscount1(child)
-    }
-  }
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_commitdate" && node.children.isEmpty) {
-      node.name = "l_shipdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
-
-  def replaceDiscount2(node: SchemaNode): Unit ={
-    if (node.name == "l_discount_tmp" && node.children.isEmpty) {
-      node.name = "l_tax"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDiscount2(child)
-    }
-  }
-
-  def replaceTax(node: SchemaNode): Unit ={
-    if (node.name == "l_tax" && node.children.isEmpty) {
-      node.name = "l_discount"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceTax(child)
-    }
-  }
+//  def replaceDiscount1(node: SchemaNode): Unit ={
+//    if (node.name == "l_discount" && node.children.isEmpty) {
+//      node.name = "l_discount_tmp"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//        replaceDiscount1(child)
+//    }
+//  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_commitdate" && node.children.isEmpty) {
+//      node.name = "l_shipdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
+//
+//  def replaceDiscount2(node: SchemaNode): Unit ={
+//    if (node.name == "l_discount_tmp" && node.children.isEmpty) {
+//      node.name = "l_tax"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDiscount2(child)
+//    }
+//  }
+//
+//  def replaceTax(node: SchemaNode): Unit ={
+//    if (node.name == "l_tax" && node.children.isEmpty) {
+//      node.name = "l_discount"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceTax(child)
+//    }
+//  }
 
 }

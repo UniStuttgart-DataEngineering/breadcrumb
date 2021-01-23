@@ -77,11 +77,26 @@ Result over sample for mq:
 +---------------+-----------+
 
 Explanation over sample for mq:
+[before]
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
 |[0003, 0006]  |1              |000022     |
 |[0006]        |1              |000022     |
++--------------+---------------+-----------+
+
+[current]
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[0003, 0006]  |1              |000029     |
+|[0006]        |1              |000029     |
+|[0003, 0006]  |1              |000028     |
+|[0006]        |1              |000028     |
+|[0003, 0006]  |1              |000026     |
+|[0006]        |1              |000026     |
+|[0003, 0006]  |1              |000030     |
+|[0006]        |1              |000030     |
 +--------------+---------------+-----------+
 
 TODO:
@@ -98,8 +113,8 @@ TODO:
     val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30"))
     val filterLine = lineitem.filter($"l_commitdate" < $"l_receiptdate")
 //    val projectOrdKey = filterLine.select($"l_orderkey").distinct()
-//    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment"))
-    val joinOrdLine = filterOrdDate.join(filterLine, $"o_orderkey" === $"l_orderkey", "left_semi")
+    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
+    val joinOrdLine = projectOrdKey.join(filterLine, $"o_orderkey" === $"l_orderkey") //, "left_semi")
     val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
 
     res
@@ -113,15 +128,37 @@ TODO:
     val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate") // SA l_shipdate -> l_commitdate // oid=6
 //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
     val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
-    val joinOrdLine = filterOrdDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey") // left_semi -> natural join
+    val joinOrdLine = filterOrdDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey")
     val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
 
     res
   }
 
+  def flatScenarioWithShipToCommitDateWithSmall: DataFrame = {
+    val orders = loadOrder001()
+    val lineitem = loadLineItem001()
+
+    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30")) // oid=3
+    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate") // SA l_shipdate -> l_commitdate // oid=6
+    //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
+    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
+    val joinOrdLine = filterOrdDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey")
+    val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
+
+    res
+  }
+
+//  def orderShipPriority: DataFrame = {
+//    val orders = loadOrder()
+//    val res = orders.select($"o_orderpriority", $"o_shippriority").distinct()
+//    res
+//  }
+
   override def referenceScenario: DataFrame = {
-//        return unmodifiedReferenceScenario
+//    return unmodifiedReferenceScenario
     return flatScenarioWithShipToCommitDate
+//    return flatScenarioWithShipToCommitDateWithSmall
+//    return orderShipPriority
   }
 
   override def getName(): String = "TPCH04"
@@ -161,14 +198,15 @@ TODO:
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
-    if (node.name == "l_shipdate" && node.children.isEmpty) {
-      node.name = "l_commitdate"
-      node.modified = true
-      return
-    }
-    for (child <- node.children){
-      replaceDate(child)
-    }
-  }
+//  def replaceDate(node: SchemaNode): Unit ={
+//    if (node.name == "l_shipdate" && node.children.isEmpty) {
+//      node.name = "l_commitdate"
+//      node.modified = true
+//      return
+//    }
+//    for (child <- node.children){
+//      replaceDate(child)
+//    }
+//  }
+
 }
