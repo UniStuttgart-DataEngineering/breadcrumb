@@ -24,8 +24,8 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
     //spark.sparkContext.hadoopConfiguration.set("dfs.client.read.shortcircuit.skip.checksum", "true")
 //    nested.coalesce(1).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
 //      .json(testConfiguration.pathToData + "/nestedcustomer")
-    nested.coalesce(100).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
-      .json("/user/hadoop/diesterf/data/tpch/nestedCustomers/")
+    nested.coalesce(10).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
+      .json("/user/hadoop/diesterf/data/tpch/nestedCustomers10/")
 //      //.option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")"
 
     //nested.schema
@@ -38,6 +38,6 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
      */
 //    nested.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedcustomer")
 
-    nested
+    nested.filter($"o_orderkey" < 0)
   }
 }
