@@ -38,6 +38,6 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
      */
 //    nested.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedcustomer")
 
-    nested.filter($"o_orderkey" < 0)
+    nested
   }
 }
