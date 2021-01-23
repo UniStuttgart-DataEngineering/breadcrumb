@@ -88,7 +88,8 @@ Explanations (over sample):
     val nestedCustomer = loadNestedCustomer()
 
     val flattenOrd = nestedCustomer.withColumn("order", explode($"c_orders"))
-    val flattenLineItem = flattenOrd.withColumn("lineitem", explode($"order.o_lineitems"))
+    val flattenOrd2 = flattenOrd.withColumn("o_lineitems", $"order.o_lineitems")
+    val flattenLineItem = flattenOrd2.withColumn("lineitem", explode($"o_lineitems"))
     val projectCols = flattenLineItem.select($"lineitem.l_commitdate".alias("l_shipdate"), $"lineitem.l_orderkey".alias("l_orderkey"), //SA: l_commitdate -> l_shipdate
       $"lineitem.l_extendedprice".alias("l_extendedprice"), $"lineitem.l_discount".alias("l_discount"),
       $"order.o_custkey".alias("o_custkey"), $"order.o_orderdate".alias("o_orderdate"), $"order.o_shippriority".alias("o_shippriority"))
