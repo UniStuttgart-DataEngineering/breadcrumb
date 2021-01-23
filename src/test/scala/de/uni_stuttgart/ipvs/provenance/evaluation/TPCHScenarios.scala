@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
-import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario104, TPCHScenario106, TPCHScenario110, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18}
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario104, TPCHScenario106, TPCHScenario110, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18, TPCHScenario2031}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.scalatest.FunSuite
@@ -530,6 +530,15 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     var res = scenario.prepareScenarioForMSRComputation()
     collectDataFrameLocal(res, scenario.getName + "intermediate")
     res = scenario.extendedScenarioWithPreparedSAandMSR()
+    res.show(10)
+    ProvenanceContext.setTestScenario(null)
+  }
+
+  test("[RewriteWithSA] TPCH 2031") {
+    val scenario = new TPCHScenario2031(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    var res = scenario.extendedScenarioWithSA
+    res = res.filter($"l_orderkey" === 1468993)
     res.show(10)
     ProvenanceContext.setTestScenario(null)
   }

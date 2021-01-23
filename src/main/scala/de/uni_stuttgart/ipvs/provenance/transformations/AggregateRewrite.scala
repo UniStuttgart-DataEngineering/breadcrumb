@@ -3,7 +3,7 @@ package de.uni_stuttgart.ipvs.provenance.transformations
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.{Constants, ProvenanceAttribute, ProvenanceContext, Rewrite, WhyNotPlanRewriter}
 import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{AlternativeOidAdder, PrimarySchemaSubsetTree, SchemaAlternativesExpressionAlternatives, SchemaAlternativesForwardTracing, SchemaSubsetTree, SchemaSubsetTreeAccessAdder, SchemaSubsetTreeBackTracing}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.SchemaBackTrace
-import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not, Or}
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, And, Attribute, AttributeReference, CaseWhen, CreateNamedStruct, CreateStruct, EqualTo, Expression, IsNull, Literal, NamedExpression, Not, Or, Size}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet, Complete, Count, First, Max, Min, Sum}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Expand, GroupingSets, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.{analysis, expressions}
@@ -178,6 +178,16 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
     val trueCase = alternativeExpression
     (condition, trueCase)
   }
+
+
+  def listCondition(provenanceColumn: NamedExpression): Expression = {
+    val condition = EqualTo(Size(provenanceColumn), Literal(0, IntegerType))
+    val trueCase = Literal(null, provenanceColumn.dataType)
+    val falseCase = Some(Literal(null, provenanceColumn.dataType))
+    val branches = Seq(Tuple2(condition, trueCase))
+    CaseWhen(branches, falseCase)
+  }
+
 
   def validAndCompatibleConditions(targetColumn: Expression, validColumns: Seq[NamedExpression], compatibleColumns: Seq[NamedExpression]): Expression = {
     val conditions : Seq[Expression] = (compatibleColumns zip validColumns).map {
