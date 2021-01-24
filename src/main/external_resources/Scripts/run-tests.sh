@@ -17,7 +17,7 @@ for saSize in "1"; do #"1" "2" "3" "4"
       if [ $testSuite = "tpch" ]; then
           dataPath=$tpchPath
       fi
-      for reference in "4"; do #"3" "5"
+      for reference in "0" "4"; do #"3" "5"
           for size in "200"; do
                 ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
           done

@@ -111,8 +111,8 @@ o_orderpriority = 3-MEDIUM)
 
   override def referenceScenario: DataFrame = {
     //    return unmodifiedReferenceScenario
-//    return flatScenarioWithCommitToShipDate
-    return orderKey
+    return flatScenarioWithCommitToShipDate
+    //return orderKey
   }
 
   override def getName(): String = "TPCH03"
