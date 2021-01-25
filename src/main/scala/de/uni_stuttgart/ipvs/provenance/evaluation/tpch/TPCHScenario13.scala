@@ -14,7 +14,7 @@ class TPCHScenario13(spark: SparkSession, testConfiguration: TestConfiguration) 
 
 //  val decrease = udf { (x: Double, y: Double) => x * (1 - y) }
 //  val increase = udf { (x: Double, y: Double) => x * (1 + y) }
-//  val special = udf { (x: String) => x.matches(".*special.*requests.*") }
+  val special = udf { (x: String) => x.matches(".*special.*requests.*") }
 
 /*
 Original result:
@@ -22,7 +22,7 @@ Original result:
 |c_count|custdist|
 +-------+--------+
 |0      |50005   |
-|9      |6641    | --> disappear for mq1
+|9      |6641    |
 |10     |6532    |
 |11     |6014    |
 |8      |5937    |
@@ -33,40 +33,11 @@ Original result:
 |17     |4587    |
 +-------+--------+
 
-Result of modified query 1 (NOT LIKE -> LIKE):
-+-------+--------+
-|c_count|custdist|
-+-------+--------+
-|1      |13503   |
-|2      |1177    |
-|3      |68      |
-|4      |4       |
-|5      |1       |
-+-------+--------+
-
-Result of modified query 2 (NOT LIKE -> NOT CONTAINS):
-+-------+--------+
-|c_count|custdist|
-+-------+--------+
-|10     |6577    |
-|9      |6538    | --> custdist is smaller than original result
-|11     |6021    |
-|8      |5761    |
-|12     |5645    |
-|13     |5018    |
-|19     |4753    |
-|20     |4541    |
-|7      |4512    |
-|17     |4484    |
-+-------+--------+
-
-
 Explanations:
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
 |[0003]        |1              |000017     |
-|[0005]        |1              |000017     |
 +--------------+---------------+-----------+
 */
 
@@ -78,15 +49,30 @@ Explanations:
     val ordComment = order.filter(!$"o_comment".like("%special%requests%"))
 //    val ordComment = order.filter(!$"o_comment".contains("special") || !$"o_comment".contains("requests"))
     val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey", "left_outer")
-//      && !special(order("o_comment")), "left_outer")
     val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
 //    res.sort($"custdist".desc, $"c_count".desc)
+//    joinCustOrd.filter($"o_orderkey".isNull)
 //    res.filter($"c_count" === 9)
-//    res
-    joinCustOrd.filter($"o_orderkey".isNull)
+    res
+//    joinCustOrd.filter($"c_custkey" === 474)
   }
 
+  def test: DataFrame = {
+    val customer = loadCustomer()
+    val order = loadOrder()
+
+    var res = customer.join(order, $"c_custkey" === order("o_custkey")
+      && !special(order("o_comment")), "left_outer")
+    res = res.filter($"c_custkey" === 474)
+//      .groupBy($"o_custkey")
+//      .agg(count($"o_orderkey").as("c_count"))
+//      .filter($"o_custkey" === 474)
+//      .groupBy($"c_count")
+//      .agg(count($"o_custkey").as("custdist"))
+//      .sort($"custdist".desc, $"c_count".desc)
+    res
+  }
 
   def flatScenarioModified: DataFrame = {
     val customer = loadCustomer()
@@ -102,9 +88,25 @@ Explanations:
     res
   }
 
+  def flatScenarioModifiedWithSmall: DataFrame = {
+    val customer = loadCustomer()
+    val order = loadOrder001()
+
+    val ordComment = order.filter(!$"o_comment".like("%special%requests%")) // oid=5
+    val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey") // LEFT_OUTER_JOIN -> NATURAL_JOIN // oid = 3
+    val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
+    val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
+    //    res.sort($"custdist".desc, $"c_count".desc)
+    //    res.filter($"c_count" === 9)
+    //    countOrd
+    res
+  }
+
   override def referenceScenario: DataFrame = {
 //    return unmodifiedReferenceScenario
+//    return test
     return flatScenarioModified
+//    return flatScenarioModifiedWithSmall
   }
 
   override def getName(): String = "TPCH13"

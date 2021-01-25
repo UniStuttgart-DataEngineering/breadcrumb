@@ -19,13 +19,13 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
     val temp = joined.withColumn("nestedOrder",
       when($"o_orderkey".isNull, null)
         .otherwise(struct(nestedOrders.schema.fieldNames.head, nestedOrders.schema.fieldNames.tail: _*)))
-    val nested = temp.groupBy(customer.schema.fieldNames.head, customer.schema.fieldNames.tail: _*)
+    var nested = temp.groupBy(customer.schema.fieldNames.head, customer.schema.fieldNames.tail: _*)
       .agg(collect_list($"nestedOrder").as("c_orders"))
     //spark.sparkContext.hadoopConfiguration.set("dfs.client.read.shortcircuit.skip.checksum", "true")
 //    nested.coalesce(1).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
 //      .json(testConfiguration.pathToData + "/nestedcustomer")
-    nested.coalesce(10).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
-      .json("/user/hadoop/diesterf/data/tpch/nestedCustomers10/")
+//    nested.coalesce(10).write.mode(SaveMode.Overwrite).option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
+//      .json("/user/hadoop/diesterf/data/tpch/nestedCustomers10/")
 //      //.option("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")"
 
     //nested.schema
@@ -36,8 +36,10 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
     println(n_count)
     println(n_count == o_count)
      */
-//    nested.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedcustomer")
 
+//    nested = nested.filter($"c_custkey".isNotNull)
+//    println(nested.count())
+    nested.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedcustomer")
     nested
   }
 }

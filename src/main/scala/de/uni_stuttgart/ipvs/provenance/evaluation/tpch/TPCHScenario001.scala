@@ -13,7 +13,7 @@ class TPCHScenario001(spark: SparkSession, testConfiguration: TestConfiguration)
   override def whyNotQuestion(): Twig = null
 
   override def referenceScenario(): DataFrame = {
-//      val factor = 1000
+      val factor = 1000
 //    val lineitem = loadLineItem()
 //    val cntLineItem = lineitem.count()
 //    val sampleSizeLI = cntLineItem / factor
@@ -41,30 +41,33 @@ class TPCHScenario001(spark: SparkSession, testConfiguration: TestConfiguration)
 //    // write to json
 //    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedOrdersSmall")
 
-//    val nestedCustomer = loadNestedCustomer()
+    val nestedCustomer = loadNestedCustomer()
 //    val cntNestedCust = nestedCustomer.count()
 //    val sampleSizeNO = cntNestedCust / factor
-//
-//    val sample = nestedCustomer.sample(true, 1D * sampleSizeNO / cntNestedCust)
-//
+
+    var sample = nestedCustomer
+    sample.printSchema()
+//    var sample = nestedCustomer.filter($"c_custkey".isNotNull)
+//    sample = sample.sample(true, 1D * sampleSizeNO / cntNestedCust)
+
 //    // write to json
 //    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedCustomerSmall")
 
-
-    // Generating small data with keeping co-relation
-    def flattenSchema(schema: StructType, prefix: String = null) : Array[Column] = {
-      schema.fields.flatMap(f => {
-        val colName = if (prefix == null) f.name else (prefix + "." + f.name)
-
-        f.dataType match {
-          case st: StructType => flattenSchema(st, colName)
-          case _ => Array(col(colName))
-        }
-      })
-    }
-
-    val nestedCustomer = loadNestedCustomer001()
-
+//
+//    // Generating small data with keeping co-relation
+//    def flattenSchema(schema: StructType, prefix: String = null) : Array[Column] = {
+//      schema.fields.flatMap(f => {
+//        val colName = if (prefix == null) f.name else (prefix + "." + f.name)
+//
+//        f.dataType match {
+//          case st: StructType => flattenSchema(st, colName)
+//          case _ => Array(col(colName))
+//        }
+//      })
+//    }
+//
+//    val nestedCustomer = loadNestedCustomer001()
+//
 //    // create small customer
 //    var sample = nestedCustomer.drop($"c_orders")
 //    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/customerSmall")
@@ -77,13 +80,13 @@ class TPCHScenario001(spark: SparkSession, testConfiguration: TestConfiguration)
 //    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedOrderSmall")
 
 
-    // create small orders
-    var sample = nestedCustomer.withColumn("order", explode($"c_orders"))
-    sample = sample.select($"order")
-//    sample = sample.drop("order.o_lineitems")
-    sample = sample.select(flattenSchema(sample.schema):_*)
-    sample = sample.drop("o_lineitems")
-//    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/orderSmall")
+//    // create small orders
+//    var sample = nestedCustomer.withColumn("order", explode($"c_orders"))
+//    sample = sample.select($"order")
+////    sample = sample.drop("order.o_lineitems")
+//    sample = sample.select(flattenSchema(sample.schema):_*)
+//    sample = sample.drop("o_lineitems")
+////    sample.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/orderSmall")
 
 
 //    // create small lineitems

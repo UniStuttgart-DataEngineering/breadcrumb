@@ -18,22 +18,11 @@ class TPCHScenario03(spark: SparkSession, testConfiguration: TestConfiguration) 
 
 /*
 Original result for a specific orderkey:
-+----------+-----------+--------------+-----------+
-|l_orderkey|o_orderdate|o_shippriority|revenue    |
-+----------+-----------+--------------+-----------+
-|4016674   |1995-02-01 |0             |186785.4098|  -> 207398.6434
-|2456423   |1995-03-05 |0             |406181.0111|
-|1468993   |1994-12-26 |0             |8964.1652  |  -> disappear
-+----------+-----------+--------------+-----------+
-
-over sample:
-+----------+-----------+--------------+------------------+
-|l_orderkey|o_orderdate|o_shippriority|revenue           |
-+----------+-----------+--------------+------------------+
-|4986467   |1994-12-21 |0             |7309.665599999999 |  -> disappear
-|1225089   |1995-02-20 |0             |85808.42079999999 |  -> 103232.2272
-|5331399   |1995-01-18 |0             |128197.82250000001|  -> 39946.4
-+----------+-----------+--------------+------------------+
++----------+-----------+--------------+-----------------+
+|l_orderkey|o_orderdate|o_shippriority|revenue          |
++----------+-----------+--------------+-----------------+
+|4986467   |1994-12-21 |0             |7309.665599999999| -> disappear
++----------+-----------+--------------+-----------------+
 
 Explanations:
 +--------------+---------------+-----------+
@@ -56,10 +45,12 @@ Explanations:
 000036: (o_shippriority, l_discount, l_shipdate)
 000042: (o_orderpriority,  l_discount, l_shipdate)
 a tuple containing follow fragment for 000042:
-(c_mktsegment = BUILDING,
+c_mktsegment = BUILDING,
 o_orderdate = 1994-12-21,
-l_shipdate = 1995-03-31,
-o_orderpriority = 3-MEDIUM)
+1995-02-06 <= l_commitdate <= 1995-03-12,
+1994-12-27 <= l_receiptdate <= 1995-04-28
+1994-12-24 <= l_shipdate <= 1995-03-31,
+o_orderpriority = 3-MEDIUM
 */
 
 
@@ -76,7 +67,8 @@ o_orderpriority = 3-MEDIUM)
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
-    res
+    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
+//    res
   }
 
   def flatScenarioWithCommitToShipDate: DataFrame = {
@@ -92,6 +84,24 @@ o_orderpriority = 3-MEDIUM)
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
+    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
+//    res
+  }
+
+  def flatScenarioWithCommitToShipDateWithSmall: DataFrame = {
+    val customer = loadCustomer()
+    val orders = loadOrder001()
+    val lineitem = loadLineItem001()
+
+    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
+    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
+    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate // oid = 9
+    val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
+    val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
+    val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
+    val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
+    //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
+//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
     res
   }
 
@@ -110,9 +120,10 @@ o_orderpriority = 3-MEDIUM)
   }
 
   override def referenceScenario: DataFrame = {
-    //    return unmodifiedReferenceScenario
+//    return unmodifiedReferenceScenario
     return flatScenarioWithCommitToShipDate
-    //return orderKey
+//    return flatScenarioWithCommitToShipDateWithSmall
+//    return orderKey
   }
 
   override def getName(): String = "TPCH03"
@@ -120,9 +131,9 @@ o_orderpriority = 3-MEDIUM)
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()
     val root = twig.createNode("root")
-    val key = twig.createNode("l_orderkey", 1, 1, "1468993")
+//    val key = twig.createNode("l_orderkey", 1, 1, "1468993") // outdated
 //    val rev = twig.createNode("revenue", 1, 1, "ltltltlt9000")
-//    val key = twig.createNode("l_orderkey", 1, 1, "4986467") // For sample data
+    val key = twig.createNode("l_orderkey", 1, 1, "4986467")
 ////    val rev = twig.createNode("revenue", 1, 1, "ltltltlt200000")
     twig = twig.createEdge(root, key, false)
 //    twig = twig.createEdge(root, rev, false)

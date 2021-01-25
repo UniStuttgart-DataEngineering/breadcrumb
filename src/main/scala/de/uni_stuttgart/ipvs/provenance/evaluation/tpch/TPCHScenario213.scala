@@ -1,13 +1,13 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.tpch
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.TestConfiguration
-import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaNode, SchemaSubsetTree}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.{PrimarySchemaSubsetTree, SchemaSubsetTree}
 import de.uni_stuttgart.ipvs.provenance.why_not_question.Twig
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.functions.{count, explode, explode_outer, size}
+import org.apache.spark.sql.functions.{count, explode, explode_outer}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class TPCHScenario113(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
+class TPCHScenario213(spark: SparkSession, testConfiguration: TestConfiguration) extends TPCHScenario(spark, testConfiguration) {
 
 
   import spark.implicits._
@@ -33,51 +33,56 @@ Original result:
 |17     |4587    |
 +-------+--------+
 
-over sample:
-
 Explanations:
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
-|[0003]        |1              |000017     |
+|[0005]        |1              |000015     |
 +--------------+---------------+-----------+
 */
 
 
   def unmodifiedNestedReferenceScenario: DataFrame = {
-    val customer = loadCustomer()
-    val nestedOrder = loadNestedOrders()
+    var nestedCust = loadNestedCustomer() // TODO: non-existed null values are loaded
+//    println(nestedCust.count())
+//    println(nestedCust.filter($"c_custkey".isNotNull).count())
+//    nestedCust = nestedCust.filter($"c_custkey".isNotNull)
 
-    val ordComment = nestedOrder.filter(!$"o_comment".like("%special%requests%"))
-    val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey", "left_outer")
-    val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
+    val flattenOrd = nestedCust.withColumn("order", explode_outer($"c_orders"))
+    val ordComment = flattenOrd.filter(!$"order.o_comment".like("%special%requests%") || $"order.o_comment".isNull) // necessary to include customers with no records
+    val countOrd = ordComment.groupBy($"c_custkey").agg(count($"order").as("c_count"))
+    val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
+    res.sort($"custdist".desc, $"c_count".desc)
+
+//    res.filter($"c_count" === 0)
+//    flattenOrd.printSchema()
+//    projectCols.filter($"c_custkey" === 474)
+//    nestedCust.filter(size($"c_orders") === 0)
+//    res
+  }
+
+  def nestedScenarioWithFlatten: DataFrame = {
+    var nestedCust = loadNestedCustomer() // TODO: non-existed null values are loaded
+//    nestedCust = nestedCust.filter($"c_custkey".isNotNull)
+
+    val flattenOrd = nestedCust.withColumn("order", explode($"c_orders")) // explode -> explode_outer
+    val ordComment = flattenOrd.filter(!$"order.o_comment".like("%special%requests%"))
+//    val ordComment = flattenOrd.filter(!$"order.o_comment".contains("special") || !$"order.o_comment".contains("requests"))
+//    val addId = flattenOrd.withColumn("id", $"order.o_comment".contains("special") && $"order.o_comment".contains("requests"))
+//    val filter1 = addId.filter($"id" === false)
+    val countOrd = ordComment.groupBy($"c_custkey").agg(count($"order").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
 //    res.sort($"custdist".desc, $"c_count".desc)
 //    res.filter($"c_count" === 0)
     res
-//    joinCustOrd.filter($"c_custkey" === 474)
   }
 
-  def nestedScenarioWithOuterJoinToJoin: DataFrame = {
-    val customer = loadCustomer()
-    val nestedOrder = loadNestedOrders()
+  def nestedScenarioWithFlattenWithSmall: DataFrame = {
+    val nestedCust = loadNestedCustomer001()
 
-    val ordComment = nestedOrder.filter(!$"o_comment".like("%special%requests%"))
-    val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey")  // LEFT_OUTER_JOIN -> NATURAL_JOIN
-    val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
-    val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
-//    res.sort($"custdist".desc, $"c_count".desc)
-//    res.filter($"c_count" === 0)
-    res
-  }
-
-  def nestedScenarioWithOuterJoinToJoinWithSmall: DataFrame = {
-    val customer = loadCustomer()
-    val nestedOrder = loadNestedOrders001()
-
-    val ordComment = nestedOrder.filter(!$"o_comment".like("%special%requests%"))
-    val joinCustOrd = customer.join(ordComment, $"c_custkey" === $"o_custkey")  // LEFT_OUTER_JOIN -> NATURAL_JOIN
-    val countOrd = joinCustOrd.groupBy($"c_custkey").agg(count($"o_orderkey").as("c_count"))
+    val flattenOrd = nestedCust.withColumn("order", explode($"c_orders")) // explode -> explode_outer
+    val ordComment = flattenOrd.filter(!$"order.o_comment".like("%special%requests%"))
+    val countOrd = ordComment.groupBy($"c_custkey").agg(count($"order").as("c_count"))
     val res = countOrd.groupBy($"c_count").agg(count($"c_custkey").as("custdist"))
     //    res.sort($"custdist".desc, $"c_count".desc)
     //    res.filter($"c_count" === 0)
@@ -85,12 +90,12 @@ Explanations:
   }
 
   override def referenceScenario: DataFrame = {
-    return unmodifiedNestedReferenceScenario
-//    return nestedScenarioWithOuterJoinToJoin
-//    return nestedScenarioWithOuterJoinToJoinWithSmall
+//    return unmodifiedNestedReferenceScenario
+    return nestedScenarioWithFlatten
+//    return nestedScenarioWithFlattenWithSmall
   }
 
-  override def getName(): String = "TPCH113"
+  override def getName(): String = "TPCH213"
 
   override def whyNotQuestion: Twig =   {
     var twig = new Twig()

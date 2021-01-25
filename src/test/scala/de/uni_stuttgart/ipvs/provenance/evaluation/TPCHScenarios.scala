@@ -1,7 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation
 
 import de.uni_stuttgart.ipvs.provenance.SharedSparkTestInstance
-import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario104, TPCHScenario106, TPCHScenario110, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18} //, TPCHScenario2031}
+import de.uni_stuttgart.ipvs.provenance.evaluation.tpch.{TPCHScenario00, TPCHScenario000, TPCHScenario001, TPCHScenario01, TPCHScenario02, TPCHScenario03, TPCHScenario04, TPCHScenario05, TPCHScenario06, TPCHScenario07, TPCHScenario10, TPCHScenario101, TPCHScenario103, TPCHScenario104, TPCHScenario106, TPCHScenario110, TPCHScenario113, TPCHScenario12, TPCHScenario13, TPCHScenario18, TPCHScenario213}
 import de.uni_stuttgart.ipvs.provenance.nested_why_not.ProvenanceContext
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.scalatest.FunSuite
@@ -616,6 +616,22 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
     ProvenanceContext.setTestScenario(null)
   }
 
+  // SCENARIO 13 - Nested - 2
+  test("[Reference] TPCH 213"){
+    val scenario = new TPCHScenario213(spark, testConfiguration1)
+    val res = scenario.referenceScenario
+    res.show(10, false)
+    res.explain()
+  }
+
+  test("[RewriteWithSAMSR] TPCH 213") {
+    val scenario = new TPCHScenario213(spark, testConfiguration1)
+    ProvenanceContext.setTestScenario(scenario)
+    val res = scenario.extendedScenarioWithSAandMSR()
+    res.show(10,false)
+    res.explain()
+    ProvenanceContext.setTestScenario(null)
+  }
 
   //  SCENARIO 18
   test("[Reference] TPCH 18"){
