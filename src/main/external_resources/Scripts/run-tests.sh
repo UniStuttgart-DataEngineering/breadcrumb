@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 repetitions="1"
-testMask="127"
+testMask="512"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 tpchPath="/user/hadoop/diesterf/data/tpch/"

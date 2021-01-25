@@ -37,4 +37,5 @@ class TPCHSuite (spark: SparkSession, testConfiguration: TestConfiguration) exte
   addScenario(new TPCHScenario106(spark, testConfiguration))
   addScenario(new TPCHScenario110(spark, testConfiguration))
   addScenario(new TPCHScenario113(spark, testConfiguration))
+  addScenario(new TPCHScenario213(spark, testConfiguration))
 }
