@@ -21,17 +21,17 @@ class TPCHSuite (spark: SparkSession, testConfiguration: TestConfiguration) exte
 //  addScenario(new TPCHScenario000(spark, testConfiguration))
 
   // Queries for flat
-//  addScenario(new TPCHScenario01(spark, testConfiguration))
-//  addScenario(new TPCHScenario03(spark, testConfiguration))
-//  addScenario(new TPCHScenario04(spark, testConfiguration))
-//  addScenario(new TPCHScenario06(spark, testConfiguration))
+  addScenario(new TPCHScenario01(spark, testConfiguration))
+  addScenario(new TPCHScenario03(spark, testConfiguration))
+  addScenario(new TPCHScenario04(spark, testConfiguration))
+  addScenario(new TPCHScenario06(spark, testConfiguration))
   addScenario(new TPCHScenario10(spark, testConfiguration))
   addScenario(new TPCHScenario13(spark, testConfiguration))
 
   // Queries for nesting
-//  addScenario(new TPCHScenario101(spark, testConfiguration))
+  addScenario(new TPCHScenario101(spark, testConfiguration))
   addScenario(new TPCHScenario103(spark, testConfiguration))
-//  addScenario(new TPCHScenario104(spark, testConfiguration))
+  addScenario(new TPCHScenario104(spark, testConfiguration))
   addScenario(new TPCHScenario106(spark, testConfiguration))
   addScenario(new TPCHScenario110(spark, testConfiguration))
   addScenario(new TPCHScenario113(spark, testConfiguration))
