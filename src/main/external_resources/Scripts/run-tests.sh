@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-repetitions="1"
+repetitions="5"
 testMask="127"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
@@ -17,7 +17,7 @@ for saSize in "1"; do #"1" "2" "3" "4"
       if [ $testSuite = "tpch" ]; then
           dataPath=$tpchPath
       fi
-      for reference in "0" "4"; do #"3" "5"
+      for reference in "0" "4" "5"; do #"3" "5"
           for size in "200"; do
                 ./submit.sh $testSuite $reference $size $repetitions $warmup $testMask $dataPath $saSize
           done

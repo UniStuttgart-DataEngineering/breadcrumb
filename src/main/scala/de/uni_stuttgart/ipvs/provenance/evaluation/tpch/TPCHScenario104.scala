@@ -59,10 +59,16 @@ Explanation over sample for mq:
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
-|[0003, 0007]  |1              |000031     |
-|[0007]        |1              |000031     |
-|[0003, 0007]  |1              |000033     |
-|[0007]        |1              |000033     |
+|[0003, 0007]  |1              |000042     |
+|[0007]        |1              |000042     |
+|[0003, 0007]  |1              |000046     |
+|[0007]        |1              |000046     |
+|[0003, 0007]  |1              |000044     |
+|[0007]        |1              |000044     |
+|[0003, 0007]  |1              |000049     |
+|[0007]        |1              |000049     |
+|[0003, 0007]  |1              |000048     |
+|[0007]        |1              |000048     |
 +--------------+---------------+-----------+
 
 TODO:
@@ -87,10 +93,10 @@ TODO:
     val filterOrderDate2 = nestedOrders2.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01")
     val nestedOrders = loadNestedOrders()
 
-    val filterOrderDate = nestedOrders.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01")
+    val filterOrderDate = nestedOrders.filter($"o_orderdate" >= "1993-07-01" && $"o_orderdate" < "1993-10-01") // oid = 3
     val flattenOrd = filterOrderDate.withColumn("lineitem", explode($"o_lineitems"))
     //    val projectOrdKey = filterLine.select($"l_orderkey").distinct() // Not supported
-    val filterCommitShipDate = flattenOrd.filter($"lineitem.l_shipdate" < $"lineitem.l_receiptdate") // SA: l_shipdate -> l_commitdate
+    val filterCommitShipDate = flattenOrd.filter($"lineitem.l_shipdate" < $"lineitem.l_receiptdate") // SA: l_shipdate -> l_commitdate // oid = 7
     val projectExpr = filterCommitShipDate.select($"lineitem.l_orderkey".alias("l_orderkey"), $"lineitem.l_comment".alias("l_comment"))
     val projectOrdKey = projectExpr.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
     val joinOrdLine = filterOrderDate2.join(projectOrdKey, $"o_orderkey" === $"l_orderkey")
@@ -117,8 +123,8 @@ TODO:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
-    return nestedScenarioWithShipToCommitDate
-//    return nestedScenarioWithShipToCommitDateWithSmall
+//    return nestedScenarioWithShipToCommitDate
+    return nestedScenarioWithShipToCommitDateWithSmall
   }
 
   override def getName(): String = "TPCH104"
@@ -127,8 +133,8 @@ TODO:
     var twig = new Twig()
     val root = twig.createNode("root")
     val priority = twig.createNode("o_orderpriority", 1, 1, "3-MEDIUM")
-        val count = twig.createNode("order_count", 1, 1, "ltltltlt11000")
-//    val count = twig.createNode("order_count", 1, 1, "ltltltlt6") // for sample data
+//        val count = twig.createNode("order_count", 1, 1, "ltltltlt11000")
+    val count = twig.createNode("order_count", 1, 1, "ltltltlt6") // for sample data
     twig = twig.createEdge(root, priority, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get

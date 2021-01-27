@@ -40,6 +40,15 @@ Explanation over sample:
 |[0002, 0007, 0009]|1              |000036     |
 |[0002, 0007]      |1              |000036     |
 +------------------+---------------+-----------+
+
+Without SA:
++--------------+---------------+-----------+
+|pickyOperators|compatibleCount|alternative|
++--------------+---------------+-----------+
+|[]            |1              |000033     |
+|[0007]        |1              |000033     |
+|[0007, 0009]  |1              |000033     |
++--------------+---------------+-----------+
 */
 
   def unmodifiedReferenceScenario: DataFrame = {
@@ -90,7 +99,7 @@ Explanation over sample:
     val joinCustOrd = customer.join(filterOrd, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterLine, $"o_orderkey" === $"l_orderkey")
     val joinNation = joinOrdLine.join(nation, $"c_nationkey" === $"n_nationkey")
-    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
+    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount"))) //SA: l_tax -> l_discount
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"c_custkey" === 61402)
@@ -121,8 +130,8 @@ Explanation over sample:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedReferenceScenario
-    return flatScenarioWithTaxToDiscount
-//    return flatScenarioWithTaxToDiscountWithSmall
+//    return flatScenarioWithTaxToDiscount
+    return flatScenarioWithTaxToDiscountWithSmall
 //    return findCustomer
   }
 
@@ -142,24 +151,24 @@ Explanation over sample:
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
-//    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
+//    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
+////    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
+////
+////    if(order) {
+////      OrdersAlternatives.createAllAlternatives(primaryTree)
+////    }
 //
-//    if(order) {
-//      OrdersAlternatives.createAllAlternatives(primaryTree)
+//    if(lineitem) {
+////      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))
+//
+////      val saSize = testConfiguration.schemaAlternativeSize
+//      val saSize = 1
+//      createAlternatives(primaryTree, saSize)
+//
+//      for (i <- 0 until saSize) {
+//        replaceDate(primaryTree.alternatives(i).rootNode)
+//      }
 //    }
-
-    if(lineitem) {
-//      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))
-
-//      val saSize = testConfiguration.schemaAlternativeSize
-      val saSize = 1
-      createAlternatives(primaryTree, saSize)
-
-      for (i <- 0 until saSize) {
-        replaceDate(primaryTree.alternatives(i).rootNode)
-      }
-    }
 
     primaryTree
   }
