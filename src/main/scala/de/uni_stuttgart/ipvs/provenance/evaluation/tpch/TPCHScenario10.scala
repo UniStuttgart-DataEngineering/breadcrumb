@@ -130,8 +130,8 @@ Without SA:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedReferenceScenario
-//    return flatScenarioWithTaxToDiscount
-    return flatScenarioWithTaxToDiscountWithSmall
+    return flatScenarioWithTaxToDiscount
+//    return flatScenarioWithTaxToDiscountWithSmall
 //    return findCustomer
   }
 
@@ -151,24 +151,24 @@ Without SA:
 
   override def computeAlternatives(backtracedWhyNotQuestion: SchemaSubsetTree, input: LeafNode): PrimarySchemaSubsetTree = {
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
-//    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
-////    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
-////
-////    if(order) {
-////      OrdersAlternatives.createAllAlternatives(primaryTree)
-////    }
+    val lineitem = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("lineitem")
+//    val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
 //
-//    if(lineitem) {
-////      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))
-//
-////      val saSize = testConfiguration.schemaAlternativeSize
-//      val saSize = 1
-//      createAlternatives(primaryTree, saSize)
-//
-//      for (i <- 0 until saSize) {
-//        replaceDate(primaryTree.alternatives(i).rootNode)
-//      }
+//    if(order) {
+//      OrdersAlternatives.createAllAlternatives(primaryTree)
 //    }
+
+    if(lineitem) {
+//      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))
+
+//      val saSize = testConfiguration.schemaAlternativeSize
+      val saSize = 1
+      createAlternatives(primaryTree, saSize)
+
+      for (i <- 0 until saSize) {
+        replaceDate(primaryTree.alternatives(i).rootNode)
+      }
+    }
 
     primaryTree
   }
