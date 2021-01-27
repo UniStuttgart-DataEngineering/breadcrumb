@@ -99,7 +99,7 @@ Without SA:
     val joinCustOrd = customer.join(filterOrd, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterLine, $"o_orderkey" === $"l_orderkey")
     val joinNation = joinOrdLine.join(nation, $"c_nationkey" === $"n_nationkey")
-    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount"))) //SA: l_tax -> l_discount
+    val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"c_custkey" === 61402)
