@@ -123,8 +123,8 @@ TODO:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
-//    return nestedScenarioWithShipToCommitDate
-    return nestedScenarioWithShipToCommitDateWithSmall
+    return nestedScenarioWithShipToCommitDate
+//    return nestedScenarioWithShipToCommitDateWithSmall
   }
 
   override def getName(): String = "TPCH104"
@@ -133,8 +133,8 @@ TODO:
     var twig = new Twig()
     val root = twig.createNode("root")
     val priority = twig.createNode("o_orderpriority", 1, 1, "3-MEDIUM")
-//        val count = twig.createNode("order_count", 1, 1, "ltltltlt11000")
-    val count = twig.createNode("order_count", 1, 1, "ltltltlt6") // for sample data
+        val count = twig.createNode("order_count", 1, 1, "ltltltlt11000")
+//    val count = twig.createNode("order_count", 1, 1, "ltltltlt6") // for sample data
     twig = twig.createEdge(root, priority, false)
     twig = twig.createEdge(root, count, false)
     twig.validate.get
