@@ -84,8 +84,8 @@ o_orderpriority = 3-MEDIUM
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
-    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
-//    res
+//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
+    res
   }
 
   def flatScenarioWithCommitToShipDateWithSmall: DataFrame = {
