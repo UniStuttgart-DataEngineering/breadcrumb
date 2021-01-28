@@ -101,8 +101,8 @@ Explanations over sample:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
-    return nestedScenarioWithLinestatusToReturnflagWithSmall
-//    return nestedScenarioWithLinestatusToReturnflag
+//    return nestedScenarioWithLinestatusToReturnflagWithSmall
+    return nestedScenarioWithLinestatusToReturnflag
   }
 
   override def getName(): String = "TPCH110"
