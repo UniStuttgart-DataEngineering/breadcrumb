@@ -39,6 +39,7 @@ Explanations over sample:
 |[0002, 0006]      |1              |000034     |
 |[0002, 0006, 0007]|1              |000034     |
 +------------------+---------------+-----------+
+0034: l_discount
 */
 
   def unmodifiedNestedReferenceScenario: DataFrame = {
@@ -100,8 +101,8 @@ Explanations over sample:
 
   override def referenceScenario: DataFrame = {
 //    return unmodifiedNestedReferenceScenario
-//    return nestedScenarioWithLinestatusToReturnflagWithSmall
-    return nestedScenarioWithLinestatusToReturnflag
+    return nestedScenarioWithLinestatusToReturnflagWithSmall
+//    return nestedScenarioWithLinestatusToReturnflag
   }
 
   override def getName(): String = "TPCH110"
