@@ -108,7 +108,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     spark.read.schema(nationSchema).option("header", false).option("delimiter", "|").csv(completePath)
   }
 
-  lazy val orderSchema = Seq(Order(0L, 0L, "", 0.0, "", "", "", 0L, "")).toDF().schema
+  lazy val orderSchema = Seq(Order(0L, 0L, "", 0.0, "", "", "", "", "")).toDF().schema
 
   def loadOrder(): DataFrame = {
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/orders.tbl*"
