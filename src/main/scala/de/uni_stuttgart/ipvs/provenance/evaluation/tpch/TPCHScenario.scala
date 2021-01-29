@@ -47,7 +47,7 @@ case class Order(
                   o_orderdate: String,
                   o_orderpriority: String,
                   o_clerk: String,
-                  o_shippriority: Long,
+                  o_shippriority: String,
                   o_comment: String)
 
 case class Part(
