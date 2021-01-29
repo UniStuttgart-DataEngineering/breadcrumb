@@ -28,7 +28,7 @@ class TPCHSuite (spark: SparkSession, testConfiguration: TestConfiguration) exte
   addScenario(new TPCHScenario10(spark, testConfiguration))
   addScenario(new TPCHScenario13(spark, testConfiguration))
 
-  // Queries for nesting
+
   addScenario(new TPCHScenario101(spark, testConfiguration))
   addScenario(new TPCHScenario103(spark, testConfiguration))
   addScenario(new TPCHScenario104(spark, testConfiguration))
@@ -36,4 +36,5 @@ class TPCHSuite (spark: SparkSession, testConfiguration: TestConfiguration) exte
   addScenario(new TPCHScenario110(spark, testConfiguration))
   addScenario(new TPCHScenario113(spark, testConfiguration))
   addScenario(new TPCHScenario213(spark, testConfiguration))
+=
 }

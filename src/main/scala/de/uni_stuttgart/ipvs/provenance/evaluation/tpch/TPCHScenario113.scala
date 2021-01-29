@@ -85,8 +85,8 @@ Explanations:
   }
 
   override def referenceScenario: DataFrame = {
-    return unmodifiedNestedReferenceScenario
-//    return nestedScenarioWithOuterJoinToJoin
+//    return unmodifiedNestedReferenceScenario
+    return nestedScenarioWithOuterJoinToJoin
 //    return nestedScenarioWithOuterJoinToJoinWithSmall
   }
 

@@ -39,6 +39,7 @@ Explanations over sample:
 |[0002, 0006]      |1              |000034     |
 |[0002, 0006, 0007]|1              |000034     |
 +------------------+---------------+-----------+
+0034: l_discount
 */
 
   def unmodifiedNestedReferenceScenario: DataFrame = {
