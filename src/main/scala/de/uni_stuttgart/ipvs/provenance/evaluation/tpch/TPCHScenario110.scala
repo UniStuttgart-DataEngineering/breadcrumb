@@ -123,26 +123,23 @@ Explanations over sample:
     val nesteOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
     if(nesteOrder) {
-      //    val saSize = testConfiguration.schemaAlternativeSize
-      val saSize = 1
-      createAlternatives(primaryTree, saSize)
-
-      for (i <- 0 until saSize) {
-        replaceDate(primaryTree.alternatives(i).rootNode)
+      if ((testConfiguration.schemaAlternativeSize & 1) > 0){
+        createAlternatives(primaryTree, 1)
+        replaceTax(primaryTree.alternatives(1).rootNode)
       }
     }
 
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
+  def replaceTax(node: SchemaNode): Unit ={
     if (node.name == "l_tax" && node.children.isEmpty) {
       node.name = "l_discount"
       node.modified = true
       return
     }
     for (child <- node.children){
-      replaceDate(child)
+      replaceTax(child)
     }
   }
 

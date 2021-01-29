@@ -150,9 +150,15 @@ Explanation over sample:
 //    }
 
     if(lineitem) {
+      if ((testConfiguration.schemaAlternativeSize & 1) > 0){
+        createAlternatives(primaryTree, 1)
+        replaceTax(primaryTree.alternatives(1).rootNode)
+      }
+    }
 //      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))
 
 //      val saSize = testConfiguration.schemaAlternativeSize
+      /* & 1
       val saSize = 1
       createAlternatives(primaryTree, saSize)
 
@@ -160,18 +166,19 @@ Explanation over sample:
         replaceDate(primaryTree.alternatives(i).rootNode)
       }
     }
+    */
 
     primaryTree
   }
 
-  def replaceDate(node: SchemaNode): Unit ={
+  def replaceTax(node: SchemaNode): Unit ={
     if (node.name == "l_tax" && node.children.isEmpty) {
       node.name = "l_discount"
       node.modified = true
       return
     }
     for (child <- node.children){
-      replaceDate(child)
+      replaceTax(child)
     }
   }
 

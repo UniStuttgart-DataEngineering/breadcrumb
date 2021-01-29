@@ -1,6 +1,7 @@
 package de.uni_stuttgart.ipvs.provenance.evaluation.tpch
 
 import de.uni_stuttgart.ipvs.provenance.evaluation.{TestConfiguration, TestScenario}
+import de.uni_stuttgart.ipvs.provenance.schema_alternatives.PrimarySchemaSubsetTree
 import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -193,4 +194,119 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
     val completePath = testConfiguration.pathToData + testConfiguration.getZeros() +"/orders001.json*"
     spark.read.schema(orders001Schema).json(completePath)
   }
+
+  def getLineItemAlternatives1(primaryTree: PrimarySchemaSubsetTree, taxDiscount: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, date)
+      }
+      case _ => primaryTree
+    }
+  }
+
+  def getLineItemAlternatives2(primaryTree: PrimarySchemaSubsetTree, taxDiscount: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, date)
+      }
+      case _ => primaryTree
+    }
+  }
+
+  def getLineItemAlternatives3(primaryTree: PrimarySchemaSubsetTree, taxDiscount: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith3Permutations(primaryTree, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith3Permutations(primaryTree, date)
+      }
+      case _ => primaryTree
+    }
+  }
+
+  def getNestedAlternatives1(primaryTree: PrimarySchemaSubsetTree, orderPriority: Seq[String], taxDiscount: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.createAlternativesWithOrdersWith1Permutations(primaryTree, orderPriority, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.create1AlternativesWithOrderAlternatives(primaryTree, orderPriority, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.create1AlternativesWithOrderAlternatives(primaryTree, orderPriority, date)
+      }
+      case alt if ((alt & 1) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, date)
+      }
+      case alt if ((alt & 4) > 0) => {
+        OrdersAlternatives.createAllAlternatives(primaryTree)
+      }
+      case _ => primaryTree
+    }
+  }
+
+  def getNestedAlternatives2(primaryTree: PrimarySchemaSubsetTree, orderPriority: Seq[String], taxDiscount: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.createAlternativesWithOrdersWith2Permutations(primaryTree, orderPriority, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0 && (alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, taxDiscount, date)
+      }
+      case alt if ((alt & 1) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.create1AlternativesWithOrderAlternatives(primaryTree, orderPriority, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.create2AlternativesWithOrderAlternatives(primaryTree, orderPriority, date)
+      }
+      case alt if ((alt & 1) > 0) => {
+        LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, date)
+      }
+      case alt if ((alt & 4) > 0) => {
+        OrdersAlternatives.createAllAlternatives(primaryTree)
+      }
+      case _ => primaryTree
+    }
+  }
+
+  def getNestedOrderAlternatives2(primaryTree: PrimarySchemaSubsetTree, orderPriority: Seq[String], date: Seq[String]): PrimarySchemaSubsetTree = {
+    testConfiguration.schemaAlternativeSize match {
+      case alt if ((alt & 2) > 0 && (alt & 4) > 0) => {
+        NestedOrdersAlternatives.create2AlternativesWithOrderAlternatives(primaryTree, orderPriority, date)
+      }
+      case alt if ((alt & 2) > 0) => {
+        LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, date)
+      }
+      case alt if ((alt & 4) > 0) => {
+        OrdersAlternatives.createAllAlternatives(primaryTree)
+      }
+      case _ => primaryTree
+    }
+  }
+
 }

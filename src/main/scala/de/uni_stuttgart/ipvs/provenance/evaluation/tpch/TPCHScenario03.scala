@@ -146,11 +146,14 @@ o_orderpriority = 3-MEDIUM
     val order = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("orders")
 
     if(order) {
-      OrdersAlternatives.createAllAlternatives(primaryTree)
+      if((testConfiguration.schemaAlternativeSize & 4) > 0){
+        OrdersAlternatives.createAllAlternatives(primaryTree)
+      }
     }
 
     if(lineitem) {
-      LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
+      getLineItemAlternatives1(primaryTree, Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
+      //LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
 
 ////      val saSize = testConfiguration.schemaAlternativeSize
 //      val saSize = 1

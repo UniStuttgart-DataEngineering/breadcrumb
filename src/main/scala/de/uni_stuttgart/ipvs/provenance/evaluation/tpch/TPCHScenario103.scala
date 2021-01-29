@@ -152,8 +152,9 @@ TODO: this should not be part of the explanation since there are no empty lists 
     val nestedOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
     if(nestedOrder) {
-      NestedOrdersAlternatives.createAlternativesWithOrdersWith1Permutations(primaryTree,
-        Seq("o_shippriority", "o_orderpriority"), Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
+      getNestedAlternatives1(primaryTree, Seq("o_shippriority", "o_orderpriority"), Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
+      //NestedOrdersAlternatives.createAlternativesWithOrdersWith1Permutations(primaryTree,
+      //  Seq("o_shippriority", "o_orderpriority"), Seq("l_discount", "l_tax"), Seq("l_commitdate", "l_shipdate", "l_receiptdate"))
 
 //      val saSize = testConfiguration.schemaAlternativeSize
 //      createAlternatives(primaryTree, saSize)

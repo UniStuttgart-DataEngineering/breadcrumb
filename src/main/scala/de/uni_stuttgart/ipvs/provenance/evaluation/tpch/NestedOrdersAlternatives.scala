@@ -37,4 +37,39 @@ object NestedOrdersAlternatives extends LineItemAlternatives {
     }
     primaryTree
   }
+
+  def create1AlternativesWithOrderAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSetOrder: Seq[String], attributeAlternativeSet1: Seq[String]): PrimarySchemaSubsetTree = {
+    val altPerms0 = attributeAlternativeSetOrder.permutations.toList
+    val altPerms1 = attributeAlternativeSet1.permutations.toList
+    val totalAlternatives = altPerms0.size * altPerms1.size
+    val allPerms : List[List[String]] = altPerms0 cross altPerms1
+    val original : List[String] = allPerms.head
+    val primaryTree = createAlternatives(primarySchemaSubsetTree, totalAlternatives)
+    for ((tree, combination) <- primaryTree.alternatives zip allPerms.tail) {
+      createAlternative(tree, original.drop(2), combination.drop(2))
+      if (original.head != combination.head) {
+        OrdersAlternatives.replaceAlternative(tree.rootNode)
+      }
+    }
+    primaryTree
+  }
+
+  def create2AlternativesWithOrderAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSetOrder: Seq[String], attributeAlternativeSet1: Seq[String]): PrimarySchemaSubsetTree = {
+    val altPerms0 = attributeAlternativeSetOrder.permutations.toList
+    val altPerms1 = attributeAlternativeSet1.combinations(2).flatMap(x => x.permutations.toList).toList
+    val totalAlternatives = altPerms0.size * altPerms1.size
+    val allPerms : List[List[String]] = altPerms0 cross altPerms1
+    val original : List[String] = allPerms.head
+    val primaryTree = createAlternatives(primarySchemaSubsetTree, totalAlternatives)
+    for ((tree, combination) <- primaryTree.alternatives zip allPerms.tail) {
+      createAlternative(tree, original.drop(2), combination.drop(2))
+      if (original.head != combination.head) {
+        OrdersAlternatives.replaceAlternative(tree.rootNode)
+      }
+    }
+    primaryTree
+  }
+
+
+
 }

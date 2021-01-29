@@ -141,9 +141,9 @@ TODO:
     //val nestedOrder = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
     if(!modified) {
-      //TODO: need to check
-      NestedOrdersAlternatives.createAlternativesWith2Permutations(primaryTree,
-        Seq("o_shippriority", "o_orderpriority"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      getNestedOrderAlternatives2(primaryTree, Seq("o_shippriority", "o_orderpriority"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      //NestedOrdersAlternatives.createAlternativesWith2Permutations(primaryTree,
+      //  Seq("o_shippriority", "o_orderpriority"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
       modified = true
 
 //      val saSize = testConfiguration.schemaAlternativeSize

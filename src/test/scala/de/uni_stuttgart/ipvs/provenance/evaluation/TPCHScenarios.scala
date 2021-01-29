@@ -10,7 +10,7 @@ class TPCHScenarios extends FunSuite with SharedSparkTestInstance {
 
   import spark.implicits._
   val pathToData = "src/main/external_resources/TPCH"
-  val testConfiguration1 = TestConfiguration.local(pathToData, 1)
+  val testConfiguration1 = TestConfiguration.local(pathToData, 7)
 
   def collectDataFrameLocal(df: DataFrame, scenarioName: String): Unit = {
     df.write.mode(SaveMode.Overwrite).parquet(pathToData + scenarioName)

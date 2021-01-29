@@ -177,7 +177,11 @@ Explanation:
     val primaryTree = super.computeAlternatives(backtracedWhyNotQuestion, input)
 
     //LineItemAlternatives().createAlternatives1(primaryTree, Seq("l_discount", "l_tax"))
-    LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+    val taxDiscount = Seq("l_discount", "l_tax")
+    val date = Seq("l_shipdate", "l_receiptdate", "l_commitdate")
+
+    getLineItemAlternatives1(primaryTree, taxDiscount, date)
+    //LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
 
     /*
@@ -193,7 +197,7 @@ Explanation:
 //        replaceDate(primaryTree.alternatives(i).rootNode)
 //      }
 
-    primaryTree
+    //primaryTree
   }
 
 //  def replaceDiscount1(node: SchemaNode): Unit ={
@@ -238,5 +242,6 @@ Explanation:
 //      replaceTax(child)
 //    }
 //  }
+
 
 }

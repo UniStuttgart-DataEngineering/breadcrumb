@@ -146,7 +146,8 @@ Explanation over sample for mq2:
     val nestedOrders = input.asInstanceOf[LogicalRelation].relation.asInstanceOf[HadoopFsRelation].location.rootPaths.head.toUri.toString.contains("nestedOrders")
 
     if(nestedOrders) {
-      NestedOrdersAlternatives.createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      getLineItemAlternatives1(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
+      //NestedOrdersAlternatives.createAlternativesWith1Permutations(primaryTree, Seq("l_discount", "l_tax"), Seq("l_shipdate", "l_receiptdate", "l_commitdate"))
 
 //      val saSize = testConfiguration.schemaAlternativeSize
 //      createAlternatives(primaryTree, saSize)
