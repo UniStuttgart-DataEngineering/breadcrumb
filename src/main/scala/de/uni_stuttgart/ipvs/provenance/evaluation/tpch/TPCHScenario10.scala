@@ -161,7 +161,7 @@ Without SA:
     if(lineitem) {
       if ((testConfiguration.schemaAlternativeSize & 1) > 0){
         createAlternatives(primaryTree, 1)
-        replaceTax(primaryTree.alternatives(1).rootNode)
+        replaceTax(primaryTree.alternatives(0).rootNode)
       }
     }
 //      LineItemAlternatives().createAlternativesWith2Permutations(primaryTree, Seq("l_discount", "l_tax"))

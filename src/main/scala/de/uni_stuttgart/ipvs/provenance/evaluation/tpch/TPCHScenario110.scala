@@ -126,7 +126,7 @@ Explanations over sample:
     if(nesteOrder) {
       if ((testConfiguration.schemaAlternativeSize & 1) > 0){
         createAlternatives(primaryTree, 1)
-        replaceTax(primaryTree.alternatives(1).rootNode)
+        replaceTax(primaryTree.alternatives(0).rootNode)
       }
     }
 
