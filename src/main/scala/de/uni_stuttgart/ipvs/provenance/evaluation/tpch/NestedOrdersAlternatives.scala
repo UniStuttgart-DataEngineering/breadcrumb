@@ -38,6 +38,24 @@ object NestedOrdersAlternatives extends LineItemAlternatives {
     primaryTree
   }
 
+  def createAlternativesWithOrdersWith1Permutations(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSetOrder: Seq[String], attributeAlternativeSet1: Seq[String]): PrimarySchemaSubsetTree = {
+    val altPerms0 = attributeAlternativeSetOrder.permutations.toList
+    val altPerms1 = attributeAlternativeSet1.map { x => List(x)}.toList
+    val totalAlternatives = altPerms0.size * altPerms1.size - 1
+    val allPerms : List[List[String]] = altPerms0 cross altPerms1
+    val original : List[String] = allPerms.head
+    val primaryTree = createAlternatives(primarySchemaSubsetTree, totalAlternatives)
+    for ((tree, combination) <- primaryTree.alternatives zip allPerms.tail) {
+      createAlternative(tree, original.drop(2), combination.drop(2))
+      if (original.head != combination.head) {
+        OrdersAlternatives.replaceAlternative(tree.rootNode)
+      }
+    }
+    primaryTree
+  }
+
+
+
   def create1AlternativesWithOrderAlternatives(primarySchemaSubsetTree: PrimarySchemaSubsetTree, attributeAlternativeSetOrder: Seq[String], attributeAlternativeSet1: Seq[String]): PrimarySchemaSubsetTree = {
     val altPerms0 = attributeAlternativeSetOrder.permutations.toList
     val altPerms1 = attributeAlternativeSet1.permutations.toList

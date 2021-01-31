@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 repetitions="5"
-testMask="127"
+testMask= 128  #"16383"
 twitterPath="/user/hadoop/diesterf/data/twitter/logs/"
 dblpPath="/user/hadoop/diesterf/data/dblp/json/big/"
 tpchPath="/user/hadoop/diesterf/data/tpch/"
 warmup="true"
 #saSize="1"
-for saSize in "1" "3" "5" "7"; do #"1" "2" "3" "4"
+for saSize in "5" "6" "7"; do #"0" "1" "2" "3" "4" "5" "6" "7"
   for testSuite in "tpch"; do #"dblp" "twitter"
       if [ $testSuite = "twitter" ]; then
           dataPath=$twitterPath

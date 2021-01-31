@@ -252,7 +252,7 @@ abstract class TPCHScenario(spark: SparkSession, testConfiguration: TestConfigur
         NestedOrdersAlternatives.create1AlternativesWithOrderAlternatives(primaryTree, orderPriority, taxDiscount)
       }
       case alt if ((alt & 2) > 0 && (alt & 4) > 0) => {
-        NestedOrdersAlternatives.create1AlternativesWithOrderAlternatives(primaryTree, orderPriority, date)
+        NestedOrdersAlternatives.createAlternativesWithOrdersWith1Permutations(primaryTree, orderPriority, date)
       }
       case alt if ((alt & 1) > 0) => {
         LineItemAlternatives().createAlternativesWith1Permutations(primaryTree, taxDiscount)
