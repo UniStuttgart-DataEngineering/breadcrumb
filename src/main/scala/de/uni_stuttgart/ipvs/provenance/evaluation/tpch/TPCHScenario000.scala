@@ -39,7 +39,7 @@ class TPCHScenario000(spark: SparkSession, testConfiguration: TestConfiguration)
 
 //    nested = nested.filter($"c_custkey".isNotNull)
 //    println(nested.count())
-    nested.coalesce(1).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedcustomer")
+    nested.coalesce(10).write.mode(SaveMode.Overwrite).json(testConfiguration.pathToData + "/nestedCustomer10")
     nested
   }
 }
