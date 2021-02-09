@@ -370,7 +370,9 @@ class AggregateRewrite (aggregate: Aggregate, override val oid: Int) extends Una
 
 
     AlternativeOidAdder(provenanceContext, aggregate.aggregateExpressions, oid).traceAttributeAccess()
-    val updatedTree = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenAggregate, aggregate.aggregateExpressions).forwardTraceExpressions().forwardTraceConstraintsOnAggregatedValues(outputWhyNotQuestion).getOutputWhyNotQuestion()
+    val updatedTree = SchemaAlternativesForwardTracing(provenanceContext.primarySchemaAlternative, rewrittenAggregate, aggregate.aggregateExpressions).forwardTraceExpressions()
+      //.forwardTraceConstraintsOnAggregatedValues(outputWhyNotQuestion)
+      .getOutputWhyNotQuestion()
     val aggregatedProvenanceAttribute = ProvenanceAttribute(oid, Constants.getProvenanceCollectionFieldName(oid), provenanceCollection.dataType)
     val aggregateContext = ProvenanceContext(provenanceContext, aggregatedProvenanceAttribute)
     aggregateContext.primarySchemaAlternative = updatedTree
