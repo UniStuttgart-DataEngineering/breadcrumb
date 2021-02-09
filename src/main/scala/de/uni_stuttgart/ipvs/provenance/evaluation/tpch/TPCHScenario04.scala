@@ -152,9 +152,9 @@ TODO:
     val orders = loadOrder()
     val lineitem = loadLineItem()
 
-    val filterOrdDate = orders.filter($"o_orderdate".between("1993-08-01", "1993-09-30"))
-    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate")
-    val projectOrdKey = filterLine.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
+    val filterOrdDate = orders.filter($"o_orderdate".between("1993-07-01", "1993-09-30"))
+//    val filterLine = lineitem.filter($"l_shipdate" < $"l_receiptdate")
+    val projectOrdKey = lineitem.groupBy($"l_orderkey").agg(count($"l_comment").alias("temp"))
     val joinOrdLine = filterOrdDate.join(projectOrdKey, $"o_orderkey" === $"l_orderkey")
     val res = joinOrdLine.groupBy($"o_orderpriority").agg(count($"o_orderkey").alias("order_count"))
     res

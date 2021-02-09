@@ -25,20 +25,20 @@ Original result for a specific orderkey:
 +----------+-----------+--------------+-----------------+
 
 Explanations (over sample):
-+------------------+---------------+-----------+
-|pickyOperators    |compatibleCount|alternative|
-+------------------+---------------+-----------+
-|[0006]            |1              |000037     |
-|[0002, 0006]      |1              |000042     |
-|[0002, 0006, 0007]|1              |000046     |
-|[0006]            |1              |000038     |
-|[0002, 0006]      |1              |000041     |
-|[0006, 0007]      |1              |000045     |
-|[0006, 0007]      |1              |000044     |
-|[0006]            |1              |000039     |
-|[0002, 0006, 0007]|1              |000048     |
-|[0006, 0007]      |1              |000043     |
-+------------------+---------------+-----------+
++------------------------+---------------+-----------+
+|pickyOperators          |compatibleCount|alternative|
++------------------------+---------------+-----------+
+|[0004, 0006]            |1              |000037     |
+|[0002, 0004, 0006]      |1              |000042     |
+|[0002, 0004, 0006, 0007]|1              |000046     |
+|[0004, 0006]            |1              |000038     |
+|[0002, 0004, 0006]      |1              |000041     |
+|[0004, 0006, 0007]      |1              |000045     |
+|[0004, 0006, 0007]      |1              |000044     |
+|[0004, 0006]            |1              |000039     |
+|[0002, 0004, 0006, 0007]|1              |000048     |
+|[0004, 0006, 0007]      |1              |000043     |
++------------------------+---------------+-----------+
 
 0007: Flatten
 TODO: this should not be part of the explanation since there are no empty lists of o_lineitems for o_orderkey === 4986467
@@ -76,7 +76,7 @@ TODO: this should not be part of the explanation since there are no empty lists 
     val customer = loadCustomer()
     val nestedOrders = loadNestedOrders()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
+    val filterMktSeg = customer.filter($"c_mktsegment" === "HOUSEHOLD")
     val filterOrdDate = nestedOrders.filter($"o_orderdate" < "1995-03-15")
     val flattenLineItem = filterOrdDate.withColumn("lineitem", explode($"o_lineitems"))
     val filterShipDate = flattenLineItem.filter($"lineitem.l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate
@@ -93,7 +93,7 @@ TODO: this should not be part of the explanation since there are no empty lists 
     val customer = loadCustomer()
     val nestedOrders = loadNestedOrders001()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
+    val filterMktSeg = customer.filter($"c_mktsegment" === "HOUSEHOLD") // oid = 4
     val filterOrdDate = nestedOrders.filter($"o_orderdate" < "1995-03-15") // oid = 9
     val flattenLineItem = filterOrdDate.withColumn("lineitem", explode($"o_lineitems")) // oid = 7
     val filterShipDate = flattenLineItem.filter($"lineitem.l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate // oid = 6

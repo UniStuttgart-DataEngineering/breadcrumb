@@ -42,13 +42,7 @@ Explanation over sample:
 +------------------+---------------+-----------+
 
 Without SA:
-+--------------+---------------+-----------+
-|pickyOperators|compatibleCount|alternative|
-+--------------+---------------+-----------+
-|[]            |1              |000033     |
-|[0007]        |1              |000033     |
-|[0007, 0009]  |1              |000033     |
-+--------------+---------------+-----------+
+
 */
 
   def unmodifiedReferenceScenario: DataFrame = {
@@ -65,7 +59,7 @@ Without SA:
     val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
-    res.filter($"c_custkey" === 61402)
+    res.filter($"c_custkey" === 39473)
 //    res
   }
 
@@ -83,8 +77,8 @@ Without SA:
     val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
-//    res.filter($"c_custkey" === 61402)
-    res
+    res.filter($"c_custkey" === 61402)
+//    res
   }
 
   def flatScenarioWithTaxToDiscountWithSmall: DataFrame = {
@@ -94,7 +88,7 @@ Without SA:
     val nation = loadNation()
 
     val filterLine = lineitem.filter($"l_returnflag" === "N") // oid = 9
-//    val filterOrd = order.filter($"o_orderdate".between("1992-10-01", "1992-12-31")) // oid = 7
+//    val filterOrd = order.filter($"o_orderdate".between("1992-01-01", "1992-12-31")) // oid = 7 // empty result
     val filterOrd = order.filter($"o_orderdate".between("1997-10-01", "1997-12-31")) // oid = 7
     val joinCustOrd = customer.join(filterOrd, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterLine, $"o_orderkey" === $"l_orderkey")
@@ -102,7 +96,7 @@ Without SA:
     val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
     var res = projectExpr.groupBy($"c_custkey",  $"c_name", $"c_acctbal", $"c_phone", $"n_name", $"c_address", $"c_comment")
       .agg(sum($"disc_price").alias("revenue"))
-//    res.filter($"c_custkey" === 61402)
+//    res.filter($"c_custkey" === 39473)
     res
   }
 
@@ -112,7 +106,8 @@ Without SA:
     val customer = loadCustomer()
     val nation = loadNation()
 
-//    order.select($"o_orderdate".substr(1,4)).distinct()
+//    order.select($"o_orderdate".substr(1,4)).distinct() // 1992 ~ 1998
+//    lineitem.select($"l_returnflag").distinct() // A,N,R
 
 //    val filterLine = lineitem.filter($"l_returnflag" === "R") // oid = 9
 //    val filterOrd = order.filter($"o_orderdate".between("1993-10-01", "1993-12-31")) // oid = 7
@@ -120,9 +115,12 @@ Without SA:
     val joinOrdLine = joinCustOrd.join(lineitem, $"o_orderkey" === $"l_orderkey")
     val joinNation = joinOrdLine.join(nation, $"c_nationkey" === $"n_nationkey")
     val projectExpr = joinNation.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_tax"))) //SA: l_tax -> l_discount
-    val res = projectExpr.filter($"c_custkey" === 61402 && $"l_returnflag" === "N")
-    res.select($"o_orderdate").distinct().sort($"o_orderdate")
-//    val res = projectExpr.select($"l_returnflag").distinct()
+    val res = projectExpr.filter($"c_custkey" === 61402 && ($"l_returnflag" === "N" || $"l_returnflag" === "R" || $"l_returnflag" === "A"))
+//    val res = projectExpr.groupBy($"c_custkey").agg(countDistinct($"l_returnflag").alias("rfCount"), count($"o_orderdate").alias("odateCount"))
+//    res.filter($"rfCount" < 3).sort(desc("odateCount"))
+//    val res = projectExpr.filter($"c_custkey" === 107372)
+    res.select($"l_returnflag", $"o_orderdate").distinct().sort($"l_returnflag", $"o_orderdate")
+//    res.select($"l_returnflag").distinct()
 //    val res = projectExpr.groupBy($"c_custkey").agg(count($"l_returnflag").alias("cntFlag"))
 //    res.filter($"cntFlag" < 3)
 //    res

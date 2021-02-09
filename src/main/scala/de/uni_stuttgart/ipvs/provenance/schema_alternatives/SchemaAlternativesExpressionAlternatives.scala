@@ -276,9 +276,11 @@ class SchemaAlternativesExpressionAlternatives(inputWhyNotQuestion: PrimarySchem
   def getAggregateFunction(expression: AggregateExpression, alternative: Expression, validColumn: NamedExpression, originalColumn: NamedExpression): AggregateExpression = {
     val function = expression.aggregateFunction match {
       case _: Sum => Sum(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
+//      case _: Sum => Sum(alternative)
       case _: Max => Max(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
       case _: Min => Min(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
       case _: Count => Count(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
+//      case _: Count => Count(alternative)
       case _: CollectList => CollectList(alternative)
       case _: Average => Average(nullNonOrigialValuesInAggregateExpressions(alternative, validColumn, originalColumn))
     }

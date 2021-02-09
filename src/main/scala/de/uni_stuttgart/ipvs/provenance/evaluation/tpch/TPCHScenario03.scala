@@ -24,23 +24,44 @@ Original result for a specific orderkey:
 |4986467   |1994-12-21 |0             |7309.665599999999| -> disappear
 +----------+-----------+--------------+-----------------+
 
+
++------------+-----------+----------+------------+
+|c_mktsegment|o_orderdate|l_shipdate|l_commitdate|
++------------+-----------+----------+------------+
+|BUILDING    |1994-12-21 |1994-12-24|1995-02-26  |
+|BUILDING    |1994-12-21 |1995-02-05|1995-03-03  |
+|BUILDING    |1994-12-21 |1995-02-08|1995-02-06  |
+|BUILDING    |1994-12-21 |1995-03-06|1995-03-12  |
+|BUILDING    |1994-12-21 |1995-03-09|1995-03-09  |
+|BUILDING    |1994-12-21 |1995-03-31|1995-02-08  |
++------------+-----------+----------+------------+
+
 Explanations:
+
+Without SA:
 +--------------+---------------+-----------+
 |pickyOperators|compatibleCount|alternative|
 +--------------+---------------+-----------+
-|[0009]        |1              |000035     |
-|[0002, 0009]  |1              |000042     |
-|[0002, 0009]  |1              |000037     |
-|[0002, 0009]  |1              |000046     |
-|[0002, 0009]  |1              |000038     |
-|[0002, 0009]  |1              |000041     |
-|[0002, 0009]  |1              |000045     |
-|[0002, 0009]  |1              |000044     |
-|[0002, 0009]  |1              |000039     |
-|[0002, 0009]  |1              |000043     |
-|[0002, 0009]  |1              |000040     |
-|[0002, 0009]  |1              |000036     |
+|[0005, 0009]  |1              |000028     |
 +--------------+---------------+-----------+
+
+With SAs:
++------------------+---------------+-----------+
+|pickyOperators    |compatibleCount|alternative|
++------------------+---------------+-----------+
+|[0005, 0009]      |1              |000035     |
+|[0002, 0005, 0009]|1              |000042     |
+|[0002, 0005, 0009]|1              |000037     |
+|[0002, 0005, 0009]|1              |000046     |
+|[0002, 0005, 0009]|1              |000038     |
+|[0002, 0005, 0009]|1              |000041     |
+|[0002, 0005, 0009]|1              |000045     |
+|[0002, 0005, 0009]|1              |000044     |
+|[0002, 0005, 0009]|1              |000039     |
+|[0002, 0005, 0009]|1              |000043     |
+|[0002, 0005, 0009]|1              |000040     |
+|[0002, 0005, 0009]|1              |000036     |
++------------------+---------------+-----------+
 
 000036: (o_shippriority, l_discount, l_shipdate)
 000042: (o_orderpriority,  l_discount, l_shipdate)
@@ -76,16 +97,16 @@ o_orderpriority = 3-MEDIUM
     val orders = loadOrder()
     val lineitem = loadLineItem()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
-    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
-    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate // oid = 9
+    val filterMktSeg = customer.filter($"c_mktsegment" === "HOUSEHOLD")
+    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-25")
+    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-25") // SA: l_commitdate -> l_shipdate // oid = 9
     val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
 //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
-//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
-    res
+    res.filter($"l_orderkey" === 4986467)
+//    res
   }
 
   def flatScenarioWithCommitToShipDateWithSmall: DataFrame = {
@@ -93,15 +114,15 @@ o_orderpriority = 3-MEDIUM
     val orders = loadOrder001()
     val lineitem = loadLineItem001()
 
-    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
-    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
-    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15") // SA: l_commitdate -> l_shipdate // oid = 9
+    val filterMktSeg = customer.filter($"c_mktsegment" === "HOUSEHOLD") // oid = 5
+    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-25")
+    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-25") // SA: l_commitdate -> l_shipdate // oid = 9
     val joinCustOrd = filterMktSeg.join(filterOrdDate, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(filterShipDate, $"o_orderkey" === $"l_orderkey")
     val projectExpr = joinOrdLine.withColumn("disc_price", ($"l_extendedprice" * (lit(1.0) - $"l_discount")))
     val res = projectExpr.groupBy($"l_orderkey", $"o_orderdate", $"o_shippriority").agg(sum($"disc_price").alias("revenue"))
     //    res.filter($"l_orderkey" === 1468993 || $"l_orderkey" === 4016674 || $"l_orderkey" === 2456423)
-//    res.filter($"l_orderkey" === 4986467 || $"l_orderkey" == 1468993)
+//    res.filter($"l_orderkey" === 4986467)
     res
   }
 
@@ -110,13 +131,16 @@ o_orderpriority = 3-MEDIUM
     val orders = loadOrder001()
     val lineitem = loadLineItem001()
 
+//    customer.select($"c_mktsegment").distinct()
+
 //    val filterMktSeg = customer.filter($"c_mktsegment" === "BUILDING")
 //    val filterOrdDate = orders.filter($"o_orderdate" < "1995-03-15")
 //    val filterShipDate = lineitem.filter($"l_commitdate" > "1995-03-15")
     val joinCustOrd = customer.join(orders, $"c_custkey" === $"o_custkey")
     val joinOrdLine = joinCustOrd.join(lineitem, $"o_orderkey" === $"l_orderkey")
     val res = joinOrdLine.filter($"o_orderkey" === 4986467)
-    res
+    res.select($"c_mktsegment", $"o_orderdate", $"l_shipdate", $"l_commitdate").distinct
+      .sort($"c_mktsegment", $"o_orderdate", $"l_shipdate", $"l_commitdate")
   }
 
   override def referenceScenario: DataFrame = {
