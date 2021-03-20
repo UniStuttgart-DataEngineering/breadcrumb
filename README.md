@@ -16,7 +16,7 @@ It provides the method:
 computeMSRs(dataFrame: DataFrame, whyNotTwig: Twig): DataFrame
 ```
 
-This method takes a Spark DataFrame and a twig (tree-pattern) as input. The twig describes the missing answer in the provided dataFrame. It returns a DataFrame that holds sets of operators. The listed operators need modification to make the missing answer appear in the result. Each of the sets is an explanation, why the missing answer is absent from the result. 
+This method takes a Spark DataFrame and a twig (tree-pattern) as input. The twig describes the missing answer in the provided dataFrame. It returns a DataFrame that holds sets of operators. The listed operators need modification to make the missing answer appear in the result. Each of the sets is an explanation, why the missing answer is absent from the result.
 
 ## Build
 This is a Maven project. Please have a look at the [Maven getting started guide](https://maven.apache.org/guides/getting-started/) on instructions about compiling and packaing this project.
@@ -24,7 +24,7 @@ This is a Maven project. Please have a look at the [Maven getting started guide]
 
 
 ## Schema alternatives
-If you like to test the schema alternatives described in the referenced work, checkout the branch named:
+If you like to try the experimental schema alternatives described in the referenced work, checkout the branch named:
 ```
 schema-alternatives
 ```
