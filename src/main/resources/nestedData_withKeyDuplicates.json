@@ -1,0 +1,6 @@
+{"flat_key": "1_flat_val", "nested_obj": {"nested_obj": {"nested_key": "1_nested_val"}}, "nested_list": [["1_list_val_1_1"], ["1_list_val_2_1"]]},
+{"flat_key": "2_flat_val", "nested_obj": {"nested_obj": {"nested_key": "2_nested_val"}}, "nested_list": [["2_list_val_1_1"], ["2_list_val_2_1"]]}
+{"flat_key": "1_flat_val", "nested_obj": {"nested_obj": {"nested_key": "1_nested_val"}}, "nested_list": [["1_list_val_1_1"], ["1_list_val_2_1"]]},
+{"flat_key": "2_flat_val", "nested_obj": {"nested_obj": {"nested_key": "2_nested_val"}}, "nested_list": [["2_list_val_1_1"], ["2_list_val_2_1"]]}
+{"flat_key": "1_flat_val", "nested_obj": {"nested_obj": {"nested_key": "1_nested_val"}}, "nested_list": [["1_list_val_1_1"], ["1_list_val_2_1"]]},
+{"flat_key": "2_flat_val", "nested_obj": {"nested_obj": {"nested_key": "2_nested_val"}}, "nested_list": [["2_list_val_1_1"], ["2_list_val_2_1"]]}
